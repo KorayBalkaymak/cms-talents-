@@ -20,41 +20,41 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const init = async () => {
-      // Ensure auth service is initialized (creates demo recruiters)
-      // We wrap this to ensure app loads even if backend is offline
       try {
-        await authService.ensureInit();
-      } catch (e) {
-        console.warn("Auth check failed:", e);
-      }
+        // Ensure auth service is initialized (creates demo recruiters)
+        // We wrap this to ensure app loads even if backend is offline
+        try {
+          await authService.ensureInit();
+        } catch (e) {
+          console.warn("Auth check failed:", e);
+        }
 
-      const initialUser = authService.getCurrentUser();
+        const initialUser = authService.getCurrentUser();
 
-      // If we have a user, try to get their latest profile data for the name
-      if (initialUser) {
-        if (initialUser.role === UserRole.CANDIDATE) {
-          try {
-            const profile = await candidateService.getById(initialUser.id);
-            if (profile && profile.firstName) {
-              setUser({ ...initialUser, firstName: profile.firstName });
-            } else {
+        // If we have a user, try to get their latest profile data for the name
+        if (initialUser) {
+          if (initialUser.role === UserRole.CANDIDATE) {
+            try {
+              const profile = await candidateService.getById(initialUser.id);
+              if (profile && profile.firstName) {
+                setUser({ ...initialUser, firstName: profile.firstName });
+              } else {
+                setUser(initialUser);
+              }
+            } catch (e) {
               setUser(initialUser);
             }
-          } catch (e) {
+          } else {
+            // Recruiter/Admin - we might wanna set a default name or fetch from recruiter profile if it existed
             setUser(initialUser);
           }
-        } else {
-          // Recruiter/Admin - we might wanna set a default name or fetch from recruiter profile if it existed
-          setUser(initialUser);
         }
-      }
 
-      try {
         const list = await candidateService.getAll();
         setAllCandidates(list);
       } catch (e) {
-        console.error("Failed to load candidates", e);
-        showToast("Verbindungsfehler zum Server", "error");
+        console.error("Global Init Error (App.tsx):", e);
+        showToast("Server nicht erreichbar. Offline-Modus.", "error");
       } finally {
         setIsLoading(false);
       }
