@@ -21,7 +21,13 @@ let SQL = null;
 
 // Initialize database
 async function initDatabase() {
-  SQL = await initSqlJs();
+  try {
+    SQL = await initSqlJs();
+  } catch (err) {
+    console.error('[DB] Failed to load sql.js:', err);
+    // Return dummy DB object or throw handled error
+    return null;
+  }
 
   // Try to load existing database
   try {

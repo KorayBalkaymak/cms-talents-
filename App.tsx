@@ -44,9 +44,15 @@ const App: React.FC = () => {
         }
       }
 
-      const list = await candidateService.getAll();
-      setAllCandidates(list);
-      setIsLoading(false);
+      try {
+        const list = await candidateService.getAll();
+        setAllCandidates(list);
+      } catch (e) {
+        console.error("Failed to load candidates", e);
+        showToast("Verbindungsfehler zum Server", "error");
+      } finally {
+        setIsLoading(false);
+      }
     };
     init();
 
