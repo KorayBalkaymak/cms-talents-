@@ -11,23 +11,14 @@ import { v4 as uuid } from 'uuid';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// On Vercel, we can only write to /tmp
-const IS_VERCEL = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
-const DB_PATH = IS_VERCEL ? '/tmp/cms_talents.db' : join(__dirname, 'cms_talents.db');
+const DB_PATH = join(__dirname, 'cms_talents.db');
 
 let db = null;
 let SQL = null;
 
 // Initialize database
 async function initDatabase() {
-  try {
-    SQL = await initSqlJs();
-  } catch (err) {
-    console.error('[DB] Failed to load sql.js:', err);
-    // Return dummy DB object or throw handled error
-    return null;
-  }
+  SQL = await initSqlJs();
 
   // Try to load existing database
   try {

@@ -17,14 +17,8 @@ app.use(express.json({ limit: '50mb' }));
 
 // Wait for database to initialize
 let dbReady = false;
-initDatabase().then((dbInstance) => {
-    if (dbInstance) {
-        dbReady = true;
-    } else {
-        console.error('[SERVER] Database initialization failed completely.');
-    }
-}).catch(e => {
-    console.error('[SERVER] Database init crashed:', e);
+initDatabase().then(() => {
+    dbReady = true;
 });
 
 // Database ready check middleware

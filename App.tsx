@@ -20,44 +20,33 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const init = async () => {
-      try {
-        // Ensure auth service is initialized (creates demo recruiters)
-        // We wrap this to ensure app loads even if backend is offline
-        try {
-          await authService.ensureInit();
-        } catch (e) {
-          console.warn("Auth check failed:", e);
-        }
+      // Ensure auth service is initialized (creates demo recruiters)
+      await authService.ensureInit();
 
-        const initialUser = authService.getCurrentUser();
+      const initialUser = authService.getCurrentUser();
 
-        // If we have a user, try to get their latest profile data for the name
-        if (initialUser) {
-          if (initialUser.role === UserRole.CANDIDATE) {
-            try {
-              const profile = await candidateService.getById(initialUser.id);
-              if (profile && profile.firstName) {
-                setUser({ ...initialUser, firstName: profile.firstName });
-              } else {
-                setUser(initialUser);
-              }
-            } catch (e) {
+      // If we have a user, try to get their latest profile data for the name
+      if (initialUser) {
+        if (initialUser.role === UserRole.CANDIDATE) {
+          try {
+            const profile = await candidateService.getById(initialUser.id);
+            if (profile && profile.firstName) {
+              setUser({ ...initialUser, firstName: profile.firstName });
+            } else {
               setUser(initialUser);
             }
-          } else {
-            // Recruiter/Admin - we might wanna set a default name or fetch from recruiter profile if it existed
+          } catch (e) {
             setUser(initialUser);
           }
+        } else {
+          // Recruiter/Admin - we might wanna set a default name or fetch from recruiter profile if it existed
+          setUser(initialUser);
         }
-
-        const list = await candidateService.getAll();
-        setAllCandidates(list);
-      } catch (e) {
-        console.error("Global Init Error (App.tsx):", e);
-        showToast("Server nicht erreichbar. Offline-Modus.", "error");
-      } finally {
-        setIsLoading(false);
       }
+
+      const list = await candidateService.getAll();
+      setAllCandidates(list);
+      setIsLoading(false);
     };
     init();
 
