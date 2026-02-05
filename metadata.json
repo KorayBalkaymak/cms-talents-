@@ -1,0 +1,7 @@
+{
+  "name": "CMS Talents",
+  "description": "Premium recruitment platform for elite candidate matching and modern talent management.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
