@@ -21,7 +21,12 @@ const App: React.FC = () => {
   useEffect(() => {
     const init = async () => {
       // Ensure auth service is initialized (creates demo recruiters)
-      await authService.ensureInit();
+      // We wrap this to ensure app loads even if backend is offline
+      try {
+        await authService.ensureInit();
+      } catch (e) {
+        console.warn("Auth check failed:", e);
+      }
 
       const initialUser = authService.getCurrentUser();
 
