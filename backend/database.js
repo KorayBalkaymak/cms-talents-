@@ -11,7 +11,10 @@ import { v4 as uuid } from 'uuid';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const DB_PATH = join(__dirname, 'cms_talents.db');
+
+// On Vercel, we can only write to /tmp
+const IS_VERCEL = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+const DB_PATH = IS_VERCEL ? '/tmp/cms_talents.db' : join(__dirname, 'cms_talents.db');
 
 let db = null;
 let SQL = null;

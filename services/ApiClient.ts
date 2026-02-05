@@ -2,6 +2,7 @@
 // API CLIENT - Connects frontend to backend
 // =====================================================
 
+// @ts-ignore
 const API_BASE = import.meta.env.PROD ? '/api' : 'http://localhost:3001/api';
 
 class ApiClient {
