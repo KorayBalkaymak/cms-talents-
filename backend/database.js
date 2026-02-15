@@ -13,6 +13,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const DB_PATH = join(__dirname, 'cms_talents.db');
 
+const IS_VERCEL = !!process.env.VERCEL;
+
 let db = null;
 let SQL = null;
 
@@ -20,19 +22,25 @@ let SQL = null;
 async function initDatabase() {
   SQL = await initSqlJs();
 
-  // Try to load existing database
-  try {
-    if (fs.existsSync(DB_PATH)) {
-      const fileBuffer = fs.readFileSync(DB_PATH);
-      db = new SQL.Database(fileBuffer);
-      console.log('[DB] Loaded existing database');
-    } else {
-      db = new SQL.Database();
-      console.log('[DB] Created new database');
-    }
-  } catch (e) {
-    console.error('[DB] Error loading database, creating new:', e);
+  if (IS_VERCEL) {
+    // Vercel: kein Dateisystem – nur In-Memory-Datenbank
     db = new SQL.Database();
+    console.log('[DB] Vercel: In-Memory-Datenbank erstellt');
+  } else {
+    // Lokal: Datei laden oder neue DB erstellen
+    try {
+      if (fs.existsSync(DB_PATH)) {
+        const fileBuffer = fs.readFileSync(DB_PATH);
+        db = new SQL.Database(fileBuffer);
+        console.log('[DB] Loaded existing database');
+      } else {
+        db = new SQL.Database();
+        console.log('[DB] Created new database');
+      }
+    } catch (e) {
+      console.error('[DB] Error loading database, creating new:', e);
+      db = new SQL.Database();
+    }
   }
 
   // Create tables
@@ -162,7 +170,7 @@ async function initDatabase() {
 }
 
 function saveDatabase() {
-  if (db) {
+  if (db && !IS_VERCEL) {
     const data = db.export();
     const buffer = Buffer.from(data);
     fs.writeFileSync(DB_PATH, buffer);

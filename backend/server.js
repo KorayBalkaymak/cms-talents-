@@ -10,6 +10,7 @@ import { initDatabase, query, queryOne, run, saveDatabase } from './database.js'
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const IS_VERCEL = !!process.env.VERCEL;
 
 // Middleware
 app.use(cors());
@@ -89,12 +90,26 @@ app.post('/api/auth/register', async (req, res) => {
             }
         }
 
-        // Kein Auto-Login: User muss E-Mail bestätigen. Link wird an Frontend übergeben (oder per E-Mail versendet).
-        res.json({
-            success: true,
-            message: 'Registrierung erfolgreich. Bitte bestätigen Sie Ihre E-Mail-Adresse über den Link, den wir Ihnen zugesendet haben.',
-            verificationToken
-        });
+        if (IS_VERCEL) {
+            // Auf Vercel: sofort verifizieren und einloggen (kein persistenter Speicher)
+            run('UPDATE users SET email_verified = 1, verification_token = NULL, verification_token_expires_at = NULL WHERE id = ?', [userId]);
+            res.json({
+                success: true,
+                user: {
+                    id: userId,
+                    email: emailTrimmed,
+                    role: role,
+                    createdAt: new Date().toISOString()
+                }
+            });
+        } else {
+            // Lokal: E-Mail-Bestätigung erforderlich
+            res.json({
+                success: true,
+                message: 'Registrierung erfolgreich. Bitte bestätigen Sie Ihre E-Mail-Adresse über den Link, den wir Ihnen zugesendet haben.',
+                verificationToken
+            });
+        }
     } catch (error) {
         console.error('Register error:', error);
         res.status(500).json({ error: 'Registrierung fehlgeschlagen' });
@@ -143,12 +158,14 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(401).json({ error: 'Ungültige Anmeldedaten' });
         }
 
-        const verified = user.email_verified == 1;
-        if (!verified) {
-            return res.status(403).json({
-                error: 'Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse. Sie haben einen Link per E-Mail erhalten – klicken Sie darauf, um sich anschließend anzumelden.',
-                needsVerification: true
-            });
+        if (!IS_VERCEL) {
+            const verified = user.email_verified == 1;
+            if (!verified) {
+                return res.status(403).json({
+                    error: 'Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse. Sie haben einen Link per E-Mail erhalten – klicken Sie darauf, um sich anschließend anzumelden.',
+                    needsVerification: true
+                });
+            }
         }
 
         if (expectedRole && user.role !== expectedRole && user.role !== 'recruiter_admin') {
