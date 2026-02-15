@@ -15,6 +15,7 @@ const CandidateAuth: React.FC<CandidateAuthProps> = ({ onAuthSuccess }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [verificationToken, setVerificationToken] = useState<string | null>(null);
 
   const validateForm = (): boolean => {
     setError('');
@@ -64,6 +65,9 @@ const CandidateAuth: React.FC<CandidateAuthProps> = ({ onAuthSuccess }) => {
         const result = await authService.register(email, password, UserRole.CANDIDATE);
         if (result.success && result.user) {
           onAuthSuccess(result.user);
+        } else if (result.success && result.verificationToken) {
+          setVerificationToken(result.verificationToken);
+          setError('');
         } else {
           setError(result.error || 'Registrierung fehlgeschlagen.');
         }
@@ -98,6 +102,23 @@ const CandidateAuth: React.FC<CandidateAuthProps> = ({ onAuthSuccess }) => {
             Elite-Matching für Ihre Karriere
           </p>
 
+          {verificationToken ? (
+            <div className="mb-6 p-6 bg-emerald-50 border border-emerald-200 rounded-2xl text-center">
+              <p className="text-emerald-800 text-sm font-medium mb-4">
+                Registrierung erfolgreich. Bitte bestätigen Sie Ihre E-Mail-Adresse, um sich anzumelden. Klicken Sie auf den Button unten – danach können Sie sich einloggen.
+              </p>
+              <a
+                href={`#/verify-email?token=${encodeURIComponent(verificationToken)}`}
+                className="inline-block w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors text-center"
+              >
+                E-Mail jetzt bestätigen
+              </a>
+              <p className="text-slate-500 text-xs mt-4">
+                Sie können diesen Link auch in einer E-Mail erhalten (wenn E-Mail-Versand eingerichtet ist).
+              </p>
+            </div>
+          ) : (
+            <>
           {error && (
             <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl">
               <p className="text-rose-600 text-sm font-bold text-center">{error}</p>
@@ -148,13 +169,15 @@ const CandidateAuth: React.FC<CandidateAuthProps> = ({ onAuthSuccess }) => {
             <p className="text-sm text-slate-500 font-medium">
               {isLogin ? 'Noch keinen Account?' : 'Bereits Mitglied?'}
               <button
-                onClick={() => { setIsLogin(!isLogin); setError(''); setConfirmPassword(''); }}
+                onClick={() => { setIsLogin(!isLogin); setError(''); setConfirmPassword(''); setVerificationToken(null); }}
                 className="ml-2 text-orange-600 font-black hover:text-orange-700 transition-colors uppercase text-xs tracking-widest"
               >
                 {isLogin ? 'Jetzt registrieren' : 'Hier anmelden'}
               </button>
             </p>
           </div>
+            </>
+          )}
         </div>
       </div>
     </div>

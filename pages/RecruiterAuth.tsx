@@ -9,27 +9,53 @@ interface RecruiterAuthProps {
 }
 
 const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [verificationToken, setVerificationToken] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+
     if (!email.trim() || !password) {
       setError('E-Mail und Passwort sind erforderlich.');
       return;
     }
+    if (!isLogin) {
+      if (password.length < 8) {
+        setError('Passwort muss mindestens 8 Zeichen haben.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Passwörter stimmen nicht überein.');
+        return;
+      }
+    }
 
     setIsLoading(true);
-    setError('');
 
     try {
-      const result = await authService.login(email, password, UserRole.RECRUITER);
-      if (result.success && result.user) {
-        onAuthSuccess(result.user);
+      if (isLogin) {
+        const result = await authService.login(email, password, UserRole.RECRUITER);
+        if (result.success && result.user) {
+          onAuthSuccess(result.user);
+        } else {
+          setError(result.error || 'Anmeldung fehlgeschlagen.');
+        }
       } else {
-        setError(result.error || 'Anmeldung fehlgeschlagen.');
+        const result = await authService.register(email, password, UserRole.RECRUITER);
+        if (result.success && result.user) {
+          onAuthSuccess(result.user);
+        } else if (result.success && result.verificationToken) {
+          setVerificationToken(result.verificationToken);
+          setError('');
+        } else {
+          setError(result.error || 'Registrierung fehlgeschlagen.');
+        }
       }
     } catch (e) {
       setError('Ein unerwarteter Fehler ist aufgetreten.');
@@ -79,10 +105,28 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
               <svg className="w-3 h-3 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
               Zurück
             </a>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-1">Login Recruiter</h2>
-            <p className="text-slate-500 text-sm">Bitte melden Sie sich an.</p>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-1">
+              {isLogin ? 'Login Recruiter' : 'Recruiter registrieren'}
+            </h2>
+            <p className="text-slate-500 text-sm">
+              {isLogin ? 'Bitte melden Sie sich an.' : 'Erstellen Sie Ihren Partner-Account.'}
+            </p>
           </div>
 
+          {verificationToken ? (
+            <div className="mb-6 p-5 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
+              <p className="text-emerald-800 text-sm font-medium mb-4">
+                Registrierung erfolgreich. Bitte bestätigen Sie Ihre E-Mail-Adresse. Klicken Sie auf den Button unten – danach können Sie sich anmelden.
+              </p>
+              <a
+                href={`#/verify-email?token=${encodeURIComponent(verificationToken)}`}
+                className="inline-block w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors text-center text-sm"
+              >
+                E-Mail jetzt bestätigen
+              </a>
+            </div>
+          ) : (
+            <>
           {error && (
             <div className="mb-6 p-3 bg-rose-50 border-l-4 border-rose-500 rounded-r-lg flex items-start gap-2">
               <svg className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -107,7 +151,9 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
             <div className="space-y-1.5">
               <div className="flex justify-between items-center ml-1">
                 <label className="text-[10px] font-black text-slate-900 uppercase tracking-wide">Passwort</label>
-                <button type="button" className="text-[10px] font-bold text-orange-600 hover:text-orange-700">Vergessen?</button>
+                {isLogin && (
+                  <button type="button" className="text-[10px] font-bold text-orange-600 hover:text-orange-700">Vergessen?</button>
+                )}
               </div>
               <Input
                 type="password"
@@ -115,10 +161,25 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
+                autoComplete={isLogin ? 'current-password' : 'new-password'}
                 className="bg-slate-50 border-slate-200 focus:bg-white h-11 text-sm rounded-xl"
               />
             </div>
+
+            {!isLogin && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-900 uppercase tracking-wide ml-1">Passwort bestätigen</label>
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className="bg-slate-50 border-slate-200 focus:bg-white h-11 text-sm rounded-xl"
+                />
+              </div>
+            )}
 
             <Button
               type="submit"
@@ -126,9 +187,24 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
               className="w-full py-3.5 text-sm rounded-xl shadow-lg shadow-orange-200 mt-2"
               isLoading={isLoading}
             >
-              Zum Dashboard
+              {isLogin ? 'Zum Dashboard' : 'Kostenlos registrieren'}
             </Button>
           </form>
+
+          <div className="mt-6 pt-6 border-t border-slate-100 text-center">
+            <p className="text-sm text-slate-500">
+              {isLogin ? 'Noch keinen Account?' : 'Bereits registriert?'}
+              <button
+                type="button"
+                onClick={() => { setIsLogin(!isLogin); setError(''); setConfirmPassword(''); setVerificationToken(null); }}
+                className="ml-2 text-orange-600 font-bold hover:text-orange-700"
+              >
+                {isLogin ? 'Jetzt registrieren' : 'Hier anmelden'}
+              </button>
+            </p>
+          </div>
+            </>
+          )}
 
           <div className="mt-8 pt-6 border-t border-slate-100 text-center">
             <p className="text-slate-400 text-[10px]">

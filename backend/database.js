@@ -125,6 +125,32 @@ async function initDatabase() {
     // Indexes might already exist
   }
 
+  // Optionale Profilfelder (Migration: Spalten hinzufügen falls nicht vorhanden)
+  try {
+    db.run('ALTER TABLE candidate_profiles ADD COLUMN address TEXT');
+  } catch (e) { /* Spalte existiert bereits */ }
+  try {
+    db.run('ALTER TABLE candidate_profiles ADD COLUMN zip_code TEXT');
+  } catch (e) { /* Spalte existiert bereits */ }
+  try {
+    db.run('ALTER TABLE candidate_profiles ADD COLUMN phone_number TEXT');
+  } catch (e) { /* Spalte existiert bereits */ }
+
+  // E-Mail-Verifizierung (Migration)
+  try {
+    db.run('ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 1');
+  } catch (e) { /* Spalte existiert bereits */ }
+  try {
+    db.run('ALTER TABLE users ADD COLUMN verification_token TEXT');
+  } catch (e) { /* Spalte existiert bereits */ }
+  try {
+    db.run('ALTER TABLE users ADD COLUMN verification_token_expires_at TEXT');
+  } catch (e) { /* Spalte existiert bereits */ }
+  // Alle bestehenden Nutzer als verifiziert setzen (Migration: alte Accounts vor E-Mail-Verifizierung)
+  try {
+    db.run('UPDATE users SET email_verified = 1, verification_token = NULL, verification_token_expires_at = NULL WHERE email_verified IS NULL OR email_verified != 1');
+  } catch (e) { /* ignore */ }
+
   // Seed demo accounts
   seedDemoAccounts();
 

@@ -9,6 +9,7 @@ import CandidateProfilePage from './pages/CandidateProfile';
 import TalentMarketplace from './pages/TalentMarketplace';
 import RecruiterAuth from './pages/RecruiterAuth';
 import RecruiterDashboard from './pages/RecruiterDashboard';
+import VerifyEmail from './pages/VerifyEmail';
 import { Toast, Button } from './components/UI';
 
 const App: React.FC = () => {
@@ -25,25 +26,30 @@ const App: React.FC = () => {
 
       const initialUser = authService.getCurrentUser();
 
-      // If we have a user, try to get their latest profile data for the name
+      // If we have a user, validate against backend and get profile data
       if (initialUser) {
         if (initialUser.role === UserRole.CANDIDATE) {
           try {
             const profile = await candidateService.getById(initialUser.id);
             if (profile && profile.firstName) {
               setUser({ ...initialUser, firstName: profile.firstName });
-            } else {
+            } else if (profile) {
               setUser(initialUser);
+            } else {
+              // Profil existiert nicht mehr im Backend – Session ungültig
+              authService.logout();
             }
           } catch (e) {
-            setUser(initialUser);
+            // Backend nicht erreichbar oder User existiert nicht – Session aufräumen
+            console.warn('[App] Session validation failed, logging out:', e);
+            authService.logout();
           }
         } else {
-          // Recruiter/Admin - we might wanna set a default name or fetch from recruiter profile if it existed
           setUser(initialUser);
         }
       }
 
+      // Öffentliche Kandidatenliste für alle (auch ohne Login) – Zuschauer, Kunden, Interessenten
       const list = await candidateService.getAll();
       setAllCandidates(list);
       setIsLoading(false);
@@ -59,6 +65,15 @@ const App: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  // Marktplatz: öffentliche Kandidatenliste nachladen, wenn jemand direkt #/talents aufruft (Gäste/Zuschauer)
+  useEffect(() => {
+    if (!currentPath.startsWith('/talents')) return;
+    const published = allCandidates.filter(c => c.isPublished && c.status === CandidateStatus.ACTIVE);
+    if (published.length === 0) {
+      candidateService.getAll().then((list) => setAllCandidates(list));
+    }
+  }, [currentPath]);
+
   const navigate = (path: string) => {
     window.location.hash = path;
   };
@@ -70,7 +85,7 @@ const App: React.FC = () => {
   const handleAuthSuccess = async (loggedInUser: User) => {
     setUser(loggedInUser);
 
-    // If candidate, ensure they have a profile
+    // If candidate, ensure they have a profile and it's in the list
     if (loggedInUser.role === UserRole.CANDIDATE) {
       let profile = await candidateService.getById(loggedInUser.id);
       if (!profile) {
@@ -82,9 +97,12 @@ const App: React.FC = () => {
         setUser({ ...loggedInUser, firstName: profile.firstName });
       }
 
-      // Refresh candidate list
+      // Refresh list (getAll = nur veröffentlichte) und eigenes Profil drin behalten
       const list = await candidateService.getAll();
-      setAllCandidates(list);
+      setAllCandidates((prev) => {
+        const withoutMe = list.filter((c) => c.userId !== loggedInUser.id);
+        return profile ? [...withoutMe, profile] : withoutMe;
+      });
     }
   };
 
@@ -120,8 +138,8 @@ const App: React.FC = () => {
   };
 
   if (isLoading) return (
-    <div className="h-screen flex items-center justify-center bg-white">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-orange-600"></div>
+    <div className="h-screen flex items-center justify-center bg-[#fafafa]">
+      <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-200 border-t-orange-600"></div>
     </div>
   );
 
@@ -135,7 +153,7 @@ const App: React.FC = () => {
         navigate('/candidate/profile');
         return null;
       }
-      return <CandidateAuth onAuthSuccess={(u) => { handleAuthSuccess(u); navigate('/candidate/profile'); }} />;
+      return <CandidateAuth onAuthSuccess={async (u) => { await handleAuthSuccess(u); navigate('/candidate/profile'); }} />;
     }
 
     if (path === '/candidate/profile') {
@@ -143,26 +161,40 @@ const App: React.FC = () => {
         navigate('/candidate/auth');
         return null;
       }
-      const profile = allCandidates.find(c => c.userId === user.id);
+      let profile = allCandidates.find(c => c.userId === user.id);
       if (!profile) {
-        // Create profile if not exists
-        candidateService.createProfile(user.id).then(p => {
-          setAllCandidates(prev => [...prev, p]);
-        });
+        // Profil laden oder anlegen (z. B. nach Reload oder wenn Liste nur veröffentlichte enthält)
+        candidateService.createProfile(user.id)
+          .then((p) => {
+            setAllCandidates((prev) => {
+              const withoutMe = prev.filter((c) => c.userId !== user.id);
+              return [...withoutMe, p];
+            });
+          })
+          .catch((err) => {
+            console.error('[App] createProfile failed:', err);
+            showToast('Sitzung abgelaufen. Bitte erneut anmelden.', 'error');
+            handleLogout();
+          });
         return (
-          <div className="h-screen flex items-center justify-center bg-white">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-orange-600"></div>
+          <div className="h-screen flex items-center justify-center bg-[#fafafa]">
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-200 border-t-orange-600"></div>
           </div>
         );
       }
       return <CandidateProfilePage profile={profile} onNavigate={navigate} onSave={handleUpdateCandidate} onLogout={handleLogout} />;
     }
 
+    // Marktplatz: für alle frei zugänglich (Zuschauer, Kunden, Interessenten) – kein Recruiter-Login nötig
     if (path === '/talents') return <TalentMarketplace candidates={allCandidates.filter(c => c.isPublished && c.status === CandidateStatus.ACTIVE)} onNavigate={navigate} user={user} />;
 
     if (path.startsWith('/talents/')) {
       const id = path.split('/').pop();
       return <TalentMarketplace candidates={allCandidates.filter(c => c.isPublished && c.status === CandidateStatus.ACTIVE)} selectedId={id} onNavigate={navigate} user={user} />;
+    }
+
+    if (path.startsWith('/verify-email')) {
+      return <VerifyEmail onNavigate={navigate} />;
     }
 
     if (path === '/recruiter/auth') {
@@ -182,15 +214,16 @@ const App: React.FC = () => {
     }
 
     return (
-      <div className="p-20 text-center bg-white h-screen flex flex-col items-center justify-center">
-        <h2 className="text-4xl font-black text-slate-900 mb-6 tracking-tighter">404 - SEITE NICHT GEFUNDEN</h2>
-        <Button size="lg" onClick={() => navigate('/')}>Zurück zur Startseite</Button>
+      <div className="p-20 text-center bg-[#fafafa] min-h-screen flex flex-col items-center justify-center">
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">Seite nicht gefunden</h2>
+        <p className="text-slate-600 mb-6">Die angeforderte Seite existiert nicht.</p>
+        <Button size="lg" onClick={() => navigate('/')}>Zur Startseite</Button>
       </div>
     );
   };
 
   return (
-    <div className="min-h-screen font-inter bg-white">
+    <div className="min-h-screen bg-[#fafafa]">
       {renderRoute()}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>

@@ -1,7 +1,8 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { CandidateProfile } from '../types';
+import React, { useState, useMemo, useEffect, useCallback, memo } from 'react';
+import { CandidateProfile, UserRole } from '../types';
 import { rankCandidates, highlightText } from '../services/SearchService';
+import { candidateService } from '../services/CandidateService';
 import { Input, Avatar, Badge, Button, Modal, EmptyState } from '../components/UI';
 import { INDUSTRIES, AVAILABILITY_OPTIONS } from '../constants';
 import { User } from '../types';
@@ -13,6 +14,59 @@ interface TalentMarketplaceProps {
   user?: User | null;
 }
 
+type MatchItem = { candidate: CandidateProfile; score: number };
+
+const CandidateCard = memo(({ item, search, onSelect }: { item: MatchItem; search: string; onSelect: (c: CandidateProfile) => void }) => {
+  const { candidate, score } = item;
+  const skills = candidate.skills ?? [];
+  const handleClick = useCallback(() => { onSelect(candidate); }, [candidate, onSelect]);
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={(e) => e.key === 'Enter' && handleClick()}
+      className="bg-white p-6 rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all cursor-pointer flex flex-col"
+      style={{ contentVisibility: 'auto', contain: 'layout paint' }}
+    >
+      <div className="flex items-start gap-5 mb-6">
+        <Avatar seed={candidate.firstName + candidate.lastName} size="md" imageUrl={candidate.profileImageUrl} className="shrink-0" />
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-semibold text-slate-900 tracking-tight leading-tight">
+            {highlightText(`${candidate.firstName} ${candidate.lastName}`, search)}
+          </h3>
+          <div className="text-xs font-bold text-slate-400 flex items-center gap-1 mt-1">
+            <svg className="w-3 h-3 text-orange-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"></path></svg>
+            {highlightText(candidate.city, search)}
+          </div>
+        </div>
+        {score > 0 && <Badge variant="orange" className="h-6 shrink-0">Match {Math.min(100, score * 10)}%</Badge>}
+      </div>
+      <div className="space-y-4 mb-6 flex-1">
+        <div className="flex flex-wrap gap-2">
+          {candidate.industry && <Badge variant="slate" className="bg-slate-50 text-slate-900 border-none px-3">{candidate.industry}</Badge>}
+          <Badge variant="slate" className="bg-slate-50 text-slate-900 border-none px-3">{candidate.experienceYears} J. Exp</Badge>
+          {candidate.availability && <Badge variant="green" className="px-3">{candidate.availability}</Badge>}
+        </div>
+        {candidate.about && (
+          <p className="text-slate-500 text-sm font-medium line-clamp-2 leading-relaxed italic">
+            "{highlightText(candidate.about, search)}"
+          </p>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1.5 border-t border-slate-50 pt-4">
+        {skills.slice(0, 4).map(skill => (
+          <span key={skill} className="text-xs font-medium text-slate-500">
+            #{highlightText(skill, search)}
+          </span>
+        ))}
+        {skills.length > 4 && <span className="text-xs font-medium text-orange-600">+{skills.length - 4}</span>}
+      </div>
+    </div>
+  );
+});
+CandidateCard.displayName = 'CandidateCard';
+
 const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const { candidates, selectedId, onNavigate } = props;
   const [search, setSearch] = useState('');
@@ -22,6 +76,48 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const [filterExp, setFilterExp] = useState(0);
   const [sortBy, setSortBy] = useState<'relevance' | 'newest' | 'experience'>('relevance');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
+  const [documentLoading, setDocumentLoading] = useState<string | null>(null);
+  const [pdfViewerUrl, setPdfViewerUrl] = useState<string | null>(null);
+  const [pdfViewerTitle, setPdfViewerTitle] = useState<string>('');
+
+  // PDF in Modal mit iframe anzeigen (zuverlässig, keine weiße Seite)
+  const openDocument = async (userId: string, docType: string, docName: string) => {
+    setDocumentLoading(docName);
+    try {
+      const docs = await candidateService.getDocuments(userId);
+      if (!docs) return;
+      let data: string | undefined;
+      if (docType === 'cv' && docs.cvPdf?.data) data = docs.cvPdf.data;
+      else if (docType === 'certificate') data = docs.certificates?.find(c => c.name === docName)?.data;
+      else if (docType === 'qualification') data = docs.qualifications?.find(q => q.name === docName)?.data;
+      if (!data) return;
+      const base64 = data.includes('base64,') ? data.split('base64,')[1] : data;
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      setPdfViewerTitle(docName);
+      setPdfViewerUrl(url);
+    } catch (e) {
+      console.error('Dokument konnte nicht geladen werden:', e);
+    } finally {
+      setDocumentLoading(null);
+    }
+  };
+
+  const closePdfViewer = useCallback(() => {
+    setPdfViewerUrl((url) => {
+      if (url) URL.revokeObjectURL(url);
+      return null;
+    });
+    setPdfViewerTitle('');
+  }, []);
+
+  const handleSelectCandidate = useCallback((candidate: CandidateProfile) => {
+    setSelectedCandidate(candidate);
+    onNavigate(`/talents/${candidate.userId}`);
+  }, [onNavigate]);
 
   // Debounce search
   useEffect(() => {
@@ -68,60 +164,55 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-inter">
+    <div className="min-h-screen bg-[#fafafa]">
       {/* Navigation Bar */}
-      <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 shadow-lg">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-
-          {/* Logo & Brand */}
           <div className="flex items-center gap-3 cursor-pointer shrink-0" onClick={() => onNavigate('/')}>
-            <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center shadow-lg shadow-orange-900/50">
-              <span className="text-white font-black italic text-sm">CT</span>
+            <div className="w-9 h-9 bg-orange-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">CT</span>
             </div>
-            <span className="text-lg font-black text-white tracking-tighter hidden sm:block">CMS <span className="text-orange-500">Talents</span></span>
+            <div className="hidden sm:block">
+              <span className="text-lg font-semibold text-slate-900">CMS <span className="text-orange-600">Talents</span></span>
+              <p className="text-xs text-slate-500 mt-0.5">Talente entdecken – für alle sichtbar</p>
+            </div>
           </div>
 
-          {/* Search Bar (Centered) */}
           <div className="flex-1 max-w-lg mx-4">
             <div className="relative group">
-              <svg className="absolute left-3 top-2.5 w-4 h-4 text-slate-500 group-focus-within:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              <svg className="absolute left-3 top-2.5 w-4 h-4 text-slate-400 group-focus-within:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
               <input
                 type="text"
-                placeholder="Suche..."
-                className="w-full pl-10 pr-4 py-2 bg-slate-800 border-2 border-slate-700 text-white text-sm rounded-xl outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all placeholder:text-slate-500 font-medium"
+                placeholder="Suche nach Skills, Ort, Branche…"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all placeholder:text-slate-400"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
           </div>
 
-          {/* Right Actions (Logged In vs Guest) */}
           <div className="flex items-center gap-3 shrink-0">
             {props.user ? (
-              // LOGGED IN NAVIGATION
               <>
-                <span className="text-xs font-bold text-slate-400 hidden md:block mr-2">Hallo, {props.user.firstName || 'User'}</span>
-
-                {props.user.role === 'admin' || props.user.role === 'recruiter' ? (
-                  <Button size="sm" variant="primary" onClick={() => onNavigate('/recruiter/dashboard')} className="h-9 text-xs px-4">
-                    ZUM DASHBOARD
+                <span className="text-sm text-slate-500 hidden md:block mr-1">Hallo, {props.user.firstName || 'User'}</span>
+                {(props.user.role === UserRole.ADMIN || props.user.role === UserRole.RECRUITER) ? (
+                  <Button size="sm" variant="primary" onClick={() => onNavigate('/recruiter/dashboard')} className="h-9 text-sm px-4">
+                    Dashboard
                   </Button>
                 ) : (
-                  <Button size="sm" variant="primary" onClick={() => onNavigate('/candidate/profile')} className="h-9 text-xs px-4">
-                    MEIN PROFIL
+                  <Button size="sm" variant="primary" onClick={() => onNavigate('/candidate/profile')} className="h-9 text-sm px-4">
+                    Mein Profil
                   </Button>
                 )}
-
-                <button onClick={handleLogout} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors" title="Abmelden">
+                <button type="button" onClick={handleLogout} className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200 transition-colors" title="Abmelden">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                 </button>
               </>
             ) : (
-              // GUEST NAVIGATION
               <>
-                <button onClick={() => onNavigate('/recruiter/auth')} className="text-[10px] font-black text-slate-400 hover:text-white uppercase tracking-widest hidden sm:block">Für Arbeitgeber</button>
-                <Button size="sm" onClick={() => onNavigate('/candidate/auth')} className="h-9 text-xs px-4">
-                  LOGIN / REGISTRIEREN
+                <button type="button" onClick={() => onNavigate('/recruiter/auth')} className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">Für Arbeitgeber</button>
+                <Button size="sm" onClick={() => onNavigate('/candidate/auth')} className="h-9 text-sm px-4">
+                  Anmelden
                 </Button>
               </>
             )}
@@ -129,11 +220,11 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col lg:flex-row gap-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col lg:flex-row gap-10" style={{ contain: 'paint' }}>
         {/* Filters */}
-        <aside className="lg:w-72 flex-shrink-0 space-y-8">
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-            <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">Branche</h4>
+        <aside className="lg:w-72 flex-shrink-0 space-y-6">
+          <div className="bg-white p-5 rounded-xl border border-slate-200">
+            <h4 className="text-sm font-semibold text-slate-900 mb-4">Branche</h4>
             <div className="space-y-2.5">
               <label className="flex items-center gap-3 text-sm text-slate-600 cursor-pointer font-bold group">
                 <input type="radio" name="industry" checked={filterIndustry === ''} onChange={() => setFilterIndustry('')} className="w-4 h-4 text-orange-600 border-slate-300 focus:ring-orange-500" />
@@ -148,8 +239,8 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-            <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">Verfügbarkeit</h4>
+          <div className="bg-white p-5 rounded-xl border border-slate-200">
+            <h4 className="text-sm font-semibold text-slate-900 mb-4">Verfügbarkeit</h4>
             <div className="space-y-2.5">
               <label className="flex items-center gap-3 text-sm text-slate-600 cursor-pointer font-bold group">
                 <input type="radio" name="availability" checked={filterAvailability === ''} onChange={() => setFilterAvailability('')} className="w-4 h-4 text-orange-600 border-slate-300 focus:ring-orange-500" />
@@ -164,8 +255,8 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-            <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4">Erfahrung ({filterExp}+ J.)</h4>
+          <div className="bg-white p-5 rounded-xl border border-slate-200">
+            <h4 className="text-sm font-semibold text-slate-900 mb-4">Erfahrung ({filterExp}+ J.)</h4>
             <input
               type="range" min="0" max="20"
               className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-orange-600"
@@ -219,49 +310,14 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               }
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {filteredAndRanked.map(({ candidate, score }) => (
-                <div
-                  key={candidate.userId}
-                  className="bg-white p-8 rounded-[2rem] border-2 border-transparent hover:border-orange-500 shadow-xl shadow-slate-200/50 transition-all cursor-pointer flex flex-col group"
-                  onClick={() => { setSelectedCandidate(candidate); onNavigate(`/talents/${candidate.userId}`); }}
-                >
-                  <div className="flex items-start gap-5 mb-6">
-                    <Avatar seed={candidate.firstName + candidate.lastName} size="md" imageUrl={candidate.profileImageUrl} className="group-hover:scale-110 transition-transform" />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-xl font-black text-slate-900 tracking-tight leading-tight">
-                        {highlightText(`${candidate.firstName} ${candidate.lastName}`, debouncedSearch)}
-                      </h3>
-                      <div className="text-xs font-bold text-slate-400 flex items-center gap-1 mt-1">
-                        <svg className="w-3 h-3 text-orange-500" fill="currentColor" viewBox="0 0 20 20"><path d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"></path></svg>
-                        {highlightText(candidate.city, debouncedSearch)}
-                      </div>
-                    </div>
-                    {score > 0 && <Badge variant="orange" className="h-6">Match {Math.min(100, score * 10)}%</Badge>}
-                  </div>
-
-                  <div className="space-y-4 mb-6 flex-1">
-                    <div className="flex flex-wrap gap-2">
-                      {candidate.industry && <Badge variant="slate" className="bg-slate-50 text-slate-900 border-none px-3">{candidate.industry}</Badge>}
-                      <Badge variant="slate" className="bg-slate-50 text-slate-900 border-none px-3">{candidate.experienceYears} J. Exp</Badge>
-                      {candidate.availability && <Badge variant="green" className="px-3">{candidate.availability}</Badge>}
-                    </div>
-                    {candidate.about && (
-                      <p className="text-slate-500 text-sm font-medium line-clamp-2 leading-relaxed italic">
-                        "{highlightText(candidate.about, debouncedSearch)}"
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex flex-wrap gap-1.5 border-t border-slate-50 pt-4">
-                    {candidate.skills.slice(0, 4).map(skill => (
-                      <span key={skill} className="text-[10px] font-black uppercase tracking-tighter text-slate-400">
-                        #{highlightText(skill, debouncedSearch)}
-                      </span>
-                    ))}
-                    {candidate.skills.length > 4 && <span className="text-[10px] font-black text-orange-500">+{candidate.skills.length - 4}</span>}
-                  </div>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8" style={{ contain: 'layout' }}>
+              {filteredAndRanked.map((item) => (
+                <CandidateCard
+                  key={item.candidate.userId}
+                  item={item}
+                  search={debouncedSearch}
+                  onSelect={handleSelectCandidate}
+                />
               ))}
             </div>
           )}
@@ -290,7 +346,28 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
                 <p className="text-xs font-black text-slate-400 uppercase">Verfügbarkeit</p>
                 <p className="text-lg font-bold text-slate-900">{selectedCandidate.availability || '-'}</p>
               </div>
+              {selectedCandidate.birthYear && (
+                <div className="bg-slate-50 p-4 rounded-xl">
+                  <p className="text-xs font-black text-slate-400 uppercase">Geburtsjahr</p>
+                  <p className="text-lg font-bold text-slate-900">{selectedCandidate.birthYear}</p>
+                </div>
+              )}
             </div>
+
+            {(selectedCandidate.address || selectedCandidate.zipCode || selectedCandidate.phoneNumber) && (
+              <div className="bg-slate-50 p-4 rounded-xl">
+                <p className="text-xs font-black text-slate-400 uppercase mb-2">Kontakt / Adresse</p>
+                <div className="space-y-1 text-slate-700">
+                  {selectedCandidate.address && <p>{selectedCandidate.address}</p>}
+                  {(selectedCandidate.zipCode || selectedCandidate.city) && (
+                    <p>{[selectedCandidate.zipCode, selectedCandidate.city].filter(Boolean).join(' ')}</p>
+                  )}
+                  {selectedCandidate.phoneNumber && (
+                    <p><a href={`tel:${selectedCandidate.phoneNumber}`} className="text-orange-600 hover:underline">{selectedCandidate.phoneNumber}</a></p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {selectedCandidate.about && (
               <div className="bg-slate-50 p-4 rounded-xl">
@@ -299,7 +376,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               </div>
             )}
 
-            {selectedCandidate.skills.length > 0 && (
+            {(selectedCandidate.skills?.length ?? 0) > 0 && (
               <div>
                 <p className="text-xs font-black text-slate-400 uppercase mb-3">Skills</p>
                 <div className="flex flex-wrap gap-2">
@@ -310,7 +387,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               </div>
             )}
 
-            {selectedCandidate.boostedKeywords.length > 0 && (
+            {(selectedCandidate.boostedKeywords?.length ?? 0) > 0 && (
               <div>
                 <p className="text-xs font-black text-slate-400 uppercase mb-3">Spezialisierungen</p>
                 <div className="flex flex-wrap gap-2">
@@ -321,7 +398,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               </div>
             )}
 
-            {selectedCandidate.socialLinks.length > 0 && (
+            {(selectedCandidate.socialLinks?.length ?? 0) > 0 && (
               <div>
                 <p className="text-xs font-black text-slate-400 uppercase mb-3">Links</p>
                 <div className="space-y-2">
@@ -335,13 +412,65 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               </div>
             )}
 
-            <div className="pt-6 border-t border-slate-100">
-              <Button className="w-full py-4" variant="primary" onClick={() => onNavigate('/recruiter/auth')}>
-                Recruiter? Vollständiges Profil ansehen
-              </Button>
-            </div>
+            {selectedCandidate.documents && selectedCandidate.documents.length > 0 && (
+              <div>
+                <p className="text-xs font-black text-slate-400 uppercase mb-3">Dokumente (anklicken zum Ansehen)</p>
+                <div className="space-y-2">
+                  {selectedCandidate.documents.map((doc, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => openDocument(selectedCandidate.userId, doc.type, doc.name)}
+                      disabled={!!documentLoading}
+                      className="flex items-center gap-2 w-full text-left p-3 rounded-xl bg-slate-50 hover:bg-orange-50 border border-slate-100 hover:border-orange-200 transition-colors group"
+                    >
+                      <span className="w-10 h-10 rounded-lg bg-slate-200 group-hover:bg-orange-100 flex items-center justify-center shrink-0">
+                        <svg className="w-5 h-5 text-slate-600 group-hover:text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-slate-500 text-xs uppercase block">
+                          {doc.type === 'cv' ? 'Lebenslauf (CV)' : doc.type === 'certificate' ? 'Zertifikat' : 'Qualifikation'}
+                        </span>
+                        <span className="font-bold text-slate-900 truncate block">{doc.name}</span>
+                      </div>
+                      {documentLoading === doc.name ? (
+                        <span className="text-xs text-slate-400">Wird geladen…</span>
+                      ) : (
+                        <svg className="w-5 h-5 text-orange-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Vollständiges Profil ist für alle sichtbar (Zuschauer, Kunden, Interessenten). Optional: Arbeitgeber-Link. */}
+            {props.user && (props.user.role === UserRole.RECRUITER || props.user.role === UserRole.ADMIN) && (
+              <div className="pt-6 border-t border-slate-100">
+                <Button className="w-full py-4" variant="primary" onClick={() => { setSelectedCandidate(null); onNavigate('/recruiter/dashboard'); }}>
+                  Zum Recruiter-Dashboard
+                </Button>
+              </div>
+            )}
           </div>
         </Modal>
+      )}
+
+      {/* PDF-Viewer: Dokument im gleichen Fenster anzeigen (keine weiße Seite) */}
+      {pdfViewerUrl && (
+        <div className="fixed inset-0 z-[100] flex flex-col bg-slate-900">
+          <div className="flex items-center justify-between px-4 py-3 bg-slate-800 border-b border-slate-700 shrink-0">
+            <span className="text-white font-bold truncate pr-4">{pdfViewerTitle}</span>
+            <Button variant="ghost" size="sm" className="text-white hover:bg-slate-700 shrink-0" onClick={closePdfViewer}>
+              Schließen
+            </Button>
+          </div>
+          <iframe
+            src={pdfViewerUrl}
+            title={pdfViewerTitle}
+            className="flex-1 w-full min-h-0 border-0"
+          />
+        </div>
       )}
     </div>
   );

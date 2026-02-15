@@ -42,7 +42,7 @@ class AuthService {
     email: string,
     password: string,
     role: UserRole
-  ): Promise<{ success: boolean; user?: User; error?: string }> {
+  ): Promise<{ success: boolean; user?: User; message?: string; verificationToken?: string; error?: string }> {
     try {
       const result = await api.register(email, password, role);
 
@@ -50,12 +50,20 @@ class AuthService {
         const user: User = {
           id: result.user.id,
           email: result.user.email,
-          passwordHash: '', // Not stored client-side
+          passwordHash: '',
           role: result.user.role as UserRole,
-          createdAt: result.user.createdAt
+          createdAt: result.user.createdAt ?? result.user.created_at ?? new Date().toISOString()
         };
         this.saveSession(user);
         return { success: true, user };
+      }
+
+      if (result.success && result.verificationToken) {
+        return {
+          success: true,
+          message: result.message || 'Bitte bestätigen Sie Ihre E-Mail-Adresse.',
+          verificationToken: result.verificationToken
+        };
       }
 
       return { success: false, error: result.error || 'Registrierung fehlgeschlagen' };
@@ -78,7 +86,7 @@ class AuthService {
           email: result.user.email,
           passwordHash: '',
           role: result.user.role as UserRole,
-          createdAt: result.user.createdAt
+          createdAt: result.user.createdAt ?? result.user.created_at ?? new Date().toISOString()
         };
         this.saveSession(user);
         return { success: true, user };

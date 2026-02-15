@@ -15,17 +15,17 @@ export const Button: React.FC<ButtonProps> = ({
   className = '',
   ...props
 }) => {
-  const baseStyles = "inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap";
+  const baseStyles = "inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500/30";
   const variants = {
-    primary: "bg-orange-600 text-white hover:bg-orange-700 shadow-sm shadow-orange-200",
-    secondary: "bg-slate-900 text-white hover:bg-slate-800 shadow-sm shadow-slate-200",
-    outline: "border-2 border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300",
-    danger: "bg-red-600 text-white hover:bg-red-700",
+    primary: "bg-orange-600 text-white hover:bg-orange-700 active:bg-orange-800 border border-orange-600",
+    secondary: "bg-slate-800 text-white hover:bg-slate-700 active:bg-slate-900 border border-slate-800",
+    outline: "border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-400",
+    danger: "bg-red-600 text-white hover:bg-red-700 border border-red-600",
     ghost: "text-slate-600 hover:bg-slate-100"
   };
   const sizes = {
     sm: "px-3 py-1.5 text-sm",
-    md: "px-4 py-2 text-sm",
+    md: "px-4 py-2.5 text-sm",
     lg: "px-6 py-3 text-base"
   };
 
@@ -48,39 +48,39 @@ export const Button: React.FC<ButtonProps> = ({
 
 export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label?: string, error?: string }> = ({ label, error, className = '', ...props }) => (
   <div className="w-full">
-    {label && <label className="block text-sm font-bold text-slate-900 mb-1.5">{label}</label>}
+    {label && <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>}
     <input
-      className={`w-full px-4 py-2.5 bg-white border-2 rounded-lg text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none border-slate-100 block appearance-none ${error ? 'border-red-500' : 'border-slate-100'} ${className}`}
+      className={`w-full px-4 py-2.5 bg-white border rounded-lg text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none block appearance-none ${error ? 'border-red-500' : 'border-slate-300'} ${className}`}
       style={{ color: '#0f172a', backgroundColor: '#ffffff' }}
       {...props}
     />
-    {error && <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>}
+    {error && <p className="mt-1.5 text-sm text-red-600 font-medium">{error}</p>}
   </div>
 );
 
 export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string, error?: string }> = ({ label, error, children, className = '', ...props }) => (
   <div className="w-full">
-    {label && <label className="block text-sm font-bold text-slate-900 mb-1.5">{label}</label>}
+    {label && <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>}
     <select
-      className={`w-full px-4 py-2.5 bg-white border-2 rounded-lg text-slate-900 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all border-slate-100 block appearance-none ${error ? 'border-red-500' : 'border-slate-100'} ${className}`}
+      className={`w-full px-4 py-2.5 bg-white border rounded-lg text-slate-900 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all block appearance-none ${error ? 'border-red-500' : 'border-slate-300'} ${className}`}
       style={{ color: '#0f172a', backgroundColor: '#ffffff' }}
       {...props}
     >
       {children}
     </select>
-    {error && <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>}
+    {error && <p className="mt-1.5 text-sm text-red-600 font-medium">{error}</p>}
   </div>
 );
 
 export const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string, error?: string }> = ({ label, error, className = '', ...props }) => (
   <div className="w-full">
-    {label && <label className="block text-sm font-bold text-slate-900 mb-1.5">{label}</label>}
+    {label && <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>}
     <textarea
-      className={`w-full px-4 py-2.5 bg-white border-2 rounded-lg text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none min-h-[120px] border-slate-100 block appearance-none ${error ? 'border-red-500' : 'border-slate-100'} ${className}`}
+      className={`w-full px-4 py-2.5 bg-white border rounded-lg text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none min-h-[120px] block appearance-none ${error ? 'border-red-500' : 'border-slate-300'} ${className}`}
       style={{ color: '#0f172a', backgroundColor: '#ffffff' }}
       {...props}
     />
-    {error && <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>}
+    {error && <p className="mt-1.5 text-sm text-red-600 font-medium">{error}</p>}
   </div>
 );
 
@@ -113,8 +113,8 @@ export const Avatar: React.FC<AvatarProps> = ({ seed, size = 'md', className = '
   // If there's an image URL, display the image
   if (imageUrl) {
     return (
-      <div className={`${sizes[size]} rounded-2xl overflow-hidden shadow-sm select-none shrink-0 ${className}`}>
-        <img src={imageUrl} alt="Profile" className="w-full h-full object-cover" />
+      <div className={`${sizes[size]} rounded-2xl overflow-hidden shadow-sm select-none shrink-0 bg-slate-100 ${className}`}>
+        <img src={imageUrl} alt="Profile" className="w-full h-full object-cover" loading="lazy" decoding="async" />
       </div>
     );
   }
@@ -135,12 +135,12 @@ export const Avatar: React.FC<AvatarProps> = ({ seed, size = 'md', className = '
 export const Modal: React.FC<{ isOpen: boolean, onClose: () => void, title: string, children: React.ReactNode }> = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50">
-          <h2 className="text-xl font-bold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-lg hover:bg-white border border-transparent hover:border-slate-200">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+          <button type="button" onClick={onClose} className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors" aria-label="Schließen">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
         <div className="p-6 overflow-y-auto flex-1">
@@ -158,7 +158,7 @@ export const Toast: React.FC<{ message: string, type: 'success' | 'error', onClo
   }, [onClose]);
 
   return (
-    <div className={`fixed bottom-6 right-6 z-[100] px-6 py-3 rounded-xl shadow-lg text-white font-bold flex items-center gap-3 animate-in slide-in-from-right duration-300 border ${type === 'success' ? 'bg-orange-600 border-orange-500' : 'bg-rose-600 border-rose-500'}`}>
+    <div className={`fixed bottom-6 right-6 z-[100] px-5 py-3 rounded-lg shadow-lg text-white font-medium text-sm flex items-center gap-3 border ${type === 'success' ? 'bg-orange-600 border-orange-500' : 'bg-red-600 border-red-500'}`}>
       {type === 'success' ? (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
       ) : (

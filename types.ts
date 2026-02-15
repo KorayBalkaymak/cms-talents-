@@ -75,6 +75,7 @@ export interface CandidateProfile {
   // --- OPTIONAL MEDIA ---
   profileImageUrl?: string; // OPTIONAL - Base64 oder URL
   socialLinks: SocialLink[]; // OPTIONAL - Array, can be empty
+  documents?: { type: string; name: string }[]; // vom Backend: Dokumenten-Infos
 }
 
 // =====================================================

@@ -1,25 +1,38 @@
 // =====================================================
 // API CLIENT - Connects frontend to backend
 // =====================================================
+// In dev Vite proxies /api to localhost:3001 – Backend muss laufen: cd backend && npm run dev
 
-const API_BASE = import.meta.env.PROD ? '/api' : 'http://localhost:3001/api';
+const API_BASE = '/api';
 
 class ApiClient {
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
         const url = `${API_BASE}${endpoint}`;
 
-        const response = await fetch(url, {
-            ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers,
-            },
-        });
+        let response: Response;
+        try {
+            response = await fetch(url, {
+                ...options,
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers,
+                },
+            });
+        } catch (e) {
+            throw new Error('Backend nicht erreichbar. Bitte im Ordner "backend" starten: npm run dev');
+        }
 
-        const data = await response.json();
+        const text = await response.text();
+        let data: any;
+        try {
+            data = text ? JSON.parse(text) : {};
+        } catch {
+            throw new Error('Backend nicht erreichbar. Bitte im Ordner "backend" starten: npm run dev');
+        }
 
         if (!response.ok) {
-            throw new Error(data.error || 'API request failed');
+            const msg = data?.error || data?.message || (response.status === 404 ? 'Backend nicht erreichbar. Bitte Backend starten: im Ordner "backend" → npm run dev' : `Anfrage fehlgeschlagen (${response.status})`);
+            throw new Error(msg);
         }
 
         return data;
@@ -30,10 +43,14 @@ class ApiClient {
     // =====================================================
 
     async register(email: string, password: string, role: string) {
-        return this.request<{ success: boolean; user: any; error?: string }>('/auth/register', {
+        return this.request<{ success: boolean; user?: any; message?: string; verificationToken?: string; error?: string }>('/auth/register', {
             method: 'POST',
             body: JSON.stringify({ email, password, role }),
         });
+    }
+
+    async verifyEmail(token: string) {
+        return this.request<{ success: boolean; message?: string; error?: string }>(`/auth/verify-email?token=${encodeURIComponent(token)}`, { method: 'GET' });
     }
 
     async login(email: string, password: string, expectedRole?: string) {
