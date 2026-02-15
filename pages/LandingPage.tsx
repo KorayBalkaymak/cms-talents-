@@ -26,30 +26,28 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                 CMS <span className="text-orange-500">Talents</span>
               </span>
             </button>
-            <div className="hidden md:flex items-center gap-10">
+            <div className="flex items-center gap-4 md:gap-10">
               {user ? (
                 <>
-                  <span className="text-sm text-slate-500">Hallo, {user.firstName || 'User'}</span>
+                  <span className="text-sm text-slate-500 hidden md:inline">Hallo, {user.firstName || 'User'}</span>
                   {user.role === UserRole.CANDIDATE ? (
-                    <Button variant="primary" size="sm" className="rounded-xl px-5 h-10 text-sm font-medium shadow-sm" onClick={() => onNavigate('/candidate/profile')}>
+                    <Button variant="primary" size="sm" className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm" onClick={() => onNavigate('/candidate/profile')}>
                       Mein Profil
                     </Button>
                   ) : (
-                    <Button variant="primary" size="sm" className="rounded-xl px-5 h-10 text-sm font-medium shadow-sm" onClick={() => onNavigate('/recruiter/dashboard')}>
+                    <Button variant="primary" size="sm" className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm" onClick={() => onNavigate('/recruiter/dashboard')}>
                       Dashboard
                     </Button>
                   )}
                 </>
               ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('/recruiter/auth')}
-                    className="text-sm font-medium text-slate-600 hover:text-orange-500 transition-colors duration-200"
-                  >
-                    Als Recruiter einloggen
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('/recruiter/auth')}
+                  className="text-xs md:text-sm font-medium text-slate-600 hover:text-orange-500 transition-colors duration-200"
+                >
+                  Als Recruiter einloggen
+                </button>
               )}
             </div>
           </div>
