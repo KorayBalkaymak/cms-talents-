@@ -27,13 +27,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
               </span>
             </button>
             <div className="hidden md:flex items-center gap-10">
-              <button
-                type="button"
-                onClick={() => onNavigate('/talents')}
-                className="text-sm font-medium text-slate-600 hover:text-orange-500 transition-colors duration-200"
-              >
-                Talente entdecken
-              </button>
               {user ? (
                 <>
                   <span className="text-sm text-slate-500">Hallo, {user.firstName || 'User'}</span>
@@ -56,9 +49,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                   >
                     Als Recruiter einloggen
                   </button>
-                  <Button variant="primary" size="sm" className="rounded-xl px-5 h-10 text-sm font-medium shadow-sm" onClick={() => onNavigate('/candidate/auth')}>
-                    Kandidat werden
-                  </Button>
                 </>
               )}
             </div>
