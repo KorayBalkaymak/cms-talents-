@@ -49,10 +49,14 @@ const App: React.FC = () => {
         }
       }
 
-      // Öffentliche Kandidatenliste für alle (auch ohne Login) – Zuschauer, Kunden, Interessenten
-      const list = await candidateService.getAll();
-      setAllCandidates(list);
+      // UI sofort zeigen; öffentliche Kandidatenliste im Hintergrund laden
       setIsLoading(false);
+      candidateService.getAll()
+        .then((list) => setAllCandidates(list))
+        .catch(() => {
+          // CandidateService gibt bereits [] zurück, aber falls sich das ändert:
+          setAllCandidates([]);
+        });
     };
     init();
 

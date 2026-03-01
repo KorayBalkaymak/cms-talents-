@@ -11,15 +11,25 @@ class ApiClient {
 
         let response: Response;
         try {
+            const controller = new AbortController();
+            const timeoutMs = 12000;
+            const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
             response = await fetch(url, {
                 ...options,
+                signal: controller.signal,
                 headers: {
                     'Content-Type': 'application/json',
                     ...options.headers,
                 },
             });
+            clearTimeout(timeout);
         } catch (e) {
-            throw new Error('Backend nicht erreichbar. Bitte im Ordner "backend" starten: npm run dev');
+            const isAbort = typeof e === 'object' && e !== null && 'name' in e && (e as any).name === 'AbortError';
+            throw new Error(isAbort
+              ? 'Anfrage dauert zu lange (Timeout). Bitte Seite neu laden.'
+              : 'Backend nicht erreichbar. Bitte im Ordner "backend" starten: npm run dev'
+            );
         }
 
         const text = await response.text();

@@ -173,7 +173,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               <span className="text-white font-bold text-sm">CT</span>
             </div>
             <div className="hidden sm:block">
-              <span className="text-lg font-semibold text-slate-900">CMS <span className="text-orange-600">Talents</span></span>
+              <img src="/cms-talents-logo.svg" alt="CMS Talents Logo" className="h-8" />
               <p className="text-xs text-slate-500 mt-0.5">Talente entdecken – für alle sichtbar</p>
             </div>
           </div>

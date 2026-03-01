@@ -22,9 +22,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
               <div className="w-9 h-9 rounded-xl bg-orange-500 flex items-center justify-center text-white font-semibold text-sm group-hover:bg-orange-600 transition-colors duration-200">
                 CT
               </div>
-              <span className="text-lg font-semibold text-slate-900 tracking-tight">
-                CMS <span className="text-orange-500">Talents</span>
-              </span>
+              <img src="/cms-talents-logo.svg" alt="CMS Talents Logo" className="h-8" />
             </button>
             <div className="flex items-center gap-4 md:gap-10">
               {user ? (
@@ -73,7 +71,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                   <span className="text-orange-400">Die besten Partner.</span>
                 </h1>
                 <p className="text-lg text-white/80 leading-relaxed mb-10 animate-fade-in-up-2">
-                  CMS Talents verbindet hochqualifizierte Fachkräfte mit führenden Arbeitgebern. Qualität, Vertrauen und passgenaues Matching – ohne Kompromisse.
+                  CMS Logo verbindet hochqualifizierte Fachkräfte mit führenden Arbeitgebern. Qualität, Vertrauen und passgenaues Matching – ohne Kompromisse.
                 </p>
                 <div className="flex flex-wrap gap-4 animate-fade-in-up-3">
                   <Button
@@ -117,16 +115,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                         ))}
                       </div>
                     </div>
-                    <div className="p-5 grid grid-cols-2 gap-4">
-                      <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-3">
-                        <div className="text-2xl font-bold text-orange-400">98%</div>
-                        <div className="text-xs font-medium text-white/60 mt-0.5">Matching</div>
-                      </div>
-                      <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-3">
-                        <div className="text-2xl font-bold text-white">500+</div>
-                        <div className="text-xs font-medium text-white/60 mt-0.5">Talente</div>
-                      </div>
-                    </div>
+
                   </div>
                 </div>
               </div>
@@ -140,10 +129,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
             <div className="rounded-2xl bg-[#0a1428] border border-white/10 shadow-2xl shadow-black/20 overflow-hidden">
               <div className="p-10 md:p-14">
                 <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight mb-6 text-center">
-                  Der Zweck von CMS Talents
+                  Der Zweck von CMS Logo
                 </h2>
                 <p className="text-lg text-white/90 leading-relaxed mb-6 text-center">
-                  CMS Talents ist eine Recruiting-Plattform, die <span className="text-orange-400 font-semibold">hochqualifizierte Fachkräfte</span> mit <span className="text-orange-400 font-semibold">passenden Arbeitgebern</span> zusammenbringt. Kandidaten können ihr Profil anlegen, sich sichtbar machen und von Recruitern gefunden werden. Arbeitgeber und Recruiter nutzen die Plattform, um gezielt nach Talenten zu suchen und den Recruiting-Prozess effizient zu steuern.
+                  CMS Logo ist eine Recruiting-Plattform, die <span className="text-orange-400 font-semibold">hochqualifizierte Fachkräfte</span> mit <span className="text-orange-400 font-semibold">passenden Arbeitgebern</span> zusammenbringt. Kandidaten können ihr Profil anlegen, sich sichtbar machen und von Recruitern gefunden werden. Arbeitgeber und Recruiter nutzen die Plattform, um gezielt nach Talenten zu suchen und den Recruiting-Prozess effizient zu steuern.
                 </p>
                 <p className="text-base text-white/75 leading-relaxed text-center">
                   Im Mittelpunkt stehen Qualität, Vertrauen und ein transparentes Matching – damit beide Seiten schnell die richtige Verbindung finden.
@@ -158,7 +147,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center max-w-2xl mx-auto mb-16">
               <h2 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-4">
-                Warum CMS <span className="text-orange-500">Talents</span>?
+                Warum CMS <span className="text-orange-500">Logo</span>?
               </h2>
               <p className="text-lg text-slate-600 leading-relaxed">
                 Qualität und Vertrauen stehen im Mittelpunkt – für Kandidaten und Arbeitgeber.
@@ -211,7 +200,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
             <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center text-white font-semibold text-sm">
               CT
             </div>
-            <span className="text-sm font-medium text-white/70">CMS Talents © 2026</span>
+            <span className="text-sm font-medium text-white/70">CMS Logo © 2026</span>
           </div>
           <div className="flex gap-10 text-sm">
             <a href="#" className="text-white/70 hover:text-orange-400 transition-colors duration-200">Impressum</a>
