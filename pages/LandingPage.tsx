@@ -19,10 +19,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
               onClick={() => onNavigate('/')}
               className="flex items-center gap-3 group"
             >
-              <div className="w-9 h-9 rounded-xl bg-orange-500 flex items-center justify-center text-white font-semibold text-sm group-hover:bg-orange-600 transition-colors duration-200">
-                CT
-              </div>
-              <img src="/cms-talents-logo.svg" alt="CMS Talents Logo" className="h-8" />
+              <img
+                src="/cms-talents-logo.png"
+                alt="CMS Talents"
+                className="h-9 w-9 object-contain rounded-md"
+              />
+              <span className="text-lg font-semibold text-slate-900 tracking-tight">
+                CMS <span className="text-orange-500">Talents</span>
+              </span>
             </button>
             <div className="flex items-center gap-4 md:gap-10">
               {user ? (
