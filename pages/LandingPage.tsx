@@ -22,11 +22,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
               <img
                 src="/cms-talents-logo.png"
                 alt="CMS Talents"
-                className="h-9 w-9 object-contain rounded-md"
+                className="h-9 md:h-10 w-auto object-contain"
               />
-              <span className="text-lg font-semibold text-slate-900 tracking-tight">
-                CMS <span className="text-orange-500">Talents</span>
-              </span>
             </button>
             <div className="flex items-center gap-4 md:gap-10">
               {user ? (
