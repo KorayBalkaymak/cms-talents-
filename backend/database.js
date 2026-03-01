@@ -55,9 +55,19 @@ function normalizeSqlForPostgres(sql) {
 async function initPostgres() {
   const { Pool } = await import('pg');
   if (!pool) {
-    pool = new Pool({ connectionString: POSTGRES_URL, ssl: { rejectUnauthorized: false } });
+    pool = new Pool({
+      connectionString: POSTGRES_URL,
+      ssl: { rejectUnauthorized: false },
+      // Serverless: schnell failen statt ewig hängen
+      max: 2,
+      idleTimeoutMillis: 10_000,
+      connectionTimeoutMillis: 10_000
+    });
   }
   dbMode = 'postgres';
+
+  // Verbindung früh prüfen (sonst wirkt es im Frontend wie "Timeout")
+  await pool.query('SELECT 1');
 
   // Schema (Postgres)
   await pool.query(`

@@ -30,6 +30,13 @@ initDatabase()
 
 // Database ready check middleware
 app.use((req, res, next) => {
+    if (req.path === '/api/health') {
+        return res.status(dbReady ? 200 : (dbInitError ? 500 : 503)).json({
+            ok: dbReady,
+            dbReady,
+            error: dbInitError ? String(dbInitError?.message || dbInitError) : undefined
+        });
+    }
     if (!dbReady) {
         if (dbInitError) {
             return res.status(500).json({
