@@ -35,7 +35,7 @@ app.use((req, res, next) => {
             return res.status(500).json({
                 error: 'Backend ist nicht korrekt konfiguriert (Datenbank).',
                 details: String(dbInitError?.message || dbInitError),
-                hint: 'Für Vercel: POSTGRES_URL (oder DATABASE_URL) setzen. Optional: ALLOW_EPHEMERAL_DB=true (nur Demo, nicht persistent).'
+                hint: 'Für Vercel: POSTGRES_URL (oder DATABASE_URL) setzen (Vercel Postgres verbinden). Ohne persistente DB verschwinden Accounts bei Cold Starts/Reload.'
             });
         }
         return res.status(503).json({ error: 'Database initializing...' });

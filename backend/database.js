@@ -22,9 +22,6 @@ const POSTGRES_URL =
 
 const IS_VERCEL = !!process.env.VERCEL;
 const USE_POSTGRES = !!POSTGRES_URL;
-const ALLOW_EPHEMERAL_DB =
-  String(process.env.ALLOW_EPHEMERAL_DB || '').toLowerCase() === 'true' ||
-  String(process.env.ALLOW_EPHEMERAL_DB || '') === '1';
 
 let db = null;          // sql.js Database
 let SQL = null;         // sql.js module
@@ -138,8 +135,9 @@ async function initPostgres() {
   await pool.query('CREATE INDEX IF NOT EXISTS idx_skills_user ON candidate_skills(user_id)');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_documents_user ON candidate_documents(user_id)');
 
-  // Alte Accounts als verifiziert markieren (nur falls noch 0/NULL)
-  await pool.query(`UPDATE users SET email_verified = 1, verification_token = NULL, verification_token_expires_at = NULL WHERE email_verified IS NULL OR email_verified != 1`);
+  // Alte Accounts (vor Einführung der Spalte) als verifiziert markieren
+  // Wichtig: neue Registrierungen mit email_verified=0 dürfen NICHT überschrieben werden.
+  await pool.query(`UPDATE users SET email_verified = 1 WHERE email_verified IS NULL`);
 }
 
 async function initSqlite() {
@@ -250,16 +248,15 @@ async function initSqlite() {
   try { db.run('ALTER TABLE users ADD COLUMN verification_token TEXT'); } catch { }
   try { db.run('ALTER TABLE users ADD COLUMN verification_token_expires_at TEXT'); } catch { }
   try {
-    db.run('UPDATE users SET email_verified = 1, verification_token = NULL, verification_token_expires_at = NULL WHERE email_verified IS NULL OR email_verified != 1');
+    // Nur alte Accounts markieren, nicht neue (email_verified=0)
+    db.run('UPDATE users SET email_verified = 1 WHERE email_verified IS NULL');
   } catch { }
 }
 
 async function initDatabase() {
-  // Auf Vercel muss die DB persistent sein, sonst gehen Register/Login nach Cold Start kaputt
-  if (IS_VERCEL && !USE_POSTGRES && !ALLOW_EPHEMERAL_DB) {
-    throw new Error(
-      'POSTGRES_URL/DATABASE_URL fehlt. Bitte Vercel Postgres verbinden (oder temporär ALLOW_EPHEMERAL_DB=true setzen).'
-    );
+  // Auf Vercel MUSS die DB persistent sein – sonst verschwinden Accounts bei Cold Starts/Reload.
+  if (IS_VERCEL && !USE_POSTGRES) {
+    throw new Error('POSTGRES_URL/DATABASE_URL fehlt. Bitte Vercel Postgres (oder externe Postgres) verbinden und als Environment Variable setzen.');
   }
   if (USE_POSTGRES) {
     await initPostgres();
