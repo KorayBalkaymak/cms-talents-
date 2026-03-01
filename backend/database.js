@@ -1,5 +1,7 @@
 // =====================================================
-// CMS TALENTS - SQLITE DATABASE SETUP (using sql.js)
+// CMS TALENTS - DATABASE LAYER
+// - Lokal: SQLite via sql.js (Datei cms_talents.db)
+// - Vercel/Prod: Optional Postgres (persistenter Storage)
 // =====================================================
 
 import initSqlJs from 'sql.js';
@@ -8,26 +10,144 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import bcrypt from 'bcryptjs';
 import { v4 as uuid } from 'uuid';
+import { Pool } from 'pg';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const DB_PATH = join(__dirname, 'cms_talents.db');
 
+const POSTGRES_URL =
+  process.env.POSTGRES_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.DATABASE_URL ||
+  '';
+
 const IS_VERCEL = !!process.env.VERCEL;
+const USE_POSTGRES = !!POSTGRES_URL;
 
-let db = null;
-let SQL = null;
+let db = null;          // sql.js Database
+let SQL = null;         // sql.js module
+let pool = null;        // pg Pool
+let dbMode = 'sqlite';  // 'sqlite' | 'postgres'
 
-// Initialize database
-async function initDatabase() {
+function normalizeSqlForPostgres(sql) {
+  let s = String(sql);
+
+  // SQLite -> Postgres: datetime('now') / datetime(\"now\")
+  s = s.replace(/datetime\((['\"])now\1\)/gi, 'CURRENT_TIMESTAMP');
+
+  // SQLite: INSERT OR IGNORE -> Postgres: ON CONFLICT DO NOTHING
+  const m = s.match(/^\s*INSERT\s+OR\s+IGNORE\s+INTO\s+([a-zA-Z0-9_]+)\s*\(([^)]+)\)\s*VALUES\s*\(([\s\S]+)\)\s*;?\s*$/i);
+  if (m) {
+    const table = m[1];
+    const cols = m[2].split(',').map(c => c.trim());
+    const values = m[3].trim();
+    s = `INSERT INTO ${table} (${cols.join(', ')}) VALUES (${values}) ON CONFLICT (${cols.join(', ')}) DO NOTHING`;
+  }
+
+  // SQLite placeholders '?' -> Postgres '$1..$n'
+  let i = 0;
+  s = s.replace(/\?/g, () => `$${++i}`);
+
+  return s;
+}
+
+async function initPostgres() {
+  if (!pool) {
+    pool = new Pool({ connectionString: POSTGRES_URL, ssl: { rejectUnauthorized: false } });
+  }
+  dbMode = 'postgres';
+
+  // Schema (Postgres)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL CHECK(role IN ('candidate', 'recruiter', 'recruiter_admin')),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      email_verified INTEGER DEFAULT 1,
+      verification_token TEXT,
+      verification_token_expires_at TIMESTAMPTZ
+    );
+
+    CREATE TABLE IF NOT EXISTS candidate_profiles (
+      user_id TEXT PRIMARY KEY,
+      first_name TEXT NOT NULL DEFAULT '',
+      last_name TEXT NOT NULL DEFAULT '',
+      city TEXT NOT NULL DEFAULT '',
+      country TEXT NOT NULL DEFAULT '',
+      industry TEXT NOT NULL DEFAULT '',
+      experience_years INTEGER NOT NULL DEFAULT 0,
+      availability TEXT NOT NULL DEFAULT '',
+      birth_year TEXT,
+      about TEXT,
+      profile_image_url TEXT,
+      avatar_seed TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'in Prüfung' CHECK(status IN ('aktiv', 'gesperrt', 'in Prüfung')),
+      is_published INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      address TEXT,
+      zip_code TEXT,
+      phone_number TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS candidate_skills (
+      id SERIAL PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      skill TEXT NOT NULL,
+      UNIQUE(user_id, skill)
+    );
+
+    CREATE TABLE IF NOT EXISTS candidate_keywords (
+      id SERIAL PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      keyword TEXT NOT NULL,
+      UNIQUE(user_id, keyword)
+    );
+
+    CREATE TABLE IF NOT EXISTS candidate_social_links (
+      id SERIAL PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      label TEXT NOT NULL,
+      url TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS candidate_documents (
+      id SERIAL PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      doc_type TEXT NOT NULL CHECK(doc_type IN ('cv', 'certificate', 'qualification')),
+      file_name TEXT NOT NULL,
+      file_data TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id TEXT PRIMARY KEY,
+      action TEXT NOT NULL,
+      performer_id TEXT NOT NULL,
+      target_id TEXT NOT NULL,
+      timestamp TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_profiles_published ON candidate_profiles(is_published, status)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_skills_user ON candidate_skills(user_id)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_documents_user ON candidate_documents(user_id)');
+
+  // Alte Accounts als verifiziert markieren (nur falls noch 0/NULL)
+  await pool.query(`UPDATE users SET email_verified = 1, verification_token = NULL, verification_token_expires_at = NULL WHERE email_verified IS NULL OR email_verified != 1`);
+}
+
+async function initSqlite() {
   SQL = await initSqlJs();
 
   if (IS_VERCEL) {
-    // Vercel: kein Dateisystem – nur In-Memory-Datenbank
+    // Vercel ohne Postgres: kein Dateisystem – nur In-Memory (nicht persistent!)
     db = new SQL.Database();
     console.log('[DB] Vercel: In-Memory-Datenbank erstellt');
   } else {
-    // Lokal: Datei laden oder neue DB erstellen
     try {
       if (fs.existsSync(DB_PATH)) {
         const fileBuffer = fs.readFileSync(DB_PATH);
@@ -43,9 +163,9 @@ async function initDatabase() {
     }
   }
 
-  // Create tables
+  dbMode = 'sqlite';
+
   db.run(`
-    -- Users table (authentication)
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       email TEXT UNIQUE NOT NULL,
@@ -54,11 +174,8 @@ async function initDatabase() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    -- Candidate profiles table
     CREATE TABLE IF NOT EXISTS candidate_profiles (
       user_id TEXT PRIMARY KEY,
-      
-      -- REQUIRED FIELDS (NOT NULL with defaults)
       first_name TEXT NOT NULL DEFAULT '',
       last_name TEXT NOT NULL DEFAULT '',
       city TEXT NOT NULL DEFAULT '',
@@ -66,13 +183,9 @@ async function initDatabase() {
       industry TEXT NOT NULL DEFAULT '',
       experience_years INTEGER NOT NULL DEFAULT 0,
       availability TEXT NOT NULL DEFAULT '',
-      
-      -- OPTIONAL FIELDS
       birth_year TEXT,
       about TEXT,
       profile_image_url TEXT,
-      
-      -- SYSTEM FIELDS
       avatar_seed TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'in Prüfung' CHECK(status IN ('aktiv', 'gesperrt', 'in Prüfung')),
       is_published INTEGER NOT NULL DEFAULT 0,
@@ -80,7 +193,6 @@ async function initDatabase() {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    -- Skills
     CREATE TABLE IF NOT EXISTS candidate_skills (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id TEXT NOT NULL,
@@ -88,7 +200,6 @@ async function initDatabase() {
       UNIQUE(user_id, skill)
     );
 
-    -- Boosted keywords
     CREATE TABLE IF NOT EXISTS candidate_keywords (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id TEXT NOT NULL,
@@ -96,7 +207,6 @@ async function initDatabase() {
       UNIQUE(user_id, keyword)
     );
 
-    -- Social links
     CREATE TABLE IF NOT EXISTS candidate_social_links (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id TEXT NOT NULL,
@@ -104,7 +214,6 @@ async function initDatabase() {
       url TEXT NOT NULL
     );
 
-    -- Documents
     CREATE TABLE IF NOT EXISTS candidate_documents (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id TEXT NOT NULL,
@@ -114,7 +223,6 @@ async function initDatabase() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    -- Audit log
     CREATE TABLE IF NOT EXISTS audit_log (
       id TEXT PRIMARY KEY,
       action TEXT NOT NULL,
@@ -124,87 +232,75 @@ async function initDatabase() {
     );
   `);
 
-  // Create indexes
   try {
     db.run('CREATE INDEX IF NOT EXISTS idx_profiles_published ON candidate_profiles(is_published, status)');
     db.run('CREATE INDEX IF NOT EXISTS idx_skills_user ON candidate_skills(user_id)');
     db.run('CREATE INDEX IF NOT EXISTS idx_documents_user ON candidate_documents(user_id)');
-  } catch (e) {
-    // Indexes might already exist
-  }
+  } catch { /* ignore */ }
 
-  // Optionale Profilfelder (Migration: Spalten hinzufügen falls nicht vorhanden)
-  try {
-    db.run('ALTER TABLE candidate_profiles ADD COLUMN address TEXT');
-  } catch (e) { /* Spalte existiert bereits */ }
-  try {
-    db.run('ALTER TABLE candidate_profiles ADD COLUMN zip_code TEXT');
-  } catch (e) { /* Spalte existiert bereits */ }
-  try {
-    db.run('ALTER TABLE candidate_profiles ADD COLUMN phone_number TEXT');
-  } catch (e) { /* Spalte existiert bereits */ }
+  // Migrations
+  try { db.run('ALTER TABLE candidate_profiles ADD COLUMN address TEXT'); } catch { }
+  try { db.run('ALTER TABLE candidate_profiles ADD COLUMN zip_code TEXT'); } catch { }
+  try { db.run('ALTER TABLE candidate_profiles ADD COLUMN phone_number TEXT'); } catch { }
 
-  // E-Mail-Verifizierung (Migration)
-  try {
-    db.run('ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 1');
-  } catch (e) { /* Spalte existiert bereits */ }
-  try {
-    db.run('ALTER TABLE users ADD COLUMN verification_token TEXT');
-  } catch (e) { /* Spalte existiert bereits */ }
-  try {
-    db.run('ALTER TABLE users ADD COLUMN verification_token_expires_at TEXT');
-  } catch (e) { /* Spalte existiert bereits */ }
-  // Alle bestehenden Nutzer als verifiziert setzen (Migration: alte Accounts vor E-Mail-Verifizierung)
+  try { db.run('ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 1'); } catch { }
+  try { db.run('ALTER TABLE users ADD COLUMN verification_token TEXT'); } catch { }
+  try { db.run('ALTER TABLE users ADD COLUMN verification_token_expires_at TEXT'); } catch { }
   try {
     db.run('UPDATE users SET email_verified = 1, verification_token = NULL, verification_token_expires_at = NULL WHERE email_verified IS NULL OR email_verified != 1');
-  } catch (e) { /* ignore */ }
+  } catch { }
+}
 
-  // Seed demo accounts
-  seedDemoAccounts();
+async function initDatabase() {
+  if (USE_POSTGRES) {
+    await initPostgres();
+  } else {
+    await initSqlite();
+  }
 
-  // Save to disk
-  saveDatabase();
-
-  console.log('[DB] Database initialized successfully');
+  await seedDemoAccounts();
+  await saveDatabase();
+  console.log(`[DB] Database initialized successfully (${dbMode})`);
   return db;
 }
 
-function saveDatabase() {
-  if (db && !IS_VERCEL) {
+async function saveDatabase() {
+  if (dbMode === 'sqlite' && db && !IS_VERCEL) {
     const data = db.export();
     const buffer = Buffer.from(data);
     fs.writeFileSync(DB_PATH, buffer);
   }
 }
 
-function seedDemoAccounts() {
+async function seedDemoAccounts() {
   const demoAccounts = [
     { email: 'recruiter@cms.de', password: 'recruiter123', role: 'recruiter' },
     { email: 'admin@cms.de', password: 'admin123', role: 'recruiter_admin' }
   ];
 
   for (const account of demoAccounts) {
-    const existing = db.exec(`SELECT id FROM users WHERE email = '${account.email}'`);
-    if (existing.length === 0 || existing[0].values.length === 0) {
+    const existing = await queryOne('SELECT id FROM users WHERE email = ?', [account.email]);
+    if (!existing) {
       const hash = bcrypt.hashSync(account.password, 10);
       const id = uuid();
-      db.run(`INSERT INTO users (id, email, password_hash, role) VALUES (?, ?, ?, ?)`,
-        [id, account.email, hash, account.role]);
+      await run('INSERT INTO users (id, email, password_hash, role) VALUES (?, ?, ?, ?)', [id, account.email, hash, account.role]);
       console.log(`[DB] Created demo account: ${account.email}`);
     }
   }
-  saveDatabase();
 }
 
-// Helper function to run queries and get results
-function query(sql, params = []) {
+async function query(sql, params = []) {
   try {
+    if (dbMode === 'postgres') {
+      const q = normalizeSqlForPostgres(sql);
+      const res = await pool.query(q, params);
+      return res.rows ?? [];
+    }
+
     const stmt = db.prepare(sql);
     stmt.bind(params);
     const results = [];
-    while (stmt.step()) {
-      results.push(stmt.getAsObject());
-    }
+    while (stmt.step()) results.push(stmt.getAsObject());
     stmt.free();
     return results;
   } catch (e) {
@@ -213,15 +309,21 @@ function query(sql, params = []) {
   }
 }
 
-function queryOne(sql, params = []) {
-  const results = query(sql, params);
+async function queryOne(sql, params = []) {
+  const results = await query(sql, params);
   return results.length > 0 ? results[0] : null;
 }
 
-function run(sql, params = []) {
+async function run(sql, params = []) {
   try {
+    if (dbMode === 'postgres') {
+      const q = normalizeSqlForPostgres(sql);
+      await pool.query(q, params);
+      return true;
+    }
+
     db.run(sql, params);
-    saveDatabase();
+    await saveDatabase();
     return true;
   } catch (e) {
     console.error('[DB] Run error:', e, sql);

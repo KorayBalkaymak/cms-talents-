@@ -76,7 +76,7 @@ class AuthService {
     email: string,
     password: string,
     expectedRole?: UserRole
-  ): Promise<{ success: boolean; user?: User; error?: string }> {
+  ): Promise<{ success: boolean; user?: User; error?: string; needsVerification?: boolean; verificationToken?: string }> {
     try {
       const result = await api.login(email, password, expectedRole);
 
@@ -94,6 +94,16 @@ class AuthService {
 
       return { success: false, error: result.error || 'Anmeldung fehlgeschlagen' };
     } catch (e: any) {
+      const needsVerification = !!e?.data?.needsVerification;
+      const verificationToken = e?.data?.verificationToken;
+      if (needsVerification) {
+        return {
+          success: false,
+          error: e?.message || 'Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.',
+          needsVerification: true,
+          verificationToken
+        };
+      }
       return { success: false, error: e.message || 'Anmeldung fehlgeschlagen' };
     }
   }

@@ -43,6 +43,9 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
         const result = await authService.login(email, password, UserRole.RECRUITER);
         if (result.success && result.user) {
           onAuthSuccess(result.user);
+        } else if (result.needsVerification && result.verificationToken) {
+          setVerificationToken(result.verificationToken);
+          setError('');
         } else {
           setError(result.error || 'Anmeldung fehlgeschlagen.');
         }

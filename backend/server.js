@@ -63,7 +63,7 @@ app.post('/api/auth/register', async (req, res) => {
             return res.status(400).json({ error: 'Ungültige Rolle' });
         }
 
-        const existing = queryOne('SELECT id FROM users WHERE email = ?', [emailTrimmed]);
+        const existing = await queryOne('SELECT id FROM users WHERE email = ?', [emailTrimmed]);
         if (existing) {
             return res.status(400).json({ error: 'Diese E-Mail ist bereits registriert' });
         }
@@ -73,7 +73,7 @@ app.post('/api/auth/register', async (req, res) => {
         const verificationToken = generateVerificationToken();
         const verificationExpires = tokenExpiryHours(24);
 
-        const userInserted = run(
+        const userInserted = await run(
             'INSERT INTO users (id, email, password_hash, role, email_verified, verification_token, verification_token_expires_at) VALUES (?, ?, ?, ?, 0, ?, ?)',
             [userId, emailTrimmed, passwordHash, role, verificationToken, verificationExpires]
         );
@@ -82,17 +82,17 @@ app.post('/api/auth/register', async (req, res) => {
         }
 
         if (role === 'candidate') {
-            const profileInserted = run('INSERT INTO candidate_profiles (user_id, avatar_seed) VALUES (?, ?)',
+            const profileInserted = await run('INSERT INTO candidate_profiles (user_id, avatar_seed) VALUES (?, ?)',
                 [userId, userId.substring(0, 8)]);
             if (!profileInserted) {
-                run('DELETE FROM users WHERE id = ?', [userId]);
+                await run('DELETE FROM users WHERE id = ?', [userId]);
                 return res.status(500).json({ error: 'Profil konnte nicht angelegt werden. Bitte erneut versuchen.' });
             }
         }
 
         if (IS_VERCEL) {
             // Auf Vercel: sofort verifizieren und einloggen (kein persistenter Speicher)
-            run('UPDATE users SET email_verified = 1, verification_token = NULL, verification_token_expires_at = NULL WHERE id = ?', [userId]);
+            await run('UPDATE users SET email_verified = 1, verification_token = NULL, verification_token_expires_at = NULL WHERE id = ?', [userId]);
             res.json({
                 success: true,
                 user: {
@@ -117,21 +117,23 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // E-Mail bestätigen (Link mit Token)
-app.get('/api/auth/verify-email', (req, res) => {
+app.get('/api/auth/verify-email', async (req, res) => {
     try {
         const { token } = req.query;
         if (!token) {
             return res.status(400).json({ success: false, error: 'Token fehlt' });
         }
-        const user = queryOne('SELECT id, email_verified, verification_token_expires_at FROM users WHERE verification_token = ?', [token]);
+        const user = await queryOne('SELECT id, email_verified, verification_token_expires_at FROM users WHERE verification_token = ?', [token]);
         if (!user) {
             return res.status(400).json({ success: false, error: 'Ungültiger oder abgelaufener Link.' });
         }
-        const now = new Date().toISOString();
-        if (user.verification_token_expires_at && user.verification_token_expires_at < now) {
+        if (user.verification_token_expires_at) {
+            const exp = new Date(user.verification_token_expires_at);
+            if (!Number.isNaN(exp.getTime()) && exp.getTime() < Date.now()) {
             return res.status(400).json({ success: false, error: 'Der Bestätigungslink ist abgelaufen. Bitte registrieren Sie sich erneut.' });
+            }
         }
-        run('UPDATE users SET email_verified = 1, verification_token = NULL, verification_token_expires_at = NULL WHERE id = ?', [user.id]);
+        await run('UPDATE users SET email_verified = 1, verification_token = NULL, verification_token_expires_at = NULL WHERE id = ?', [user.id]);
         res.json({ success: true, message: 'E-Mail-Adresse bestätigt. Sie können sich jetzt anmelden.' });
     } catch (error) {
         console.error('Verify email error:', error);
@@ -148,7 +150,7 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(400).json({ error: 'Email und Passwort erforderlich' });
         }
 
-        const user = queryOne('SELECT * FROM users WHERE email = ?', [String(email).trim().toLowerCase()]);
+        const user = await queryOne('SELECT * FROM users WHERE email = ?', [String(email).trim().toLowerCase()]);
         if (!user) {
             return res.status(401).json({ error: 'Ungültige Anmeldedaten' });
         }
@@ -161,9 +163,20 @@ app.post('/api/auth/login', async (req, res) => {
         if (!IS_VERCEL) {
             const verified = user.email_verified == 1;
             if (!verified) {
+                // Token ggf. erneuern, damit Login-Screen direkt einen Bestätigungslink anzeigen kann
+                let token = user.verification_token;
+                const exp = user.verification_token_expires_at ? new Date(user.verification_token_expires_at) : null;
+                const expired = exp ? (!Number.isNaN(exp.getTime()) && exp.getTime() < Date.now()) : false;
+                if (!token || expired) {
+                    token = generateVerificationToken();
+                    const expires = tokenExpiryHours(24);
+                    await run('UPDATE users SET verification_token = ?, verification_token_expires_at = ? WHERE id = ?', [token, expires, user.id]);
+                }
+
                 return res.status(403).json({
-                    error: 'Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse. Sie haben einen Link per E-Mail erhalten – klicken Sie darauf, um sich anschließend anzumelden.',
-                    needsVerification: true
+                    error: 'Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse. Klicken Sie auf den Bestätigungslink, um sich anschließend anzumelden.',
+                    needsVerification: true,
+                    verificationToken: token
                 });
             }
         }
@@ -191,13 +204,13 @@ app.post('/api/auth/login', async (req, res) => {
 // CANDIDATE ENDPOINTS
 // =====================================================
 
-function enrichCandidate(row) {
+async function enrichCandidate(row) {
     if (!row) return null;
 
-    const skills = query('SELECT skill FROM candidate_skills WHERE user_id = ?', [row.user_id]);
-    const keywords = query('SELECT keyword FROM candidate_keywords WHERE user_id = ?', [row.user_id]);
-    const links = query('SELECT label, url FROM candidate_social_links WHERE user_id = ?', [row.user_id]);
-    const docRows = query('SELECT doc_type, file_name FROM candidate_documents WHERE user_id = ?', [row.user_id]);
+    const skills = await query('SELECT skill FROM candidate_skills WHERE user_id = ?', [row.user_id]);
+    const keywords = await query('SELECT keyword FROM candidate_keywords WHERE user_id = ?', [row.user_id]);
+    const links = await query('SELECT label, url FROM candidate_social_links WHERE user_id = ?', [row.user_id]);
+    const docRows = await query('SELECT doc_type, file_name FROM candidate_documents WHERE user_id = ?', [row.user_id]);
     const documents = docRows.map(d => ({ type: d.doc_type, name: d.file_name }));
 
     return {
@@ -228,10 +241,11 @@ function enrichCandidate(row) {
 }
 
 // Get published candidates – öffentlich, für alle (Zuschauer, Kunden, Interessenten), kein Recruiter-Login nötig
-app.get('/api/candidates', (req, res) => {
+app.get('/api/candidates', async (req, res) => {
     try {
-        const candidates = query(`SELECT * FROM candidate_profiles WHERE is_published = 1 AND status = 'aktiv'`);
-        res.json(candidates.map(c => enrichCandidate(c)));
+        const candidates = await query(`SELECT * FROM candidate_profiles WHERE is_published = 1 AND status = 'aktiv'`);
+        const enriched = await Promise.all(candidates.map((c) => enrichCandidate(c)));
+        res.json(enriched);
     } catch (error) {
         console.error('Get candidates error:', error);
         res.status(500).json({ error: 'Fehler beim Laden der Kandidaten' });
@@ -239,10 +253,11 @@ app.get('/api/candidates', (req, res) => {
 });
 
 // Get all candidates (admin)
-app.get('/api/candidates/all', (req, res) => {
+app.get('/api/candidates/all', async (req, res) => {
     try {
-        const candidates = query('SELECT * FROM candidate_profiles');
-        res.json(candidates.map(c => enrichCandidate(c)));
+        const candidates = await query('SELECT * FROM candidate_profiles');
+        const enriched = await Promise.all(candidates.map((c) => enrichCandidate(c)));
+        res.json(enriched);
     } catch (error) {
         console.error('Get all candidates error:', error);
         res.status(500).json({ error: 'Fehler beim Laden der Kandidaten' });
@@ -250,21 +265,21 @@ app.get('/api/candidates/all', (req, res) => {
 });
 
 // Get single candidate (legt Profil an, falls User Kandidat ist aber noch kein Profil hat)
-app.get('/api/candidates/:userId', (req, res) => {
+app.get('/api/candidates/:userId', async (req, res) => {
     try {
-        let candidate = queryOne('SELECT * FROM candidate_profiles WHERE user_id = ?', [req.params.userId]);
+        let candidate = await queryOne('SELECT * FROM candidate_profiles WHERE user_id = ?', [req.params.userId]);
         if (!candidate) {
-            const user = queryOne('SELECT id, role FROM users WHERE id = ?', [req.params.userId]);
+            const user = await queryOne('SELECT id, role FROM users WHERE id = ?', [req.params.userId]);
             if (user && user.role === 'candidate') {
-                run('INSERT INTO candidate_profiles (user_id, avatar_seed) VALUES (?, ?)',
+                await run('INSERT INTO candidate_profiles (user_id, avatar_seed) VALUES (?, ?)',
                     [req.params.userId, req.params.userId.substring(0, 8)]);
-                candidate = queryOne('SELECT * FROM candidate_profiles WHERE user_id = ?', [req.params.userId]);
+                candidate = await queryOne('SELECT * FROM candidate_profiles WHERE user_id = ?', [req.params.userId]);
             }
         }
         if (!candidate) {
             return res.status(404).json({ error: 'Kandidat nicht gefunden' });
         }
-        res.json(enrichCandidate(candidate));
+        res.json(await enrichCandidate(candidate));
     } catch (error) {
         console.error('Get candidate error:', error);
         res.status(500).json({ error: 'Fehler beim Laden des Kandidaten' });
@@ -272,15 +287,15 @@ app.get('/api/candidates/:userId', (req, res) => {
 });
 
 // Create/Update candidate profile
-app.put('/api/candidates/:userId', (req, res) => {
+app.put('/api/candidates/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
         const data = req.body;
 
-        const existing = queryOne('SELECT user_id FROM candidate_profiles WHERE user_id = ?', [userId]);
+        const existing = await queryOne('SELECT user_id FROM candidate_profiles WHERE user_id = ?', [userId]);
 
         if (existing) {
-            run(`UPDATE candidate_profiles SET
+            await run(`UPDATE candidate_profiles SET
           first_name = ?, last_name = ?, city = ?, country = ?,
           address = ?, zip_code = ?, phone_number = ?,
           industry = ?, experience_years = ?, availability = ?,
@@ -295,7 +310,7 @@ app.put('/api/candidates/:userId', (req, res) => {
                     data.status || 'in Prüfung', data.isPublished ? 1 : 0, userId
                 ]);
         } else {
-            run(`INSERT INTO candidate_profiles (
+            await run(`INSERT INTO candidate_profiles (
           user_id, first_name, last_name, city, country, address, zip_code, phone_number,
           industry, experience_years, availability, birth_year, about,
           profile_image_url, avatar_seed, status, is_published
@@ -310,25 +325,25 @@ app.put('/api/candidates/:userId', (req, res) => {
         }
 
         // Update skills
-        run('DELETE FROM candidate_skills WHERE user_id = ?', [userId]);
+        await run('DELETE FROM candidate_skills WHERE user_id = ?', [userId]);
         for (const skill of (data.skills || [])) {
-            run('INSERT OR IGNORE INTO candidate_skills (user_id, skill) VALUES (?, ?)', [userId, skill]);
+            await run('INSERT OR IGNORE INTO candidate_skills (user_id, skill) VALUES (?, ?)', [userId, skill]);
         }
 
         // Update keywords
-        run('DELETE FROM candidate_keywords WHERE user_id = ?', [userId]);
+        await run('DELETE FROM candidate_keywords WHERE user_id = ?', [userId]);
         for (const keyword of (data.boostedKeywords || [])) {
-            run('INSERT OR IGNORE INTO candidate_keywords (user_id, keyword) VALUES (?, ?)', [userId, keyword]);
+            await run('INSERT OR IGNORE INTO candidate_keywords (user_id, keyword) VALUES (?, ?)', [userId, keyword]);
         }
 
         // Update social links
-        run('DELETE FROM candidate_social_links WHERE user_id = ?', [userId]);
+        await run('DELETE FROM candidate_social_links WHERE user_id = ?', [userId]);
         for (const link of (data.socialLinks || [])) {
-            run('INSERT INTO candidate_social_links (user_id, label, url) VALUES (?, ?, ?)', [userId, link.label, link.url]);
+            await run('INSERT INTO candidate_social_links (user_id, label, url) VALUES (?, ?, ?)', [userId, link.label, link.url]);
         }
 
-        const updated = queryOne('SELECT * FROM candidate_profiles WHERE user_id = ?', [userId]);
-        res.json(enrichCandidate(updated));
+        const updated = await queryOne('SELECT * FROM candidate_profiles WHERE user_id = ?', [userId]);
+        res.json(await enrichCandidate(updated));
 
     } catch (error) {
         console.error('Update candidate error:', error);
@@ -337,28 +352,28 @@ app.put('/api/candidates/:userId', (req, res) => {
 });
 
 // Admin action
-app.post('/api/candidates/:userId/admin', (req, res) => {
+app.post('/api/candidates/:userId/admin', async (req, res) => {
     try {
         const { userId } = req.params;
         const { action, newStatus, performerId } = req.body;
 
         if (action === 'delete') {
-            run('DELETE FROM candidate_skills WHERE user_id = ?', [userId]);
-            run('DELETE FROM candidate_keywords WHERE user_id = ?', [userId]);
-            run('DELETE FROM candidate_social_links WHERE user_id = ?', [userId]);
-            run('DELETE FROM candidate_documents WHERE user_id = ?', [userId]);
-            run('DELETE FROM candidate_profiles WHERE user_id = ?', [userId]);
-            run('DELETE FROM users WHERE id = ?', [userId]);
+            await run('DELETE FROM candidate_skills WHERE user_id = ?', [userId]);
+            await run('DELETE FROM candidate_keywords WHERE user_id = ?', [userId]);
+            await run('DELETE FROM candidate_social_links WHERE user_id = ?', [userId]);
+            await run('DELETE FROM candidate_documents WHERE user_id = ?', [userId]);
+            await run('DELETE FROM candidate_profiles WHERE user_id = ?', [userId]);
+            await run('DELETE FROM users WHERE id = ?', [userId]);
 
-            run('INSERT INTO audit_log (id, action, performer_id, target_id) VALUES (?, ?, ?, ?)',
+            await run('INSERT INTO audit_log (id, action, performer_id, target_id) VALUES (?, ?, ?, ?)',
                 [uuid(), 'Kandidat gelöscht', performerId || 'unknown', userId]);
 
             res.json({ success: true });
         } else if (action === 'status' && newStatus) {
-            run('UPDATE candidate_profiles SET status = ?, updated_at = datetime("now") WHERE user_id = ?',
+            await run('UPDATE candidate_profiles SET status = ?, updated_at = datetime("now") WHERE user_id = ?',
                 [newStatus, userId]);
 
-            run('INSERT INTO audit_log (id, action, performer_id, target_id) VALUES (?, ?, ?, ?)',
+            await run('INSERT INTO audit_log (id, action, performer_id, target_id) VALUES (?, ?, ?, ?)',
                 [uuid(), `Status geändert zu "${newStatus}"`, performerId || 'unknown', userId]);
 
             res.json({ success: true });
@@ -375,9 +390,9 @@ app.post('/api/candidates/:userId/admin', (req, res) => {
 // DOCUMENT ENDPOINTS
 // =====================================================
 
-app.get('/api/documents/:userId', (req, res) => {
+app.get('/api/documents/:userId', async (req, res) => {
     try {
-        const docs = query('SELECT * FROM candidate_documents WHERE user_id = ?', [req.params.userId]);
+        const docs = await query('SELECT * FROM candidate_documents WHERE user_id = ?', [req.params.userId]);
 
         const result = { userId: req.params.userId, cvPdf: null, certificates: [], qualifications: [] };
 
@@ -395,25 +410,25 @@ app.get('/api/documents/:userId', (req, res) => {
     }
 });
 
-app.put('/api/documents/:userId', (req, res) => {
+app.put('/api/documents/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
         const { cvPdf, certificates, qualifications } = req.body;
 
-        run('DELETE FROM candidate_documents WHERE user_id = ?', [userId]);
+        await run('DELETE FROM candidate_documents WHERE user_id = ?', [userId]);
 
         if (cvPdf) {
-            run('INSERT INTO candidate_documents (user_id, doc_type, file_name, file_data) VALUES (?, ?, ?, ?)',
+            await run('INSERT INTO candidate_documents (user_id, doc_type, file_name, file_data) VALUES (?, ?, ?, ?)',
                 [userId, 'cv', cvPdf.name, cvPdf.data]);
         }
 
         for (const cert of (certificates || [])) {
-            run('INSERT INTO candidate_documents (user_id, doc_type, file_name, file_data) VALUES (?, ?, ?, ?)',
+            await run('INSERT INTO candidate_documents (user_id, doc_type, file_name, file_data) VALUES (?, ?, ?, ?)',
                 [userId, 'certificate', cert.name, cert.data]);
         }
 
         for (const qual of (qualifications || [])) {
-            run('INSERT INTO candidate_documents (user_id, doc_type, file_name, file_data) VALUES (?, ?, ?, ?)',
+            await run('INSERT INTO candidate_documents (user_id, doc_type, file_name, file_data) VALUES (?, ?, ?, ?)',
                 [userId, 'qualification', qual.name, qual.data]);
         }
 
@@ -428,9 +443,9 @@ app.put('/api/documents/:userId', (req, res) => {
 // AUDIT LOG
 // =====================================================
 
-app.get('/api/audit-log', (req, res) => {
+app.get('/api/audit-log', async (req, res) => {
     try {
-        const logs = query('SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT 100');
+        const logs = await query('SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT 100');
         res.json(logs.map(l => ({
             id: l.id,
             action: l.action,

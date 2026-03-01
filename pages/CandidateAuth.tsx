@@ -58,6 +58,9 @@ const CandidateAuth: React.FC<CandidateAuthProps> = ({ onAuthSuccess }) => {
         const result = await authService.login(email, password, UserRole.CANDIDATE);
         if (result.success && result.user) {
           onAuthSuccess(result.user);
+        } else if (result.needsVerification && result.verificationToken) {
+          setVerificationToken(result.verificationToken);
+          setError('');
         } else {
           setError(result.error || 'Anmeldung fehlgeschlagen.');
         }

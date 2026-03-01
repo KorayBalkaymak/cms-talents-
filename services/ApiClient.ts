@@ -42,7 +42,10 @@ class ApiClient {
 
         if (!response.ok) {
             const msg = data?.error || data?.message || (response.status === 404 ? 'Backend nicht erreichbar. Bitte Backend starten: im Ordner "backend" → npm run dev' : `Anfrage fehlgeschlagen (${response.status})`);
-            throw new Error(msg);
+            const err: any = new Error(msg);
+            err.status = response.status;
+            err.data = data;
+            throw err;
         }
 
         return data;
