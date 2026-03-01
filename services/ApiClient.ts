@@ -12,7 +12,8 @@ class ApiClient {
         let response: Response;
         try {
             const controller = new AbortController();
-            const timeoutMs = 12000;
+            // Vercel Cold Start kann >12s dauern → etwas großzügiger, damit Register/Login nicht abbrechen
+            const timeoutMs = 30000;
             const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
             response = await fetch(url, {
@@ -27,7 +28,7 @@ class ApiClient {
         } catch (e) {
             const isAbort = typeof e === 'object' && e !== null && 'name' in e && (e as any).name === 'AbortError';
             throw new Error(isAbort
-              ? 'Anfrage dauert zu lange (Timeout). Bitte Seite neu laden.'
+              ? 'Server startet gerade (Timeout). Bitte in 10 Sekunden erneut versuchen.'
               : 'Backend nicht erreichbar. Bitte im Ordner "backend" starten: npm run dev'
             );
         }

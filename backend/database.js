@@ -4,13 +4,11 @@
 // - Vercel/Prod: Optional Postgres (persistenter Storage)
 // =====================================================
 
-import initSqlJs from 'sql.js';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import bcrypt from 'bcryptjs';
 import { v4 as uuid } from 'uuid';
-import { Pool } from 'pg';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -53,6 +51,7 @@ function normalizeSqlForPostgres(sql) {
 }
 
 async function initPostgres() {
+  const { Pool } = await import('pg');
   if (!pool) {
     pool = new Pool({ connectionString: POSTGRES_URL, ssl: { rejectUnauthorized: false } });
   }
@@ -141,6 +140,7 @@ async function initPostgres() {
 }
 
 async function initSqlite() {
+  const { default: initSqlJs } = await import('sql.js');
   SQL = await initSqlJs();
 
   if (IS_VERCEL) {
@@ -252,6 +252,10 @@ async function initSqlite() {
 }
 
 async function initDatabase() {
+  // Auf Vercel muss die DB persistent sein, sonst gehen Register/Login nach Cold Start kaputt
+  if (IS_VERCEL && !USE_POSTGRES) {
+    throw new Error('POSTGRES_URL/DATABASE_URL fehlt. Bitte eine Postgres-Datenbank in Vercel verbinden und als Environment Variable setzen.');
+  }
   if (USE_POSTGRES) {
     await initPostgres();
   } else {

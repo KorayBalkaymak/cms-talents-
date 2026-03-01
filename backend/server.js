@@ -18,13 +18,25 @@ app.use(express.json({ limit: '50mb' }));
 
 // Wait for database to initialize
 let dbReady = false;
-initDatabase().then(() => {
-    dbReady = true;
-});
+let dbInitError = null;
+initDatabase()
+    .then(() => {
+        dbReady = true;
+    })
+    .catch((e) => {
+        dbInitError = e;
+        console.error('[DB] init failed:', e);
+    });
 
 // Database ready check middleware
 app.use((req, res, next) => {
     if (!dbReady) {
+        if (dbInitError) {
+            return res.status(500).json({
+                error: 'Backend ist nicht korrekt konfiguriert (Datenbank).',
+                details: String(dbInitError?.message || dbInitError)
+            });
+        }
         return res.status(503).json({ error: 'Database initializing...' });
     }
     next();
