@@ -67,7 +67,13 @@ async function initPostgres() {
   dbMode = 'postgres';
 
   // Verbindung früh prüfen (sonst wirkt es im Frontend wie "Timeout")
-  await pool.query('SELECT 1');
+  try {
+    await pool.query('SELECT 1');
+  } catch (e) {
+    const msg = e && typeof e === 'object' && 'message' in e ? String(e.message) : String(e);
+    const code = e && typeof e === 'object' && 'code' in e ? String(e.code) : '';
+    throw new Error(`Postgres connection failed${code ? ` (${code})` : ''}: ${msg}`);
+  }
 
   // Schema (Postgres)
   await pool.query(`

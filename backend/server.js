@@ -34,14 +34,29 @@ app.use((req, res, next) => {
         return res.status(dbReady ? 200 : (dbInitError ? 500 : 503)).json({
             ok: dbReady,
             dbReady,
-            error: dbInitError ? String(dbInitError?.message || dbInitError) : undefined
+            error: dbInitError ? String(dbInitError?.message || dbInitError) : undefined,
+            env: {
+                VERCEL: !!process.env.VERCEL,
+                POSTGRES_URL: !!process.env.POSTGRES_URL,
+                DATABASE_URL: !!process.env.DATABASE_URL,
+                PRISMA_DATABASE_URL: !!process.env.PRISMA_DATABASE_URL
+            }
         });
     }
     if (!dbReady) {
         if (dbInitError) {
+            const details = String(dbInitError?.message || dbInitError);
+            const code = (dbInitError && typeof dbInitError === 'object' && 'code' in dbInitError) ? String(dbInitError.code) : undefined;
             return res.status(500).json({
                 error: 'Backend ist nicht korrekt konfiguriert (Datenbank).',
-                details: String(dbInitError?.message || dbInitError),
+                details,
+                code,
+                env: {
+                    VERCEL: !!process.env.VERCEL,
+                    POSTGRES_URL: !!process.env.POSTGRES_URL,
+                    DATABASE_URL: !!process.env.DATABASE_URL,
+                    PRISMA_DATABASE_URL: !!process.env.PRISMA_DATABASE_URL
+                },
                 hint: 'Für Vercel: POSTGRES_URL (oder DATABASE_URL) setzen (Vercel Postgres verbinden). Ohne persistente DB verschwinden Accounts bei Cold Starts/Reload.'
             });
         }
