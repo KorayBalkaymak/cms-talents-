@@ -22,6 +22,9 @@ const POSTGRES_URL =
 
 const IS_VERCEL = !!process.env.VERCEL;
 const USE_POSTGRES = !!POSTGRES_URL;
+const ALLOW_EPHEMERAL_DB =
+  String(process.env.ALLOW_EPHEMERAL_DB || '').toLowerCase() === 'true' ||
+  String(process.env.ALLOW_EPHEMERAL_DB || '') === '1';
 
 let db = null;          // sql.js Database
 let SQL = null;         // sql.js module
@@ -253,8 +256,10 @@ async function initSqlite() {
 
 async function initDatabase() {
   // Auf Vercel muss die DB persistent sein, sonst gehen Register/Login nach Cold Start kaputt
-  if (IS_VERCEL && !USE_POSTGRES) {
-    throw new Error('POSTGRES_URL/DATABASE_URL fehlt. Bitte eine Postgres-Datenbank in Vercel verbinden und als Environment Variable setzen.');
+  if (IS_VERCEL && !USE_POSTGRES && !ALLOW_EPHEMERAL_DB) {
+    throw new Error(
+      'POSTGRES_URL/DATABASE_URL fehlt. Bitte Vercel Postgres verbinden (oder temporär ALLOW_EPHEMERAL_DB=true setzen).'
+    );
   }
   if (USE_POSTGRES) {
     await initPostgres();
