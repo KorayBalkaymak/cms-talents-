@@ -14,11 +14,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const DB_PATH = join(__dirname, 'cms_talents.db');
 
-const POSTGRES_URL =
+const POSTGRES_URL = String(
   process.env.POSTGRES_URL ||
   process.env.POSTGRES_URL_NON_POOLING ||
   process.env.DATABASE_URL ||
-  '';
+  process.env.PRISMA_DATABASE_URL ||
+  ''
+).trim();
 
 const IS_VERCEL = !!process.env.VERCEL;
 const USE_POSTGRES = !!POSTGRES_URL;
