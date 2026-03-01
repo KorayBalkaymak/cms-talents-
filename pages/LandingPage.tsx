@@ -111,7 +111,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                             key={i}
                             className={`aspect-square rounded-lg flex items-center justify-center ${i % 3 === 1 ? 'bg-orange-500' : 'bg-white/10 border border-white/20'}`}
                           >
-                            {i === 2 && <span className="text-sm font-semibold text-orange-200">CT</span>}
+                            {i === 2 && (
+                              <img
+                                src="/cms-talents-logo.jpg"
+                                alt="CMS Talents"
+                                className="h-6 w-auto object-contain opacity-90"
+                              />
+                            )}
                           </div>
                         ))}
                       </div>
@@ -198,9 +204,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
       <footer className="bg-[#101B31] border-t border-white/10 py-12">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center text-white font-semibold text-sm">
-              CT
-            </div>
+            <img src="/cms-talents-logo.jpg" alt="CMS Talents" className="h-8 w-auto object-contain" />
             <span className="text-sm font-medium text-white/70">CMS Logo © 2026</span>
           </div>
           <div className="flex gap-10 text-sm">

@@ -94,9 +94,7 @@ const CandidateAuth: React.FC<CandidateAuthProps> = ({ onAuthSuccess }) => {
           </div>
 
           <div className="flex justify-center mb-8">
-            <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-orange-500 text-3xl font-black italic shadow-2xl shadow-slate-900/20">
-              CT
-            </div>
+            <img src="/cms-talents-logo.jpg" alt="CMS Talents" className="h-12 w-auto object-contain" />
           </div>
           <h2 className="text-3xl font-black text-slate-900 text-center mb-2 tracking-tighter">
             {isLogin ? 'Willkommen zurück' : 'Kandidat werden'}

@@ -128,7 +128,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       <aside className="w-64 bg-slate-900 text-slate-300 hidden md:flex flex-col">
         <div className="p-6">
           <div className="flex items-center gap-3 text-white mb-8">
-            <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center font-black italic shadow-lg text-sm">CT</div>
             <img src="/cms-talents-logo.jpg" alt="CMS Talents" className="h-8 w-auto object-contain" />
           </div>
           <nav className="space-y-2">

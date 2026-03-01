@@ -209,7 +209,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
       <header className="bg-slate-900 h-20 sticky top-0 z-30 shadow-xl border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center font-black text-white italic shadow-lg">CT</div>
+            <img src="/cms-talents-logo.jpg" alt="CMS Talents" className="h-10 w-auto object-contain" />
             <div className="flex flex-col">
               <span className="font-black text-white leading-none text-sm tracking-tight uppercase">CMS Talents | Profil</span>
               <span className="text-[10px] text-orange-500 font-bold tracking-widest uppercase mt-1">Status: {formData.isPublished ? 'Live' : 'Entwurf'}</span>

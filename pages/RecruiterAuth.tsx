@@ -79,8 +79,8 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-20"></div>
 
         <div className="relative z-10 max-w-md text-center">
-          <div className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-xl shadow-orange-900/40">
-            <span className="text-2xl font-black text-white italic tracking-tighter">CT</span>
+          <div className="mb-6 inline-flex items-center justify-center">
+            <img src="/cms-talents-logo.jpg" alt="CMS Talents" className="h-12 w-auto object-contain" />
           </div>
           <h1 className="text-3xl font-black text-white tracking-tight mb-4 leading-tight">
             Willkommen im <br />
