@@ -4,6 +4,7 @@
 // - Vercel/Prod: Optional Postgres (persistenter Storage)
 // =====================================================
 
+import dns from 'node:dns';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -53,6 +54,9 @@ function normalizeSqlForPostgres(sql) {
 }
 
 async function initPostgres() {
+  // In Serverless Umgebungen kommt es häufig zu IPv6-Timeouts – Prisma DB ist i.d.R. via IPv4 erreichbar.
+  try { dns.setDefaultResultOrder('ipv4first'); } catch { /* ignore */ }
+
   const { Pool } = await import('pg');
   if (!pool) {
     pool = new Pool({
@@ -61,7 +65,8 @@ async function initPostgres() {
       // Serverless: schnell failen statt ewig hängen
       max: 2,
       idleTimeoutMillis: 10_000,
-      connectionTimeoutMillis: 10_000
+      connectionTimeoutMillis: 30_000,
+      keepAlive: true
     });
   }
   dbMode = 'postgres';
