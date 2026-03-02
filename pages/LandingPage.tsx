@@ -124,10 +124,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                             bg: 'bg-white/10 border border-white/20',
                             fg: 'text-orange-300',
                             icon: (
-                              <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
-                                <path d="M8.2 12.4 5.7 9.9 3 12.6l2.2 2.2h2.4l2.7-2.7c.7-.7 1.9-.7 2.6 0l.6.6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M15.8 12.4 18.3 9.9 21 12.6l-2.2 2.2h-2.4l-2.7-2.7c-.7-.7-1.9-.7-2.6 0l-.5.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M7.6 14.8 10 17.2c1.1 1.1 2.9 1.1 4 0l2.4-2.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="m11 17 2 2a1 1 0 1 0 3-3" />
+                                <path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4" />
+                                <path d="m21 3 1 11h-2" />
+                                <path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3" />
+                                <path d="M3 4h8" />
                               </svg>
                             )
                           },
@@ -136,11 +138,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                             bg: 'bg-white/10 border border-white/20',
                             fg: 'text-white/85',
                             icon: (
-                              <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
-                                <path d="M12 10.2a2.4 2.4 0 1 0 0-4.8 2.4 2.4 0 0 0 0 4.8Z" stroke="currentColor" strokeWidth="2" />
-                                <path d="M6.5 19.5a5.5 5.5 0 0 1 11 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                <path d="M5 14.5h14a2 2 0 0 1 2 2v1.5H3V16.5a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-                                <path d="M9 17.8h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
+                              <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                {/* Laptop */}
+                                <path d="M18 5a2 2 0 0 1 2 2v8.526a2 2 0 0 0 .212.897l1.068 2.127a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45l1.068-2.127A2 2 0 0 0 4 15.526V7a2 2 0 0 1 2-2z" />
+                                <path d="M20.054 15.987H3.946" />
+                                {/* Person on screen */}
+                                <circle cx="12" cy="10" r="2.1" />
+                                <path d="M9.2 13.3a3.6 3.6 0 0 1 5.6 0" />
                               </svg>
                             )
                           },
