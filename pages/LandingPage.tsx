@@ -93,7 +93,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
               </div>
 
               {/* Product preview card – premium look */}
-              <div className="relative hidden lg:block">
+              <div className="relative mt-12 lg:mt-0">
                 <div className="relative rounded-2xl bg-white/5 border border-white/10 p-px shadow-2xl">
                   <div className="rounded-2xl bg-[#101B31]/80 overflow-hidden border border-white/10">
                     <div className="p-6 border-b border-white/10">
@@ -106,18 +106,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                         <span className="text-xs font-medium text-white/60 ml-2">Talent-Marktplatz</span>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
-                        {[1, 2, 3, 4, 5, 6].map((i) => (
+                        {[
+                          'Finde Talente, die wirklich passen – schneller, smarter, sicherer.',
+                          'Dein nächster Top‑Hire ist nur einen Klick entfernt.',
+                          'Qualität statt Masse: Entdecke geprüfte Profile mit Substanz.',
+                          'Matching, das Zeit spart – und Entscheidungen leichter macht.',
+                          'Talente sichtbar machen. Chancen verbinden. Karrieren starten.',
+                          'Vom Profil zum perfekten Match – transparent und effizient.'
+                        ].map((text, idx) => (
                           <div
-                            key={i}
-                            className={`aspect-square rounded-lg flex items-center justify-center ${i % 3 === 1 ? 'bg-orange-500' : 'bg-white/10 border border-white/20'}`}
+                            key={text}
+                            className={`aspect-square rounded-lg flex items-center justify-center p-3 text-center ${idx % 3 === 0 ? 'bg-orange-500' : 'bg-white/10 border border-white/20'}`}
                           >
-                            {i === 2 && (
-                              <img
-                                src="/cms-talents-logo.jpg"
-                                alt="CMS Talents"
-                                className="h-6 w-auto object-contain opacity-90"
-                              />
-                            )}
+                            <span className={`text-[10px] sm:text-xs font-semibold leading-snug ${idx % 3 === 0 ? 'text-white' : 'text-white/85'}`}>
+                              {text}
+                            </span>
                           </div>
                         ))}
                       </div>
