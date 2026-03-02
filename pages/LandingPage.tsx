@@ -125,23 +125,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                             fg: 'text-orange-300',
                             icon: (
                               <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
-                                <path d="M7.5 12.5 5 10.5 2.5 13l2.5 2.5h2.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M16.5 12.5 19 10.5 21.5 13 19 15.5h-2.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M7.2 15.5 10 18.2c1.1 1.1 2.9 1.1 4 0l2.8-2.7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M9 13.2 11 11.2c.6-.6 1.4-.6 2 0l2 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M8.2 12.4 5.7 9.9 3 12.6l2.2 2.2h2.4l2.7-2.7c.7-.7 1.9-.7 2.6 0l.6.6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M15.8 12.4 18.3 9.9 21 12.6l-2.2 2.2h-2.4l-2.7-2.7c-.7-.7-1.9-.7-2.6 0l-.5.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M7.6 14.8 10 17.2c1.1 1.1 2.9 1.1 4 0l2.4-2.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                               </svg>
                             )
                           },
                           {
-                            key: 'customers',
+                            key: 'laptop-worker',
                             bg: 'bg-white/10 border border-white/20',
                             fg: 'text-white/85',
                             icon: (
                               <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
-                                <path d="M15 11a3 3 0 1 0-6 0 3 3 0 0 0 6 0Z" stroke="currentColor" strokeWidth="2" />
-                                <path d="M4 21a8 8 0 0 1 16 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                <path d="M8.5 11.5c-1.6.3-2.8 1.6-3 3.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
-                                <path d="M15.5 11.5c1.6.3 2.8 1.6 3 3.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
+                                <path d="M12 10.2a2.4 2.4 0 1 0 0-4.8 2.4 2.4 0 0 0 0 4.8Z" stroke="currentColor" strokeWidth="2" />
+                                <path d="M6.5 19.5a5.5 5.5 0 0 1 11 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                <path d="M5 14.5h14a2 2 0 0 1 2 2v1.5H3V16.5a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                                <path d="M9 17.8h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
                               </svg>
                             )
                           },
