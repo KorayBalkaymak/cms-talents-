@@ -107,20 +107,88 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         {[
-                          'Finde Talente, die wirklich passen – schneller, smarter, sicherer.',
-                          'Dein nächster Top‑Hire ist nur einen Klick entfernt.',
-                          'Qualität statt Masse: Entdecke geprüfte Profile mit Substanz.',
-                          'Matching, das Zeit spart – und Entscheidungen leichter macht.',
-                          'Talente sichtbar machen. Chancen verbinden. Karrieren starten.',
-                          'Vom Profil zum perfekten Match – transparent und effizient.'
-                        ].map((text, idx) => (
+                          {
+                            key: 'work',
+                            bg: 'bg-orange-500',
+                            fg: 'text-white',
+                            icon: (
+                              <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
+                                <path d="M9 7V6a3 3 0 0 1 3-3h0a3 3 0 0 1 3 3v1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                <path d="M4 8h16v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V8Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                                <path d="M4 12h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                              </svg>
+                            )
+                          },
+                          {
+                            key: 'handshake',
+                            bg: 'bg-white/10 border border-white/20',
+                            fg: 'text-orange-300',
+                            icon: (
+                              <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
+                                <path d="M7.5 12.5 5 10.5 2.5 13l2.5 2.5h2.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M16.5 12.5 19 10.5 21.5 13 19 15.5h-2.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M7.2 15.5 10 18.2c1.1 1.1 2.9 1.1 4 0l2.8-2.7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                <path d="M9 13.2 11 11.2c.6-.6 1.4-.6 2 0l2 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )
+                          },
+                          {
+                            key: 'customers',
+                            bg: 'bg-white/10 border border-white/20',
+                            fg: 'text-white/85',
+                            icon: (
+                              <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
+                                <path d="M15 11a3 3 0 1 0-6 0 3 3 0 0 0 6 0Z" stroke="currentColor" strokeWidth="2" />
+                                <path d="M4 21a8 8 0 0 1 16 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                <path d="M8.5 11.5c-1.6.3-2.8 1.6-3 3.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
+                                <path d="M15.5 11.5c1.6.3 2.8 1.6 3 3.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
+                              </svg>
+                            )
+                          },
+                          {
+                            key: 'search',
+                            bg: 'bg-orange-500',
+                            fg: 'text-white',
+                            icon: (
+                              <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
+                                <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" strokeWidth="2" />
+                                <path d="M16.5 16.5 21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                              </svg>
+                            )
+                          },
+                          {
+                            key: 'construction',
+                            bg: 'bg-white/10 border border-white/20',
+                            fg: 'text-white/85',
+                            icon: (
+                              <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
+                                <path d="M5 10a7 7 0 0 1 14 0v2H5v-2Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                                <path d="M9 10V7.5a3 3 0 0 1 6 0V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                <path d="M6 12v6a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3v-6" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                              </svg>
+                            )
+                          },
+                          {
+                            key: 'industry',
+                            bg: 'bg-white/10 border border-white/20',
+                            fg: 'text-orange-300',
+                            icon: (
+                              <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
+                                <path d="M4 21V9l6 3V9l6 3V7l4 2v12H4Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                                <path d="M8 21v-4h2v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                <path d="M14 21v-6h2v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                <path d="M18 11v.01" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+                              </svg>
+                            )
+                          }
+                        ].map((item) => (
                           <div
-                            key={text}
-                            className={`aspect-square rounded-lg flex items-center justify-center p-3 text-center ${idx % 3 === 0 ? 'bg-orange-500' : 'bg-white/10 border border-white/20'}`}
+                            key={item.key}
+                            className={`aspect-square rounded-lg flex items-center justify-center ${item.bg}`}
                           >
-                            <span className={`text-[10px] sm:text-xs font-semibold leading-snug ${idx % 3 === 0 ? 'text-white' : 'text-white/85'}`}>
-                              {text}
-                            </span>
+                            <div className={`${item.fg}`}>
+                              {item.icon}
+                            </div>
                           </div>
                         ))}
                       </div>
