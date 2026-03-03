@@ -174,7 +174,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
+    <div className="min-h-screen bg-[#101B31] pb-20">
       {/* Publish Warning Modal */}
       {showPublishWarning && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -206,23 +206,23 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
         </div>
       )}
 
-      <header className="bg-slate-900 h-20 sticky top-0 z-30 shadow-xl border-b border-slate-800">
+      <header className="bg-white h-20 sticky top-0 z-30 shadow-sm border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           <div className="flex items-center gap-4">
             <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-10 w-auto object-contain" />
             <div className="flex flex-col">
-              <span className="font-black text-white leading-none text-sm tracking-tight uppercase">CMS Talents | Profil</span>
-              <span className="text-[10px] text-orange-500 font-bold tracking-widest uppercase mt-1">Status: {formData.isPublished ? 'Live' : 'Entwurf'}</span>
+              <span className="font-black text-slate-900 leading-none text-sm tracking-tight uppercase">CMS Talents | Profil</span>
+              <span className="text-[10px] text-orange-600 font-bold tracking-widest uppercase mt-1">Status: {formData.isPublished ? 'Live' : 'Entwurf'}</span>
             </div>
           </div>
           <div className="flex gap-4">
             <button
               onClick={() => onNavigate('/talents')}
-              className="text-xs font-black text-slate-400 hover:text-white transition-colors uppercase tracking-widest px-4"
+              className="text-xs font-black text-slate-600 hover:text-orange-600 transition-colors uppercase tracking-widest px-4"
             >
               Zum Marktplatz
             </button>
-            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" onClick={onLogout}>Abmelden</Button>
+            <Button variant="ghost" size="sm" className="text-slate-600 hover:text-orange-600" onClick={onLogout}>Abmelden</Button>
             <Button size="sm" variant="primary" className="rounded-xl px-6" onClick={() => handleSubmit(formData.isPublished)} isLoading={isSaving}>Speichern</Button>
           </div>
         </div>
@@ -230,21 +230,23 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
 
       <main className="max-w-4xl mx-auto px-4 mt-12">
         {/* Required fields notice */}
-        <div className="bg-orange-50 border-2 border-orange-100 rounded-2xl p-6 mb-8 flex items-start gap-4">
-          <div className="w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center text-white shrink-0">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8 flex items-start gap-4 shadow-[0_18px_60px_-45px_rgba(0,0,0,0.75)]">
+          <div className="w-10 h-10 bg-orange-500/15 border border-orange-400/25 rounded-xl flex items-center justify-center text-orange-200 shrink-0">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
           <div>
-            <h4 className="font-black text-slate-900">Pflichtfelder</h4>
-            <p className="text-sm text-slate-600">Felder mit <span className="text-orange-600 font-black">*</span> sind erforderlich, um dein Profil zu veröffentlichen.</p>
+            <h4 className="font-black text-white">Pflichtfelder</h4>
+            <p className="text-sm text-white/75">
+              Felder mit <span className="text-orange-300 font-black">*</span> sind erforderlich, um dein Profil zu veröffentlichen.
+            </p>
           </div>
         </div>
 
         <div className="space-y-8">
           {/* Identity Section */}
-          <section className="bg-white p-10 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+          <section className="bg-white p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
             <div className="flex flex-col md:flex-row items-center gap-10">
               <div className="relative">
                 <Avatar
@@ -326,7 +328,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Details Section */}
-          <section className="bg-white p-10 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+          <section className="bg-white p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
             <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
               <span className="w-2 h-8 bg-orange-600 rounded-full"></span>
               BERUFLICHER FOKUS
@@ -361,7 +363,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Skills Section */}
-          <section className="bg-white p-10 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+          <section className="bg-white p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
             <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
               <span className="w-2 h-8 bg-orange-600 rounded-full"></span>
               SKILLS & MATCHING-BOOST (optional)
@@ -404,7 +406,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Social Links Section */}
-          <section className="bg-white p-10 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+          <section className="bg-white p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
             <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
               <span className="w-2 h-8 bg-orange-600 rounded-full"></span>
               SOCIAL LINKS (optional)
@@ -448,7 +450,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Documents Section */}
-          <section className="bg-white p-10 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+          <section className="bg-white p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
             <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
               <span className="w-2 h-8 bg-orange-600 rounded-full"></span>
               DOKUMENTE (optional)
