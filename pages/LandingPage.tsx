@@ -204,19 +204,74 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
         </section>
 
         {/* ─── Zweck der App: dunkelblaue Box auf orangem Hintergrund ─── */}
-        <section className="py-20 md:py-28 bg-orange-500">
-          <div className="max-w-4xl mx-auto px-6">
-            <div className="rounded-2xl bg-[#0a1428] border border-white/10 shadow-2xl shadow-black/20 overflow-hidden">
+        <section className="relative py-20 md:py-28 bg-orange-500 overflow-hidden">
+          {/* Premium overlays */}
+          <div className="absolute inset-0 bg-[radial-gradient(900px_circle_at_20%_20%,rgba(255,255,255,0.20),transparent_55%),radial-gradient(700px_circle_at_80%_30%,rgba(0,0,0,0.18),transparent_55%)] pointer-events-none" />
+          <div className="absolute -top-24 -right-24 w-[520px] h-[520px] rounded-full bg-white/10 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-32 -left-32 w-[620px] h-[620px] rounded-full bg-[#101B31]/30 blur-3xl pointer-events-none" />
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none" />
+
+          <div className="relative max-w-6xl mx-auto px-6">
+            <div className="rounded-3xl bg-[#0a1428]/90 backdrop-blur border border-white/10 shadow-[0_40px_120px_-60px_rgba(0,0,0,0.9)] overflow-hidden">
               <div className="p-10 md:p-14">
-                <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight mb-6 text-center">
-                  Der Zweck von CMS Logo
-                </h2>
-                <p className="text-lg text-white/90 leading-relaxed mb-6 text-center">
-                  CMS Logo ist eine Recruiting-Plattform, die <span className="text-orange-400 font-semibold">hochqualifizierte Fachkräfte</span> mit <span className="text-orange-400 font-semibold">passenden Arbeitgebern</span> zusammenbringt. Kandidaten können ihr Profil anlegen, sich sichtbar machen und von Recruitern gefunden werden. Arbeitgeber und Recruiter nutzen die Plattform, um gezielt nach Talenten zu suchen und den Recruiting-Prozess effizient zu steuern.
-                </p>
-                <p className="text-base text-white/75 leading-relaxed text-center">
-                  Im Mittelpunkt stehen Qualität, Vertrauen und ein transparentes Matching – damit beide Seiten schnell die richtige Verbindung finden.
-                </p>
+                <div className="flex flex-col items-center text-center mb-10">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-white/90 text-xs font-semibold tracking-wide">
+                    <span className="w-2 h-2 rounded-full bg-orange-400" />
+                    Warum es CMS Logo gibt
+                  </span>
+                  <h2 className="mt-5 text-3xl md:text-4xl font-bold text-white tracking-tight">
+                    Der Zweck von <span className="text-orange-400">CMS Logo</span>
+                  </h2>
+                  <p className="mt-4 max-w-3xl text-lg text-white/85 leading-relaxed">
+                    CMS Logo ist eine Recruiting-Plattform, die <span className="text-orange-300 font-semibold">hochqualifizierte Fachkräfte</span> mit <span className="text-orange-300 font-semibold">passenden Arbeitgebern</span> zusammenbringt.
+                    Kandidaten erstellen ihr Profil, werden sichtbar und können von Recruitern gezielt gefunden werden.
+                  </p>
+                  <p className="mt-4 max-w-3xl text-base text-white/70 leading-relaxed">
+                    Im Mittelpunkt stehen Qualität, Vertrauen und ein transparentes Matching – damit beide Seiten schneller die richtige Verbindung finden.
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-4">
+                  {[
+                    {
+                      title: 'Qualität',
+                      text: 'Strukturierte Profile, klare Signale und Fokus auf Substanz – statt reiner Masse.',
+                      icon: (
+                        <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 2l2.6 6.2L21 9l-5 4.2L17.2 21 12 17.9 6.8 21 8 13.2 3 9l6.4-.8L12 2Z" />
+                        </svg>
+                      ),
+                    },
+                    {
+                      title: 'Vertrauen',
+                      text: 'Datenschutz, Kontrolle über Sichtbarkeit und ein professionelles Umfeld für beide Seiten.',
+                      icon: (
+                        <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 2 20 6v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4Z" />
+                          <path d="m9 12 2 2 4-5" />
+                        </svg>
+                      ),
+                    },
+                    {
+                      title: 'Matching',
+                      text: 'Gezielte Suche, klare Filter und relevante Profile – für schnellere Entscheidungen.',
+                      icon: (
+                        <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" />
+                          <path d="M16.5 16.5 21 21" />
+                        </svg>
+                      ),
+                    },
+                  ].map((item) => (
+                    <div key={item.title} className="group rounded-2xl bg-white/5 border border-white/10 p-6 hover:bg-white/7.5 transition-colors">
+                      <div className="w-11 h-11 rounded-xl bg-orange-500/15 text-orange-300 flex items-center justify-center border border-orange-400/20 group-hover:bg-orange-500/25 transition-colors">
+                        {item.icon}
+                      </div>
+                      <h3 className="mt-4 text-lg font-semibold text-white tracking-tight">{item.title}</h3>
+                      <p className="mt-2 text-sm text-white/70 leading-relaxed">{item.text}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
