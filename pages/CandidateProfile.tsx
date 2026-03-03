@@ -206,10 +206,10 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
         </div>
       )}
 
-      <header className="bg-white h-20 sticky top-0 z-30 shadow-sm border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
+      <header className="bg-white h-16 sm:h-20 sticky top-0 z-30 shadow-sm border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-10 w-auto object-contain" />
+            <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-8 sm:h-10 w-auto object-contain" />
             <div className="flex flex-col">
               <span className="font-black text-slate-900 leading-none text-sm tracking-tight uppercase">CMS Talents | Profil</span>
               <span className="text-[10px] text-orange-600 font-bold tracking-widest uppercase mt-1">Status: {formData.isPublished ? 'Live' : 'Entwurf'}</span>
@@ -228,9 +228,9 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 mt-12">
+      <main className="max-w-4xl mx-auto px-4 mt-8 sm:mt-12">
         {/* Required fields notice */}
-        <div className="bg-orange-500 border border-orange-300/40 rounded-2xl p-6 mb-8 flex items-start gap-4 shadow-[0_18px_60px_-45px_rgba(0,0,0,0.75)]">
+        <div className="bg-orange-500 border border-orange-300/40 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 flex items-start gap-3 sm:gap-4 shadow-[0_18px_60px_-45px_rgba(0,0,0,0.75)]">
           <div className="w-10 h-10 bg-white/15 border border-white/20 rounded-xl flex items-center justify-center text-white shrink-0">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -244,10 +244,10 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </div>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           {/* Identity Section */}
-          <section className="bg-white p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
-            <div className="flex flex-col md:flex-row items-center gap-10">
+          <section className="bg-white p-6 sm:p-8 md:p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
+            <div className="flex flex-col md:flex-row items-center gap-6 sm:gap-8 md:gap-10">
               <div className="relative">
                 <Avatar
                   seed={formData.firstName + formData.lastName || 'user'}
@@ -328,12 +328,12 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Details Section */}
-          <section className="bg-white p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
-            <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
+          <section className="bg-white p-6 sm:p-8 md:p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
+            <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-6 sm:mb-8 flex items-center gap-3">
               <span className="w-2 h-8 bg-orange-600 rounded-full"></span>
               BERUFLICHER FOKUS
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-8 mb-6 sm:mb-8">
               <div>
                 <label className="block text-sm font-bold text-slate-900 mb-1.5">Hauptbranche<RequiredBadge /></label>
                 <Select name="industry" value={formData.industry} onChange={handleChange} error={errors.industry}>
@@ -363,12 +363,12 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Skills Section */}
-          <section className="bg-white p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
-            <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
+          <section className="bg-white p-6 sm:p-8 md:p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
+            <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-6 sm:mb-8 flex items-center gap-3">
               <span className="w-2 h-8 bg-orange-600 rounded-full"></span>
               SKILLS & MATCHING-BOOST (optional)
             </h3>
-            <div className="space-y-8">
+            <div className="space-y-6 sm:space-y-8">
               <div>
                 <Input
                   label="Fachliche Skills"
@@ -395,7 +395,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                       key={kw}
                       type="button"
                       onClick={() => toggleKeyword(kw)}
-                      className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all border-2 ${formData.boostedKeywords.includes(kw) ? 'bg-slate-900 text-orange-500 border-slate-900 shadow-lg' : 'bg-slate-50 text-slate-500 border-transparent hover:border-slate-200'}`}
+                      className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-black transition-all border-2 ${formData.boostedKeywords.includes(kw) ? 'bg-slate-900 text-orange-500 border-slate-900 shadow-lg' : 'bg-slate-50 text-slate-500 border-transparent hover:border-slate-200'}`}
                     >
                       {kw.toUpperCase()}
                     </button>
@@ -406,8 +406,8 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Social Links Section */}
-          <section className="bg-white p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
-            <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
+          <section className="bg-white p-6 sm:p-8 md:p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
+            <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-6 sm:mb-8 flex items-center gap-3">
               <span className="w-2 h-8 bg-orange-600 rounded-full"></span>
               SOCIAL LINKS (optional)
             </h3>
@@ -416,7 +416,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             {formData.socialLinks.length > 0 && (
               <div className="space-y-3 mb-6">
                 {formData.socialLinks.map((link, idx) => (
-                  <div key={idx} className="flex items-center gap-4 bg-slate-50 p-4 rounded-xl">
+                  <div key={idx} className="flex items-center gap-3 sm:gap-4 bg-slate-50 p-3 sm:p-4 rounded-xl">
                     <span className="font-bold text-slate-700">{link.label}:</span>
                     <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline truncate flex-1">{link.url}</a>
                     <button type="button" onClick={() => removeLink(idx)} className="text-slate-400 hover:text-red-500">
@@ -450,13 +450,13 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Documents Section */}
-          <section className="bg-white p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
-            <h3 className="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
+          <section className="bg-white p-6 sm:p-8 md:p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
+            <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-6 sm:mb-8 flex items-center gap-3">
               <span className="w-2 h-8 bg-orange-600 rounded-full"></span>
               DOKUMENTE (optional)
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               <FileUpload
                 label="Lebenslauf (CV)"
                 accept="application/pdf"
