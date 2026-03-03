@@ -230,16 +230,16 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
 
       <main className="max-w-4xl mx-auto px-4 mt-12">
         {/* Required fields notice */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-8 flex items-start gap-4 shadow-[0_18px_60px_-45px_rgba(0,0,0,0.75)]">
-          <div className="w-10 h-10 bg-orange-500/15 border border-orange-400/25 rounded-xl flex items-center justify-center text-orange-200 shrink-0">
+        <div className="bg-orange-500 border border-orange-300/40 rounded-2xl p-6 mb-8 flex items-start gap-4 shadow-[0_18px_60px_-45px_rgba(0,0,0,0.75)]">
+          <div className="w-10 h-10 bg-white/15 border border-white/20 rounded-xl flex items-center justify-center text-white shrink-0">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
           <div>
             <h4 className="font-black text-white">Pflichtfelder</h4>
-            <p className="text-sm text-white/75">
-              Felder mit <span className="text-orange-300 font-black">*</span> sind erforderlich, um dein Profil zu veröffentlichen.
+            <p className="text-sm text-white/90">
+              Felder mit <span className="text-white font-black">*</span> sind erforderlich, um dein Profil zu veröffentlichen.
             </p>
           </div>
         </div>
