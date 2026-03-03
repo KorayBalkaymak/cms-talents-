@@ -22,7 +22,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
               <img
                 src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
                 alt="CMS Talents"
-                className="h-11 md:h-12 w-auto object-contain"
+                className="h-12 md:h-14 w-auto object-contain"
               />
             </button>
             <div className="flex items-center gap-4 md:gap-10">
@@ -73,17 +73,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                 <p className="text-lg text-white/80 leading-relaxed mb-10 animate-fade-in-up-2">
                   CMS Logo verbindet hochqualifizierte Fachkräfte mit führenden Arbeitgebern. Qualität, Vertrauen und passgenaues Matching – ohne Kompromisse.
                 </p>
-                <div className="flex flex-wrap gap-4 animate-fade-in-up-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in-up-3">
                   <Button
                     size="md"
-                    className="rounded-xl px-7 py-3.5 text-sm font-semibold bg-orange-500 hover:bg-orange-400 text-white shadow-lg shadow-orange-500/30 transition-all duration-200"
+                    className="w-full rounded-xl px-7 py-3.5 text-sm font-semibold bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/30 transition-all duration-200 justify-center"
                     onClick={() => onNavigate('/candidate/auth')}
                   >
                     Profil erstellen
                   </Button>
                   <Button
                     size="md"
-                    className="rounded-xl px-7 py-3.5 text-sm font-semibold bg-orange-500 hover:bg-orange-400 text-white shadow-lg shadow-orange-500/30 transition-all duration-200"
+                    className="w-full rounded-xl px-7 py-3.5 text-sm font-semibold bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/30 transition-all duration-200 justify-center"
                     onClick={() => onNavigate('/talents')}
                   >
                     Talente finden
@@ -223,48 +223,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                   <p className="mt-4 max-w-3xl text-base text-white/70 leading-relaxed">
                     Im Mittelpunkt stehen Qualität, Vertrauen und ein transparentes Matching – damit beide Seiten schneller die richtige Verbindung finden.
                   </p>
-                </div>
-
-                <div className="grid md:grid-cols-3 gap-4">
-                  {[
-                    {
-                      title: 'Qualität',
-                      text: 'Strukturierte Profile, klare Signale und Fokus auf Substanz – statt reiner Masse.',
-                      icon: (
-                        <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 2l2.6 6.2L21 9l-5 4.2L17.2 21 12 17.9 6.8 21 8 13.2 3 9l6.4-.8L12 2Z" />
-                        </svg>
-                      ),
-                    },
-                    {
-                      title: 'Vertrauen',
-                      text: 'Datenschutz, Kontrolle über Sichtbarkeit und ein professionelles Umfeld für beide Seiten.',
-                      icon: (
-                        <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 2 20 6v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4Z" />
-                          <path d="m9 12 2 2 4-5" />
-                        </svg>
-                      ),
-                    },
-                    {
-                      title: 'Matching',
-                      text: 'Gezielte Suche, klare Filter und relevante Profile – für schnellere Entscheidungen.',
-                      icon: (
-                        <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" />
-                          <path d="M16.5 16.5 21 21" />
-                        </svg>
-                      ),
-                    },
-                  ].map((item) => (
-                    <div key={item.title} className="group rounded-2xl bg-white/5 border border-white/10 p-6 hover:bg-white/7.5 transition-colors">
-                      <div className="w-11 h-11 rounded-xl bg-orange-500/15 text-orange-300 flex items-center justify-center border border-orange-400/20 group-hover:bg-orange-500/25 transition-colors">
-                        {item.icon}
-                      </div>
-                      <h3 className="mt-4 text-lg font-semibold text-white tracking-tight">{item.title}</h3>
-                      <p className="mt-2 text-sm text-white/70 leading-relaxed">{item.text}</p>
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>
