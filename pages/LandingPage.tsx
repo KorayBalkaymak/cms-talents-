@@ -51,7 +51,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
             </div>
           </div>
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
       </header>
 
       <main>
