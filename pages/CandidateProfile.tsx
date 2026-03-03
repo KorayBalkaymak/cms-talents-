@@ -228,7 +228,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 mt-8 sm:mt-12">
+      <main className="max-w-4xl mx-auto px-4 mt-6 sm:mt-12">
         {/* Required fields notice */}
         <div className="bg-orange-500 border border-orange-300/40 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 flex items-start gap-3 sm:gap-4 shadow-[0_18px_60px_-45px_rgba(0,0,0,0.75)]">
           <div className="w-10 h-10 bg-white/15 border border-white/20 rounded-xl flex items-center justify-center text-white shrink-0">
@@ -244,15 +244,15 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </div>
         </div>
 
-        <div className="space-y-6 sm:space-y-8">
+        <div className="space-y-5 sm:space-y-8">
           {/* Identity Section */}
-          <section className="bg-white p-6 sm:p-8 md:p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
-            <div className="flex flex-col md:flex-row items-center gap-6 sm:gap-8 md:gap-10">
+          <section className="bg-white p-4 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
+            <div className="flex flex-col md:flex-row items-center gap-5 sm:gap-8 md:gap-10">
               <div className="relative">
                 <Avatar
                   seed={formData.firstName + formData.lastName || 'user'}
-                  size="xl"
-                  className="ring-[12px] ring-orange-50"
+                  size="md"
+                  className="w-20 h-20 text-xl sm:w-32 sm:h-32 sm:text-3xl ring-[8px] sm:ring-[12px] ring-orange-50"
                   imageUrl={formData.profileImageUrl}
                 />
                 <label className="absolute -bottom-2 -right-2 p-3 bg-slate-900 text-orange-500 rounded-2xl shadow-xl cursor-pointer hover:bg-slate-800 transition-colors">
@@ -266,7 +266,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                 </label>
               </div>
               <div className="flex-1 w-full space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <label className="block text-sm font-bold text-slate-900 mb-1.5">Vorname<RequiredBadge /></label>
                     <Input name="firstName" value={formData.firstName} onChange={handleChange} placeholder="Max" error={errors.firstName} />
@@ -276,7 +276,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                     <Input name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Mustermann" error={errors.lastName} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
                   <div>
                     <label className="block text-sm font-bold text-slate-900 mb-1.5">Stadt<RequiredBadge /></label>
                     <Input name="city" value={formData.city} onChange={handleChange} placeholder="Berlin" error={errors.city} />
@@ -328,7 +328,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Details Section */}
-          <section className="bg-white p-6 sm:p-8 md:p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
+          <section className="bg-white p-4 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
             <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-6 sm:mb-8 flex items-center gap-3">
               <span className="w-2 h-8 bg-orange-600 rounded-full"></span>
               BERUFLICHER FOKUS
@@ -363,7 +363,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Skills Section */}
-          <section className="bg-white p-6 sm:p-8 md:p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
+          <section className="bg-white p-4 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
             <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-6 sm:mb-8 flex items-center gap-3">
               <span className="w-2 h-8 bg-orange-600 rounded-full"></span>
               SKILLS & MATCHING-BOOST (optional)
@@ -406,7 +406,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Social Links Section */}
-          <section className="bg-white p-6 sm:p-8 md:p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
+          <section className="bg-white p-4 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
             <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-6 sm:mb-8 flex items-center gap-3">
               <span className="w-2 h-8 bg-orange-600 rounded-full"></span>
               SOCIAL LINKS (optional)
@@ -450,7 +450,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Documents Section */}
-          <section className="bg-white p-6 sm:p-8 md:p-10 rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
+          <section className="bg-white p-4 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
             <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-6 sm:mb-8 flex items-center gap-3">
               <span className="w-2 h-8 bg-orange-600 rounded-full"></span>
               DOKUMENTE (optional)
@@ -493,7 +493,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             <Button
               variant="outline"
               size="lg"
-              className="flex-1 py-5 rounded-2xl border-2 border-slate-200"
+              className="flex-1 py-3.5 sm:py-5 rounded-xl sm:rounded-2xl border-2 border-slate-200"
               onClick={() => handleSubmit(false)}
               isLoading={isSaving}
             >
@@ -502,7 +502,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             <Button
               size="lg"
               variant="primary"
-              className="flex-1 py-5 rounded-2xl shadow-2xl shadow-orange-600/20 text-lg uppercase font-black tracking-widest"
+              className="flex-1 py-3.5 sm:py-5 rounded-xl sm:rounded-2xl shadow-2xl shadow-orange-600/20 text-base sm:text-lg uppercase font-black tracking-widest"
               onClick={() => handleSubmit(true)}
               isLoading={isSaving}
             >
