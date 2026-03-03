@@ -204,15 +204,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
         </section>
 
         {/* ─── Zweck der App: dunkelblaue Box auf orangem Hintergrund ─── */}
-        <section className="relative py-20 md:py-28 bg-orange-500 overflow-hidden">
-          {/* Premium overlays */}
-          <div className="absolute inset-0 bg-[radial-gradient(900px_circle_at_20%_20%,rgba(255,255,255,0.20),transparent_55%),radial-gradient(700px_circle_at_80%_30%,rgba(0,0,0,0.18),transparent_55%)] pointer-events-none" />
-          <div className="absolute -top-24 -right-24 w-[520px] h-[520px] rounded-full bg-white/10 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-32 -left-32 w-[620px] h-[620px] rounded-full bg-[#101B31]/30 blur-3xl pointer-events-none" />
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none" />
-
+        <section className="py-20 md:py-28 bg-orange-500">
           <div className="relative max-w-6xl mx-auto px-6">
-            <div className="rounded-3xl bg-[#0a1428]/90 backdrop-blur border border-white/10 shadow-[0_40px_120px_-60px_rgba(0,0,0,0.9)] overflow-hidden">
+            <div className="rounded-3xl bg-[#0a1428] border border-white/10 shadow-2xl overflow-hidden">
               <div className="p-10 md:p-14">
                 <div className="flex flex-col items-center text-center mb-10">
                   <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-white/90 text-xs font-semibold tracking-wide">
