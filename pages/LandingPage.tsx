@@ -122,7 +122,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                           {
                             key: 'handshake',
                             bg: 'bg-white/10 border border-white/20',
-                            fg: 'text-orange-300',
+                            fg: 'text-white',
                             icon: (
                               <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="m11 17 2 2a1 1 0 1 0 3-3" />
@@ -174,7 +174,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                           {
                             key: 'industry',
                             bg: 'bg-white/10 border border-white/20',
-                            fg: 'text-orange-300',
+                            fg: 'text-white',
                             icon: (
                               <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
                                 <path d="M4 21V9l6 3V9l6 3V7l4 2v12H4Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
