@@ -128,7 +128,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       <aside className="w-64 bg-slate-900 text-slate-300 hidden md:flex flex-col">
         <div className="p-6">
           <div className="flex items-center gap-3 text-white mb-8">
-            <img src="/cms-talents-logo.jpg" alt="CMS Talents" className="h-8 w-auto object-contain" />
+            <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-8 w-auto object-contain" />
           </div>
           <nav className="space-y-2">
             <button onClick={() => setActiveTab('candidates')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs transition-all border ${activeTab === 'candidates' ? 'bg-slate-800 text-orange-500 border-slate-700' : 'text-slate-500 border-transparent hover:bg-slate-800 hover:text-white'}`}>

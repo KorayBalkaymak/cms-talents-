@@ -80,7 +80,7 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
 
         <div className="relative z-10 max-w-md text-center">
           <div className="mb-6 inline-flex items-center justify-center">
-            <img src="/cms-talents-logo.jpg" alt="CMS Talents" className="h-12 w-auto object-contain" />
+            <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-12 w-auto object-contain" />
           </div>
           <h1 className="text-3xl font-black text-white tracking-tight mb-4 leading-tight">
             Willkommen im <br />

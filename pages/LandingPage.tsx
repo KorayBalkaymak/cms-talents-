@@ -20,7 +20,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
               className="flex items-center gap-3 group"
             >
               <img
-                src="/cms-talents-logo.jpg"
+                src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
                 alt="CMS Talents"
                 className="h-11 md:h-12 w-auto object-contain"
               />
@@ -326,7 +326,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
       <footer className="bg-[#101B31] border-t border-white/10 py-12">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <img src="/cms-talents-logo.jpg" alt="CMS Talents" className="h-8 w-auto object-contain" />
+            <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-8 w-auto object-contain" />
             <span className="text-sm font-medium text-white/70">CMS Logo © 2026</span>
           </div>
           <div className="flex gap-10 text-sm">
