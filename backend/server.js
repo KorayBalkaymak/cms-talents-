@@ -47,9 +47,24 @@ async function ensureAllowlistedRecruiters() {
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
+// Vercel: Request-Pfad kann ohne /api ankommen (z. B. /auth/register) – für Routen-Matching normalisieren
+if (IS_VERCEL) {
+    app.use((req, res, next) => {
+        const p = req.path || req.url?.split('?')[0] || '';
+        if (p && p !== '/' && !p.startsWith('/api')) {
+            const q = req.originalUrl?.indexOf('?');
+            req.url = '/api' + p + (q >= 0 ? req.originalUrl.substring(q) : '');
+        }
+        next();
+    });
+}
+
 // Wait for database to initialize
 let dbReady = false;
 let dbInitError = null;
+let dbReadyResolve;
+const dbReadyPromise = new Promise((resolve) => { dbReadyResolve = resolve; });
+
 initDatabase()
     .then(async () => {
         try {
@@ -58,14 +73,18 @@ initDatabase()
             console.error('[RecruiterSeed] failed:', e);
         }
         dbReady = true;
+        if (dbReadyResolve) dbReadyResolve();
     })
     .catch((e) => {
         dbInitError = e;
         console.error('[DB] init failed:', e);
+        if (dbReadyResolve) dbReadyResolve(); // Auflösen, damit wartende Requests die Fehlerantwort bekommen
     });
 
-// Database ready check middleware
-app.use((req, res, next) => {
+const DB_WAIT_MS = 25000; // Cold Start (z. B. Vercel): bis zu 25s auf DB warten
+
+// Database ready check middleware – wartet bei Cold Start auf DB, damit Registrierung/Login funktioniert
+app.use(async (req, res, next) => {
     if (req.path === '/api/health') {
         return res.status(dbReady ? 200 : (dbInitError ? 500 : 503)).json({
             ok: dbReady,
@@ -80,23 +99,45 @@ app.use((req, res, next) => {
         });
     }
     if (!dbReady) {
+        try {
+            await Promise.race([
+                dbReadyPromise,
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), DB_WAIT_MS))
+            ]);
+        } catch (_) {
+            // Timeout oder Promise abgeschlossen mit Fehler
+        }
+    }
+    if (!dbReady) {
         if (dbInitError) {
             const details = String(dbInitError?.message || dbInitError);
             const code = (dbInitError && typeof dbInitError === 'object' && 'code' in dbInitError) ? String(dbInitError.code) : undefined;
+            const onVercel = !!process.env.VERCEL;
+            const hasDbUrl = !!(process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_URL_NON_POOLING || process.env.PRISMA_DATABASE_URL);
+            let errorMessage;
+            if (onVercel && !hasDbUrl) {
+                errorMessage = 'DATABASE_URL kommt auf Vercel nicht an. Bitte: (1) Vercel → Projekt → Settings → Environment Variables. (2) Name: DATABASE_URL, Value: Ihre Supabase-URL (Transaction Pooler, Port 6543). (3) Für Production und Preview aktivieren, Speichern. (4) Deployments → bei letztem Deployment „Redeploy“ klicken.';
+            } else if (onVercel && hasDbUrl) {
+                errorMessage = 'Datenbank-Verbindung schlägt fehl (Supabase). Prüfen: Passwort in DATABASE_URL korrekt? Supabase-Projekt läuft? Details: ' + details;
+            } else if (!onVercel) {
+                errorMessage = 'Backend (Datenbank) nicht konfiguriert. Lokal: .env mit DATABASE_URL anlegen und Backend neu starten.';
+            } else {
+                errorMessage = 'Datenbank nicht erreichbar. Bitte DATABASE_URL oder POSTGRES_URL in Vercel (Environment Variables) setzen und neu deployen.';
+            }
             return res.status(500).json({
-                error: 'Backend ist nicht korrekt konfiguriert (Datenbank).',
+                error: errorMessage,
                 details,
                 code,
                 env: {
-                    VERCEL: !!process.env.VERCEL,
-                    POSTGRES_URL: !!process.env.POSTGRES_URL,
-                    DATABASE_URL: !!process.env.DATABASE_URL,
-                    PRISMA_DATABASE_URL: !!process.env.PRISMA_DATABASE_URL
+                    VERCEL: onVercel,
+                    DATABASE_URL_set: !!process.env.DATABASE_URL,
+                    POSTGRES_URL_set: !!process.env.POSTGRES_URL,
+                    PRISMA_DATABASE_URL_set: !!process.env.PRISMA_DATABASE_URL
                 },
-                hint: 'Für Vercel: POSTGRES_URL (oder DATABASE_URL) setzen (Vercel Postgres verbinden). Ohne persistente DB verschwinden Accounts bei Cold Starts/Reload.'
+                hint: onVercel ? 'Health-Check: Diese App-URL/api/health im Browser öffnen – zeigt ob DATABASE_URL ankommt.' : 'Für Vercel: POSTGRES_URL oder DATABASE_URL setzen.'
             });
         }
-        return res.status(503).json({ error: 'Database initializing...' });
+        return res.status(503).json({ error: 'Server startet noch. Bitte in wenigen Sekunden erneut versuchen.' });
     }
     next();
 });
@@ -116,9 +157,10 @@ function tokenExpiryHours(hours = 24) {
 }
 
 // Register new user (Account erst nach E-Mail-Bestätigung nutzbar)
-app.post('/api/auth/register', async (req, res) => {
+async function handleRegister(req, res) {
     try {
-        const { email, password, role } = req.body;
+        const { email, password, role: bodyRole } = req.body || {};
+        const role = (bodyRole && ['candidate', 'recruiter'].includes(bodyRole)) ? bodyRole : 'candidate';
 
         if (!email || !password) {
             return res.status(400).json({ error: 'Email und Passwort erforderlich' });
@@ -129,9 +171,6 @@ app.post('/api/auth/register', async (req, res) => {
         }
         if (password.length < 8) {
             return res.status(400).json({ error: 'Passwort muss mindestens 8 Zeichen haben' });
-        }
-        if (!['candidate', 'recruiter'].includes(role)) {
-            return res.status(400).json({ error: 'Ungültige Rolle' });
         }
 
         if (role === 'recruiter') {
@@ -192,7 +231,9 @@ app.post('/api/auth/register', async (req, res) => {
         console.error('Register error:', error);
         res.status(500).json({ error: 'Registrierung fehlgeschlagen' });
     }
-});
+}
+app.post('/api/auth/register', (req, res) => handleRegister(req, res));
+app.post('/auth/register', (req, res) => handleRegister(req, res)); // Vercel: Pfad oft ohne /api
 
 // E-Mail bestätigen (Link mit Token)
 app.get('/api/auth/verify-email', async (req, res) => {
