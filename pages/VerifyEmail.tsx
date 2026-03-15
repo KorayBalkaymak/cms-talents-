@@ -10,7 +10,7 @@ const VerifyEmail: React.FC<{ onNavigate: (path: string) => void }> = ({ onNavig
     const hash = window.location.hash || '';
     const query = hash.includes('?') ? hash.split('?')[1] : '';
     const params = new URLSearchParams(query);
-    const token = params.get('token');
+    const token = (params.get('token') || '').trim();
 
     if (!token) {
       setStatus('error');

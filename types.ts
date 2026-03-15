@@ -71,6 +71,8 @@ export interface CandidateProfile {
   about?: string;           // OPTIONAL - Kurz-Bio (max 500 chars)
   skills: string[];         // OPTIONAL - Array, can be empty
   boostedKeywords: string[]; // OPTIONAL - Sichtbarkeits-Booster
+  isSubmitted?: boolean;     // OPTIONAL - zur Recruiter-Prüfung eingereicht
+  cvReviewedAt?: string | null; // OPTIONAL - Recruiter hat CV geprüft
 
   // --- OPTIONAL MEDIA ---
   profileImageUrl?: string; // OPTIONAL - Base64 oder URL

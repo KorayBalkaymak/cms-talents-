@@ -5,16 +5,18 @@ import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea
 import { candidateService } from '../services/CandidateService';
 import { auditService } from '../services/AuditService';
 import { INDUSTRIES, AVAILABILITY_OPTIONS } from '../constants';
+import { documentService } from '../services/DocumentService';
 
 interface RecruiterDashboardProps {
   user: User;
   candidates: CandidateProfile[];
-  onAdminAction: (userUuid: string, action: 'delete' | 'status', newStatus?: CandidateStatus, performerId?: string) => void;
+  onAdminAction: (userUuid: string, action: 'delete' | 'status' | 'publish' | 'cv_reviewed', newStatus?: CandidateStatus, performerId?: string) => Promise<void> | void;
   onUpdateCandidate?: (candidate: CandidateProfile) => void;
+  onRefreshCandidates?: () => Promise<void> | void;
   onLogout: () => void;
 }
 
-const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidates, onAdminAction, onUpdateCandidate, onLogout }) => {
+const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidates, onAdminAction, onUpdateCandidate, onRefreshCandidates, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
   const [candidateDocs, setCandidateDocs] = useState<CandidateDocuments | null>(null);
@@ -22,6 +24,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [modalTab, setModalTab] = useState('profile');
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [isLoadingAudit, setIsLoadingAudit] = useState(false);
+  const [isSavingDocs, setIsSavingDocs] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [docError, setDocError] = useState<string | null>(null);
 
   // Document Preview State
   const [previewDoc, setPreviewDoc] = useState<{ name: string; data: string } | null>(null);
@@ -41,6 +46,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     }
   }, [activeTab, candidates]);
 
+  useEffect(() => {
+    if (!selectedCandidate) return;
+    const fresh = candidates.find((c) => c.userId === selectedCandidate.userId);
+    if (fresh) setSelectedCandidate(fresh);
+  }, [candidates, selectedCandidate]);
+
   const loadAuditLogs = async () => {
     setIsLoadingAudit(true);
     try {
@@ -49,13 +60,31 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     } catch (e) { console.error(e); } finally { setIsLoadingAudit(false); }
   };
 
-  const filtered = candidates.filter(c =>
+  const isAdmin = user.role === UserRole.ADMIN;
+  // Recruiter dürfen NICHT Stammdaten/Skills/Links bearbeiten (nur Admin).
+  const canEdit = isAdmin;
+
+  // Recruiter sollen nicht alle Entwürfe/leer angelegte Profile sehen.
+  // Sichtbar: eingereicht ODER bereits veröffentlicht. Admins sehen alles.
+  const visibleCandidates = isAdmin
+    ? candidates
+    : candidates.filter((c) => !!c.isSubmitted || !!c.isPublished || c.status === CandidateStatus.ACTIVE);
+
+  const filtered = visibleCandidates
+    .slice()
+    .sort((a, b) => {
+      // Show submitted first
+      const aSub = !!a.isSubmitted;
+      const bSub = !!b.isSubmitted;
+      if (aSub && !bSub) return -1;
+      if (bSub && !aSub) return 1;
+      return 0;
+    })
+    .filter(c =>
     `${c.firstName} ${c.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.industry.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.skills.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()))
   );
-
-  const isAdmin = user.role === UserRole.ADMIN;
 
   const handleViewCandidate = async (candidate: CandidateProfile) => {
     setSelectedCandidate(candidate);
@@ -64,6 +93,166 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     setModalTab('profile');
     const docs = await candidateService.getDocuments(candidate.userId);
     setCandidateDocs(docs || null);
+    setDocError(null);
+  };
+
+  const canShowPublishFor = (c: CandidateProfile | null) => {
+    if (!c) return false;
+    if (c.isPublished) return false;
+    // Normal: eingereicht → freigeben
+    if (c.isSubmitted) return true;
+    // Legacy: aktiv aber nicht published → freigeben ermöglichen
+    if (c.status === CandidateStatus.ACTIVE) return true;
+    return false;
+  };
+
+  const publishDisabledReason = (c: CandidateProfile | null) => {
+    if (!c) return 'Bitte Kandidat öffnen.';
+    if (isPublishing) return 'Bitte warten…';
+    if (!candidateDocs?.cvPdf) return 'Bitte zuerst einen Lebenslauf hochladen.';
+    return null;
+  };
+
+  const handlePublish = async (c: CandidateProfile | null) => {
+    if (!c) return;
+    setDocError(null);
+    setIsPublishing(true);
+    try {
+      let docs = candidateDocs;
+      if (!docs || selectedCandidate?.userId !== c.userId) {
+        docs = await candidateService.getDocuments(c.userId);
+        if (selectedCandidate?.userId === c.userId) setCandidateDocs(docs || null);
+      }
+
+      if (!docs?.cvPdf) {
+        setDocError('Bitte zuerst einen Lebenslauf hochladen.');
+        return;
+      }
+
+      // Ensure CV review flag exists (so Recruiter can always "Freigeben" after reviewing).
+      if (!c.cvReviewedAt) {
+        await Promise.resolve(onAdminAction(c.userId, 'cv_reviewed', undefined, user.id));
+      }
+
+      await Promise.resolve(onAdminAction(c.userId, 'publish', undefined, user.id));
+    } catch (e: any) {
+      setDocError(e?.message || 'Freigabe fehlgeschlagen.');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const saveDocs = async (nextDocs: CandidateDocuments) => {
+    if (!selectedCandidate) return;
+    setIsSavingDocs(true);
+    setDocError(null);
+    try {
+      await candidateService.updateDocuments(nextDocs);
+      const fresh = await candidateService.getDocuments(selectedCandidate.userId);
+      setCandidateDocs(fresh || null);
+      if (onRefreshCandidates) await onRefreshCandidates();
+    } catch (e: any) {
+      setDocError(e?.message || 'Fehler beim Speichern der Dokumente');
+    } finally {
+      setIsSavingDocs(false);
+    }
+  };
+
+  const handleReplaceCv = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !selectedCandidate) return;
+    const file = files[0];
+    const up = await documentService.uploadPdf(file);
+    if (!up.success || !up.data || !up.name) {
+      setDocError(up.error || 'PDF-Upload fehlgeschlagen.');
+      return;
+    }
+    const base: CandidateDocuments = candidateDocs || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
+    await saveDocs({ ...base, userId: selectedCandidate.userId, cvPdf: { name: up.name, data: up.data } });
+  };
+
+  const handleRemoveCv = async () => {
+    if (!selectedCandidate) return;
+    if (!window.confirm('Lebenslauf wirklich entfernen?')) return;
+    const base: CandidateDocuments = candidateDocs || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
+    await saveDocs({ ...base, userId: selectedCandidate.userId, cvPdf: undefined });
+  };
+
+  const handleAddCertificates = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !selectedCandidate) return;
+    const results = await documentService.uploadMultiplePdfs(files);
+    if (!results.length) {
+      setDocError('Keine gültigen PDFs ausgewählt.');
+      return;
+    }
+    const base: CandidateDocuments = candidateDocs || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
+    await saveDocs({
+      ...base,
+      userId: selectedCandidate.userId,
+      certificates: [...(base.certificates || []), ...results]
+    });
+  };
+
+  const handleRemoveCertificate = async (idx: number) => {
+    if (!selectedCandidate) return;
+    if (!window.confirm('Zertifikat wirklich entfernen?')) return;
+    const base: CandidateDocuments = candidateDocs || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
+    await saveDocs({
+      ...base,
+      userId: selectedCandidate.userId,
+      certificates: (base.certificates || []).filter((_, i) => i !== idx)
+    });
+  };
+
+  const handleReplaceCertificate = async (idx: number, files: FileList | null) => {
+    if (!files || files.length === 0 || !selectedCandidate) return;
+    const file = files[0];
+    const up = await documentService.uploadPdf(file);
+    if (!up.success || !up.data || !up.name) {
+      setDocError(up.error || 'PDF-Upload fehlgeschlagen.');
+      return;
+    }
+    const base: CandidateDocuments = candidateDocs || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
+    const next = (base.certificates || []).map((d, i) => i === idx ? { name: up.name!, data: up.data! } : d);
+    await saveDocs({ ...base, userId: selectedCandidate.userId, certificates: next });
+  };
+
+  const handleAddQualifications = async (files: FileList | null) => {
+    if (!files || files.length === 0 || !selectedCandidate) return;
+    const results = await documentService.uploadMultiplePdfs(files);
+    if (!results.length) {
+      setDocError('Keine gültigen PDFs ausgewählt.');
+      return;
+    }
+    const base: CandidateDocuments = candidateDocs || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
+    await saveDocs({
+      ...base,
+      userId: selectedCandidate.userId,
+      qualifications: [...(base.qualifications || []), ...results]
+    });
+  };
+
+  const handleRemoveQualification = async (idx: number) => {
+    if (!selectedCandidate) return;
+    if (!window.confirm('Qualifikation wirklich entfernen?')) return;
+    const base: CandidateDocuments = candidateDocs || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
+    await saveDocs({
+      ...base,
+      userId: selectedCandidate.userId,
+      qualifications: (base.qualifications || []).filter((_, i) => i !== idx)
+    });
+  };
+
+  const handleReplaceQualification = async (idx: number, files: FileList | null) => {
+    if (!files || files.length === 0 || !selectedCandidate) return;
+    const file = files[0];
+    const up = await documentService.uploadPdf(file);
+    if (!up.success || !up.data || !up.name) {
+      setDocError(up.error || 'PDF-Upload fehlgeschlagen.');
+      return;
+    }
+    const base: CandidateDocuments = candidateDocs || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
+    const next = (base.qualifications || []).map((d, i) => i === idx ? { name: up.name!, data: up.data! } : d);
+    await saveDocs({ ...base, userId: selectedCandidate.userId, qualifications: next });
   };
 
   // Only used within Edit Mode now, or via Save button?
@@ -128,7 +317,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       <aside className="w-64 bg-slate-900 text-slate-300 hidden md:flex flex-col">
         <div className="p-6">
           <div className="flex items-center gap-3 text-white mb-8">
-            <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-8 w-auto object-contain" />
+            <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-12 w-auto object-contain" />
           </div>
           <nav className="space-y-2">
             <button onClick={() => setActiveTab('candidates')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs transition-all border ${activeTab === 'candidates' ? 'bg-slate-800 text-orange-500 border-slate-700' : 'text-slate-500 border-transparent hover:bg-slate-800 hover:text-white'}`}>
@@ -198,9 +387,37 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         </td>
                         <td className="px-6 py-3 text-xs font-semibold text-slate-600">{cand.industry || '-'}</td>
                         <td className="px-6 py-3 text-xs font-semibold text-slate-600">{cand.experienceYears}J</td>
-                        <td className="px-6 py-3"><Badge variant={cand.status === CandidateStatus.ACTIVE ? 'green' : cand.status === CandidateStatus.BLOCKED ? 'red' : 'yellow'}>{cand.status}</Badge></td>
+                        <td className="px-6 py-3">
+                          <Badge variant={cand.status === CandidateStatus.ACTIVE ? 'green' : cand.status === CandidateStatus.BLOCKED ? 'red' : 'yellow'}>
+                            {cand.status === CandidateStatus.ACTIVE
+                              ? cand.status
+                              : cand.status === CandidateStatus.BLOCKED
+                                ? cand.status
+                                : (cand.isSubmitted ? 'Eingereicht' : 'Entwurf')}
+                          </Badge>
+                          {cand.isSubmitted && (
+                            <div className={`mt-1 text-[10px] font-black uppercase tracking-widest ${cand.cvReviewedAt ? 'text-emerald-600' : 'text-orange-600'}`}>
+                              {cand.cvReviewedAt ? 'CV geprüft' : 'CV offen'}
+                            </div>
+                          )}
+                        </td>
                         <td className="px-6 py-3"><Badge variant={cand.isPublished ? 'green' : 'slate'}>{cand.isPublished ? 'Ja' : 'Nein'}</Badge></td>
-                        <td className="px-6 py-3 text-right"><Button size="sm" variant="ghost" className="text-xs text-orange-600 font-black h-8 px-3" onClick={() => handleViewCandidate(cand)}>MANAGE</Button></td>
+                        <td className="px-6 py-3 text-right">
+                          <div className="inline-flex items-center gap-2">
+                            {!cand.isPublished && (!!cand.isSubmitted || cand.status === CandidateStatus.ACTIVE) && (
+                              <Button
+                                size="sm"
+                                variant="primary"
+                                className="h-8 px-3 text-[11px] font-black rounded-xl"
+                                onClick={() => onAdminAction(cand.userId, 'publish', undefined, user.id)}
+                                disabled={!cand.cvReviewedAt}
+                              >
+                                FREIGEBEN
+                              </Button>
+                            )}
+                            <Button size="sm" variant="ghost" className="text-xs text-orange-600 font-black h-8 px-3" onClick={() => handleViewCandidate(cand)}>MANAGE</Button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -234,14 +451,40 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   <h3 className="text-lg font-black">{selectedCandidate.firstName} {selectedCandidate.lastName}</h3>
                   <p className="text-orange-500 font-bold uppercase text-[10px] tracking-wider">{selectedCandidate.industry}</p>
                 </div>
-                {isAdmin && !isEditing && <Button variant="secondary" className="px-4 py-2 text-xs h-auto" onClick={() => setIsEditing(true)}>BEARBEITEN</Button>}
+                {!isEditing && canShowPublishFor(selectedCandidate) && (
+                  <Button
+                    variant="primary"
+                    className="px-4 py-2 text-xs h-auto rounded-xl"
+                    onClick={() => handlePublish(selectedCandidate)}
+                    disabled={!!publishDisabledReason(selectedCandidate)}
+                    title={publishDisabledReason(selectedCandidate) || undefined}
+                  >
+                    FREIGEBEN
+                  </Button>
+                )}
+                {canEdit && !isEditing && <Button variant="secondary" className="px-4 py-2 text-xs h-auto" onClick={() => setIsEditing(true)}>BEARBEITEN</Button>}
               </div>
 
               {/* Tabs */}
               {isEditing ? (
-                <Tabs tabs={[{ id: 'general', label: 'Stammdaten' }, { id: 'skills', label: 'Skills' }, { id: 'social', label: 'Links' }]} activeTab={editTab} onChange={setEditTab} />
+                <Tabs
+                  tabs={[
+                    { id: 'general', label: 'Stammdaten' },
+                    { id: 'skills', label: 'Skills' },
+                    { id: 'social', label: 'Links' }
+                  ]}
+                  activeTab={editTab}
+                  onChange={setEditTab}
+                />
               ) : (
-                <Tabs tabs={[{ id: 'profile', label: 'Profil' }, { id: 'documents', label: 'Dokumente' }, { id: 'admin', label: 'Admin' }]} activeTab={modalTab} onChange={setModalTab} />
+                <Tabs
+                  tabs={isAdmin
+                    ? [{ id: 'profile', label: 'Profil' }, { id: 'documents', label: 'Dokumente' }, { id: 'admin', label: 'Admin' }]
+                    : [{ id: 'profile', label: 'Profil' }, { id: 'documents', label: 'Dokumente' }]
+                  }
+                  activeTab={modalTab}
+                  onChange={setModalTab}
+                />
               )}
 
               {/* EDIT FORM (Buffered) */}
@@ -258,20 +501,22 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       <Select label="Verfügbarkeit" name="availability" value={editForm.availability} onChange={handleEditChange} className="h-10 text-sm">{AVAILABILITY_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}</Select>
                       <Textarea label="Über" name="about" value={editForm.about || ''} onChange={handleEditChange} className="text-sm" />
 
-                      {/* SAFETY: Status Change ONLY here with Save */}
-                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-3 mt-2">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status & Sichtbarkeit</p>
-                        <div className="flex items-center gap-4">
-                          <label className="flex items-center gap-2 cursor-pointer select-none">
-                            <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500" checked={editForm.isPublished} onChange={e => setEditForm({ ...editForm, isPublished: e.target.checked })} />
-                            <span className="text-sm font-bold text-slate-700">Live veröffentlicht</span>
-                          </label>
-                          <div className="h-4 w-px bg-slate-300"></div>
-                          <Select name="status" value={editForm.status} onChange={handleEditChange} className="!mt-0 w-40 h-9 text-xs py-0 ring-0 border-slate-200">
-                            {Object.values(CandidateStatus).map(s => <option key={s} value={s}>{s}</option>)}
-                          </Select>
+                      {/* Admin-only: Status & Sichtbarkeit */}
+                      {isAdmin && (
+                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-3 mt-2">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status & Sichtbarkeit</p>
+                          <div className="flex items-center gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                              <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500" checked={editForm.isPublished} onChange={e => setEditForm({ ...editForm, isPublished: e.target.checked })} />
+                              <span className="text-sm font-bold text-slate-700">Live veröffentlicht</span>
+                            </label>
+                            <div className="h-4 w-px bg-slate-300"></div>
+                            <Select name="status" value={editForm.status} onChange={handleEditChange} className="!mt-0 w-40 h-9 text-xs py-0 ring-0 border-slate-200">
+                              {Object.values(CandidateStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                            </Select>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   )}
                   {editTab === 'skills' && (
@@ -300,11 +545,35 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 <>
                   {modalTab === 'profile' && (
                     <div className="space-y-3">
-                      {/* PRIVATE DATA SECTION (ADMIN ONLY) */}
+                      {canShowPublishFor(selectedCandidate) && (
+                        <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                          <Button
+                            variant="primary"
+                            className="w-full h-11 rounded-xl text-sm font-black"
+                            onClick={() => handlePublish(selectedCandidate)}
+                            disabled={!!publishDisabledReason(selectedCandidate)}
+                            title={publishDisabledReason(selectedCandidate) || undefined}
+                          >
+                            Kandidat freigeben (im Marktplatz sichtbar)
+                          </Button>
+                          {publishDisabledReason(selectedCandidate) && (
+                            <div className="mt-2 text-[11px] font-bold text-orange-700">
+                              {publishDisabledReason(selectedCandidate)}
+                            </div>
+                          )}
+                          {!publishDisabledReason(selectedCandidate) && selectedCandidate && !selectedCandidate.cvReviewedAt && (
+                            <div className="mt-2 text-[11px] font-bold text-slate-600">
+                              Hinweis: Beim Klick wird der CV automatisch als „geprüft“ markiert.
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Kontakt/Adresse (für Recruiter sichtbar, aber read-only) */}
                       <div className="bg-white p-4 rounded-xl border-2 border-slate-100 mb-4 shadow-sm">
                         <div className="flex items-center gap-2 mb-3">
-                          <Badge variant="dark" className="text-[10px] py-0.5 px-2 bg-slate-800 text-white">ADMIN DATA</Badge>
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vertraulich</span>
+                          <Badge variant="slate" className="text-[10px] py-0.5 px-2 bg-slate-100 text-slate-700">KONTAKT</Badge>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nur anzeigen</span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6">
                           <div>
@@ -313,10 +582,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           </div>
                           <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Adresse</p>
-                            <p className="font-medium text-slate-700 text-sm">{selectedCandidate.address || '-'} {selectedCandidate.zipCode}</p>
+                            <p className="font-medium text-slate-700 text-sm">
+                              {selectedCandidate.address || '-'} {selectedCandidate.zipCode || ''}
+                            </p>
                           </div>
                           <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Kontakt</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Telefon</p>
                             <p className="font-medium text-slate-700 text-sm">{selectedCandidate.phoneNumber || '-'}</p>
                           </div>
                           <div>
@@ -325,12 +596,80 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           </div>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-slate-50 p-3 rounded-xl"><p className="text-[10px] font-black text-slate-400 uppercase">Erfahrung</p><p className="text-sm font-bold text-slate-900">{selectedCandidate.experienceYears} Jahre</p></div>
-                        <div className="bg-slate-50 p-3 rounded-xl"><p className="text-[10px] font-black text-slate-400 uppercase">Status</p><p className="text-sm font-bold text-slate-900">{selectedCandidate.status}</p></div>
+
+                      {/* Legacy: alte Admin-Box entfernt */}
+                      {false && isAdmin && (
+                        <div className="bg-white p-4 rounded-xl border-2 border-slate-100 mb-4 shadow-sm">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Badge variant="dark" className="text-[10px] py-0.5 px-2 bg-slate-800 text-white">ADMIN DATA</Badge>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Vertraulich</span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6">
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Name</p>
+                              <p className="font-black text-slate-900 text-sm">{selectedCandidate.firstName} {selectedCandidate.lastName}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Adresse</p>
+                              <p className="font-medium text-slate-700 text-sm">{selectedCandidate.address || '-'} {selectedCandidate.zipCode}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Kontakt</p>
+                              <p className="font-medium text-slate-700 text-sm">{selectedCandidate.phoneNumber || '-'}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">System-ID</p>
+                              <p className="font-mono text-xs text-slate-400 truncate">{selectedCandidate.userId}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div className="bg-slate-50 p-3 rounded-xl">
+                          <p className="text-[10px] font-black text-slate-400 uppercase">Ort</p>
+                          <p className="text-sm font-bold text-slate-900">{selectedCandidate.city || '-'}, {selectedCandidate.country || '-'}</p>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-xl">
+                          <p className="text-[10px] font-black text-slate-400 uppercase">Branche</p>
+                          <p className="text-sm font-bold text-slate-900">{selectedCandidate.industry || '-'}</p>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-xl">
+                          <p className="text-[10px] font-black text-slate-400 uppercase">Verfügbarkeit</p>
+                          <p className="text-sm font-bold text-slate-900">{selectedCandidate.availability || '-'}</p>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-xl">
+                          <p className="text-[10px] font-black text-slate-400 uppercase">Erfahrung</p>
+                          <p className="text-sm font-bold text-slate-900">{selectedCandidate.experienceYears} Jahre</p>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-xl">
+                          <p className="text-[10px] font-black text-slate-400 uppercase">Status</p>
+                          <p className="text-sm font-bold text-slate-900">{selectedCandidate.status}</p>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-xl">
+                          <p className="text-[10px] font-black text-slate-400 uppercase">Live</p>
+                          <p className="text-sm font-bold text-slate-900">{selectedCandidate.isPublished ? 'Ja' : 'Nein'}</p>
+                        </div>
                       </div>
+
                       {selectedCandidate.about && <div className="bg-slate-50 p-3 rounded-xl"><p className="text-[10px] font-black text-slate-400 uppercase mb-1">Über</p><p className="text-sm text-slate-700 leading-relaxed">{selectedCandidate.about}</p></div>}
                       {selectedCandidate.skills.length > 0 && <div className="flex flex-wrap gap-1">{selectedCandidate.skills.map(s => <Badge key={s} variant="orange">{s}</Badge>)}</div>}
+
+                      {selectedCandidate.socialLinks?.length > 0 && (
+                        <div className="bg-slate-50 p-3 rounded-xl">
+                          <p className="text-[10px] font-black text-slate-400 uppercase mb-2">Links</p>
+                          <div className="space-y-2">
+                            {selectedCandidate.socialLinks.map((l, idx) => (
+                              <div key={idx} className="flex items-center justify-between gap-3">
+                                <span className="text-xs font-black text-slate-700">{l.label}</span>
+                                <a href={l.url} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-orange-700 hover:underline truncate max-w-[320px]">
+                                  {l.url}
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -344,11 +683,62 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           <div className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50 hover:bg-white hover:shadow-md transition-all">
                             <span className="text-sm font-bold text-slate-700 truncate max-w-[200px]">{candidateDocs.cvPdf.name}</span>
                             <div className="flex gap-2">
-                              <button onClick={() => setPreviewDoc(candidateDocs.cvPdf!)} className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold text-slate-700">Ansehen</button>
+                              <button
+                                onClick={() => {
+                                  if (selectedCandidate?.userId && !selectedCandidate.cvReviewedAt) {
+                                    onAdminAction(selectedCandidate.userId, 'cv_reviewed', undefined, user.id);
+                                  }
+                                  setPreviewDoc(candidateDocs.cvPdf!);
+                                }}
+                                className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold text-slate-700"
+                              >
+                                Ansehen
+                              </button>
                               <a href={candidateDocs.cvPdf.data} download={candidateDocs.cvPdf.name} className="px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded-lg text-xs font-bold text-orange-700">↓</a>
+                              <button
+                                onClick={handleRemoveCv}
+                                disabled={isSavingDocs}
+                                className="px-3 py-1 bg-red-50 hover:bg-red-100 rounded-lg text-xs font-black text-red-700 disabled:opacity-60"
+                              >
+                                Entfernen
+                              </button>
+                              <label className={`px-3 py-1 rounded-lg text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                                Ersetzen
+                                <input
+                                  type="file"
+                                  accept="application/pdf"
+                                  className="hidden"
+                                  disabled={isSavingDocs}
+                                  onChange={(e) => handleReplaceCv(e.target.files)}
+                                />
+                              </label>
                             </div>
                           </div>
                         ) : <div className="text-xs text-slate-400 italic">Kein CV</div>}
+                        {!candidateDocs?.cvPdf && (
+                          <div className="mt-2">
+                            <label className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                              CV hochladen
+                              <input
+                                type="file"
+                                accept="application/pdf"
+                                className="hidden"
+                                disabled={isSavingDocs}
+                                onChange={(e) => handleReplaceCv(e.target.files)}
+                              />
+                            </label>
+                          </div>
+                        )}
+                        {selectedCandidate?.isSubmitted && (
+                          <div className="mt-2 text-[11px] font-bold text-slate-600">
+                            {selectedCandidate.cvReviewedAt ? (
+                              <span className="text-emerald-700">Freigabe möglich (CV geprüft).</span>
+                            ) : (
+                              <span className="text-orange-700">Vor Freigabe bitte CV ansehen (wird automatisch als geprüft markiert).</span>
+                            )}
+                          </div>
+                        )}
+                        {docError && <div className="mt-2 text-[11px] font-black text-red-600">{docError}</div>}
                       </div>
 
                       {/* Certificates */}
@@ -361,9 +751,39 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               <div className="flex gap-2">
                                 <button onClick={() => setPreviewDoc(doc)} className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold text-slate-700">Ansehen</button>
                                 <a href={doc.data} download={doc.name} className="px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded-lg text-xs font-bold text-orange-700">↓</a>
+                                <button
+                                  onClick={() => handleRemoveCertificate(i)}
+                                  disabled={isSavingDocs}
+                                  className="px-3 py-1 bg-red-50 hover:bg-red-100 rounded-lg text-xs font-black text-red-700 disabled:opacity-60"
+                                >
+                                  Entfernen
+                                </button>
+                                <label className={`px-3 py-1 rounded-lg text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                                  Ersetzen
+                                  <input
+                                    type="file"
+                                    accept="application/pdf"
+                                    className="hidden"
+                                    disabled={isSavingDocs}
+                                    onChange={(e) => handleReplaceCertificate(i, e.target.files)}
+                                  />
+                                </label>
                               </div>
                             </div>
                           )) : <div className="text-xs text-slate-400 italic">Keine</div>}
+                        </div>
+                        <div className="mt-2">
+                          <label className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                            Zertifikate hinzufügen
+                            <input
+                              type="file"
+                              accept="application/pdf"
+                              multiple
+                              className="hidden"
+                              disabled={isSavingDocs}
+                              onChange={(e) => handleAddCertificates(e.target.files)}
+                            />
+                          </label>
                         </div>
                       </div>
 
@@ -377,15 +797,45 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               <div className="flex gap-2">
                                 <button onClick={() => setPreviewDoc(doc)} className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold text-slate-700">Ansehen</button>
                                 <a href={doc.data} download={doc.name} className="px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded-lg text-xs font-bold text-orange-700">↓</a>
+                                <button
+                                  onClick={() => handleRemoveQualification(i)}
+                                  disabled={isSavingDocs}
+                                  className="px-3 py-1 bg-red-50 hover:bg-red-100 rounded-lg text-xs font-black text-red-700 disabled:opacity-60"
+                                >
+                                  Entfernen
+                                </button>
+                                <label className={`px-3 py-1 rounded-lg text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                                  Ersetzen
+                                  <input
+                                    type="file"
+                                    accept="application/pdf"
+                                    className="hidden"
+                                    disabled={isSavingDocs}
+                                    onChange={(e) => handleReplaceQualification(i, e.target.files)}
+                                  />
+                                </label>
                               </div>
                             </div>
                           )) : <div className="text-xs text-slate-400 italic">Keine</div>}
+                        </div>
+                        <div className="mt-2">
+                          <label className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                            Qualifikationen hinzufügen
+                            <input
+                              type="file"
+                              accept="application/pdf"
+                              multiple
+                              className="hidden"
+                              disabled={isSavingDocs}
+                              onChange={(e) => handleAddQualifications(e.target.files)}
+                            />
+                          </label>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {modalTab === 'admin' && (
+                  {isAdmin && modalTab === 'admin' && (
                     <div className="space-y-6">
                       {/* SAFETY: Removed instant buttons. Only Link to Edit Mode */}
                       <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">

@@ -14,6 +14,15 @@ class AuthService {
     this.loadSession();
   }
 
+  private isLocalhost(): boolean {
+    try {
+      const h = window.location.hostname;
+      return h === 'localhost' || h === '127.0.0.1';
+    } catch {
+      return false;
+    }
+  }
+
   private loadSession(): void {
     try {
       const stored = localStorage.getItem(SESSION_KEY);
@@ -59,6 +68,27 @@ class AuthService {
       }
 
       if (result.success && result.verificationToken) {
+        // Lokal (ohne E-Mail-Versand): automatisch verifizieren + einloggen,
+        // damit der Nutzer nicht "festhängt".
+        if (this.isLocalhost()) {
+          try {
+            await api.verifyEmail(result.verificationToken);
+            const loginRes = await api.login(email, password, role);
+            if (loginRes?.success && loginRes.user) {
+              const user: User = {
+                id: loginRes.user.id,
+                email: loginRes.user.email,
+                passwordHash: '',
+                role: loginRes.user.role as UserRole,
+                createdAt: loginRes.user.createdAt ?? loginRes.user.created_at ?? new Date().toISOString()
+              };
+              this.saveSession(user);
+              return { success: true, user };
+            }
+          } catch {
+            // fallback to manual verification UI
+          }
+        }
         return {
           success: true,
           message: result.message || 'Bitte bestätigen Sie Ihre E-Mail-Adresse.',
@@ -97,6 +127,26 @@ class AuthService {
       const needsVerification = !!e?.data?.needsVerification;
       const verificationToken = e?.data?.verificationToken;
       if (needsVerification) {
+        // Lokal: automatisch verifizieren und einmal erneut versuchen
+        if (this.isLocalhost() && verificationToken) {
+          try {
+            await api.verifyEmail(verificationToken);
+            const retry = await api.login(email, password, expectedRole);
+            if (retry?.success && retry.user) {
+              const user: User = {
+                id: retry.user.id,
+                email: retry.user.email,
+                passwordHash: '',
+                role: retry.user.role as UserRole,
+                createdAt: retry.user.createdAt ?? retry.user.created_at ?? new Date().toISOString()
+              };
+              this.saveSession(user);
+              return { success: true, user };
+            }
+          } catch {
+            // fallback to showing verification UI
+          }
+        }
         return {
           success: false,
           error: e?.message || 'Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.',
@@ -111,6 +161,21 @@ class AuthService {
   logout(): void {
     this.currentUser = null;
     localStorage.removeItem(SESSION_KEY);
+  }
+
+  async deleteMyAccount(password: string): Promise<{ success: boolean; error?: string }> {
+    const me = this.getCurrentUser();
+    if (!me?.email) return { success: false, error: 'Nicht eingeloggt.' };
+    try {
+      const res = await api.deleteAccount(me.email, password);
+      if (res?.success) {
+        this.logout();
+        return { success: true };
+      }
+      return { success: false, error: res?.error || 'Konto konnte nicht gelöscht werden.' };
+    } catch (e: any) {
+      return { success: false, error: e?.message || 'Konto konnte nicht gelöscht werden.' };
+    }
   }
 }
 

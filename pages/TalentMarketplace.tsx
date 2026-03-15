@@ -26,35 +26,39 @@ const CandidateCard = memo(({ item, search, onSelect }: { item: MatchItem; searc
       tabIndex={0}
       onClick={handleClick}
       onKeyDown={(e) => e.key === 'Enter' && handleClick()}
-      className="bg-white p-6 rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all cursor-pointer flex flex-col"
+      className="group bg-white p-6 rounded-2xl border border-slate-200 hover:border-slate-300 hover:shadow-[0_18px_50px_-30px_rgba(2,6,23,0.35)] transition-all cursor-pointer flex flex-col"
       style={{ contentVisibility: 'auto', contain: 'layout paint' }}
     >
-      <div className="flex items-start gap-5 mb-6">
-        <Avatar seed={candidate.firstName + candidate.lastName} size="md" imageUrl={candidate.profileImageUrl} className="shrink-0" />
+      <div className="flex items-start gap-4 mb-5">
+        <Avatar seed={candidate.firstName + candidate.lastName} size="md" imageUrl={candidate.profileImageUrl} className="shrink-0 ring-4 ring-orange-50" />
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-slate-900 tracking-tight leading-tight">
+          <h3 className="text-lg font-black text-[#101B31] tracking-tight leading-tight group-hover:text-slate-900 transition-colors">
             {highlightText(`${candidate.firstName} ${candidate.lastName}`, search)}
           </h3>
           <div className="text-xs font-bold text-slate-400 flex items-center gap-1 mt-1">
-            <svg className="w-3 h-3 text-orange-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"></path></svg>
+            <svg className="w-3 h-3 text-orange-600 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"></path></svg>
             {highlightText(candidate.city, search)}
           </div>
         </div>
-        {score > 0 && <Badge variant="orange" className="h-6 shrink-0">Match {Math.min(100, score * 10)}%</Badge>}
+        {score > 0 && (
+          <Badge variant="orange" className="h-7 shrink-0 px-3 bg-orange-50 text-orange-700 border border-orange-100">
+            Match {Math.min(100, score * 10)}%
+          </Badge>
+        )}
       </div>
       <div className="space-y-4 mb-6 flex-1">
         <div className="flex flex-wrap gap-2">
-          {candidate.industry && <Badge variant="slate" className="bg-slate-50 text-slate-900 border-none px-3">{candidate.industry}</Badge>}
-          <Badge variant="slate" className="bg-slate-50 text-slate-900 border-none px-3">{candidate.experienceYears} J. Exp</Badge>
-          {candidate.availability && <Badge variant="green" className="px-3">{candidate.availability}</Badge>}
+          {candidate.industry && <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">{candidate.industry}</Badge>}
+          <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">{candidate.experienceYears} J. Exp</Badge>
+          {candidate.availability && <Badge variant="green" className="px-3 py-1">{candidate.availability}</Badge>}
         </div>
         {candidate.about && (
-          <p className="text-slate-500 text-sm font-medium line-clamp-2 leading-relaxed italic">
+          <p className="text-slate-600 text-sm font-medium line-clamp-2 leading-relaxed">
             "{highlightText(candidate.about, search)}"
           </p>
         )}
       </div>
-      <div className="flex flex-wrap gap-1.5 border-t border-slate-50 pt-4">
+      <div className="flex flex-wrap gap-1.5 border-t border-slate-100 pt-4">
         {skills.slice(0, 4).map(skill => (
           <span key={skill} className="text-xs font-medium text-slate-500">
             #{highlightText(skill, search)}
@@ -164,129 +168,175 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa]">
+    <div className="min-h-screen bg-white">
       {/* Navigation Bar */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 cursor-pointer shrink-0" onClick={() => onNavigate('/')}>
-            <div>
-              <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-9 sm:h-10 w-auto object-contain" />
-              <p className="hidden sm:block text-xs text-slate-500 mt-0.5">Talente entdecken – für alle sichtbar</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 cursor-pointer shrink-0" onClick={() => onNavigate('/')}>
+              <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-12 w-auto object-contain" />
+            </div>
+
+            <div className="hidden lg:block flex-1 max-w-xl">
+              <div className="relative group">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-orange-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <input
+                  type="text"
+                  placeholder="Suche nach Skills, Ort, Branche…"
+                  className="w-full pl-11 pr-4 h-11 bg-white border border-slate-200 text-slate-900 text-sm rounded-xl outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all placeholder:text-slate-400 shadow-sm"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              {props.user ? (
+                <>
+                  <span className="text-sm text-slate-500 hidden md:block mr-1">Hallo, {props.user.firstName || 'User'}</span>
+                  {(props.user.role === UserRole.ADMIN || props.user.role === UserRole.RECRUITER) ? (
+                    <Button size="sm" variant="primary" onClick={() => onNavigate('/recruiter/dashboard')} className="h-10 text-sm px-4 rounded-xl">
+                      Dashboard
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => onNavigate('/candidate/profile')}
+                      className="h-10 text-sm px-4 rounded-xl bg-[#101B31] border-[#101B31] hover:bg-[#0B1324] active:bg-[#070D19]"
+                    >
+                      Mein Profil
+                    </Button>
+                  )}
+                  <button type="button" onClick={handleLogout} className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200 transition-colors" title="Abmelden">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button type="button" onClick={() => onNavigate('/recruiter/auth')} className="text-sm font-medium text-slate-600 hover:text-[#101B31] hidden sm:block">Für Arbeitgeber</button>
+                  <Button size="sm" onClick={() => onNavigate('/candidate/auth')} className="h-10 text-sm px-4 rounded-xl">
+                    Anmelden
+                  </Button>
+                </>
+              )}
             </div>
           </div>
 
-          <div className="flex-1 max-w-lg mx-4">
+          {/* Mobile search */}
+          <div className="lg:hidden mt-3">
             <div className="relative group">
-              <svg className="absolute left-3 top-2.5 w-4 h-4 text-slate-400 group-focus-within:text-orange-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-orange-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
               <input
                 type="text"
                 placeholder="Suche nach Skills, Ort, Branche…"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-lg outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all placeholder:text-slate-400"
+                className="w-full pl-11 pr-4 h-11 bg-white border border-slate-200 text-slate-900 text-sm rounded-xl outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all placeholder:text-slate-400 shadow-sm"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            {props.user ? (
-              <>
-                <span className="text-sm text-slate-500 hidden md:block mr-1">Hallo, {props.user.firstName || 'User'}</span>
-                {(props.user.role === UserRole.ADMIN || props.user.role === UserRole.RECRUITER) ? (
-                  <Button size="sm" variant="primary" onClick={() => onNavigate('/recruiter/dashboard')} className="h-9 text-sm px-4">
-                    Dashboard
-                  </Button>
-                ) : (
-                  <Button size="sm" variant="primary" onClick={() => onNavigate('/candidate/profile')} className="h-9 text-sm px-4">
-                    Mein Profil
-                  </Button>
-                )}
-                <button type="button" onClick={handleLogout} className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200 transition-colors" title="Abmelden">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                </button>
-              </>
-            ) : (
-              <>
-                <button type="button" onClick={() => onNavigate('/recruiter/auth')} className="text-sm font-medium text-slate-600 hover:text-slate-900 hidden sm:block">Für Arbeitgeber</button>
-                <Button size="sm" onClick={() => onNavigate('/candidate/auth')} className="h-9 text-sm px-4">
-                  Anmelden
-                </Button>
-              </>
-            )}
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col lg:flex-row gap-10" style={{ contain: 'paint' }}>
         {/* Filters */}
-        <aside className="lg:w-72 flex-shrink-0 space-y-6">
-          <div className="bg-white p-5 rounded-xl border border-slate-200">
-            <h4 className="text-sm font-semibold text-slate-900 mb-4">Branche</h4>
-            <div className="space-y-2.5">
-              <label className="flex items-center gap-3 text-sm text-slate-600 cursor-pointer font-bold group">
-                <input type="radio" name="industry" checked={filterIndustry === ''} onChange={() => setFilterIndustry('')} className="w-4 h-4 text-orange-600 border-slate-300 focus:ring-orange-500" />
-                <span className="group-hover:text-slate-900">Alle Branchen</span>
-              </label>
-              {INDUSTRIES.map(ind => (
-                <label key={ind} className="flex items-center gap-3 text-sm text-slate-600 cursor-pointer font-bold group">
-                  <input type="radio" name="industry" checked={filterIndustry === ind} onChange={() => setFilterIndustry(ind)} className="w-4 h-4 text-orange-600 border-slate-300 focus:ring-orange-500" />
-                  <span className="group-hover:text-slate-900">{ind}</span>
-                </label>
-              ))}
+        <aside className="lg:w-80 flex-shrink-0 space-y-6">
+          <div className="rounded-3xl border border-slate-200 bg-white shadow-[0_18px_60px_-45px_rgba(2,6,23,0.25)] overflow-hidden">
+            <div className="px-6 py-5 bg-[#101B31] text-white flex items-center justify-between">
+              <div>
+                <div className="text-xs font-black tracking-[0.25em] text-white/70 uppercase">Filter</div>
+                <div className="text-lg font-black tracking-tight">Feinjustierung</div>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-white/20 text-white hover:bg-white/10 h-9 px-3 rounded-xl"
+                onClick={() => { setSearch(''); setFilterIndustry(''); setFilterExp(0); setFilterAvailability(''); }}
+              >
+                Reset
+              </Button>
             </div>
-          </div>
 
-          <div className="bg-white p-5 rounded-xl border border-slate-200">
-            <h4 className="text-sm font-semibold text-slate-900 mb-4">Verfügbarkeit</h4>
-            <div className="space-y-2.5">
-              <label className="flex items-center gap-3 text-sm text-slate-600 cursor-pointer font-bold group">
-                <input type="radio" name="availability" checked={filterAvailability === ''} onChange={() => setFilterAvailability('')} className="w-4 h-4 text-orange-600 border-slate-300 focus:ring-orange-500" />
-                <span className="group-hover:text-slate-900">Alle</span>
-              </label>
-              {AVAILABILITY_OPTIONS.map(opt => (
-                <label key={opt} className="flex items-center gap-3 text-sm text-slate-600 cursor-pointer font-bold group">
-                  <input type="radio" name="availability" checked={filterAvailability === opt} onChange={() => setFilterAvailability(opt)} className="w-4 h-4 text-orange-600 border-slate-300 focus:ring-orange-500" />
-                  <span className="group-hover:text-slate-900">{opt}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+            <div className="p-6 space-y-6">
+              <div>
+                <h4 className="text-sm font-black text-[#101B31] mb-3">Branche</h4>
+                <div className="space-y-2.5">
+                  <label className="flex items-center gap-3 text-sm text-slate-600 cursor-pointer font-bold group">
+                    <input type="radio" name="industry" checked={filterIndustry === ''} onChange={() => setFilterIndustry('')} className="w-4 h-4 accent-orange-600 border-slate-300 focus:ring-2 focus:ring-orange-500/30" />
+                    <span className="group-hover:text-[#101B31]">Alle Branchen</span>
+                  </label>
+                  {INDUSTRIES.map(ind => (
+                    <label key={ind} className="flex items-center gap-3 text-sm text-slate-600 cursor-pointer font-bold group">
+                      <input type="radio" name="industry" checked={filterIndustry === ind} onChange={() => setFilterIndustry(ind)} className="w-4 h-4 accent-orange-600 border-slate-300 focus:ring-2 focus:ring-orange-500/30" />
+                      <span className="group-hover:text-[#101B31]">{ind}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
 
-          <div className="bg-white p-5 rounded-xl border border-slate-200">
-            <h4 className="text-sm font-semibold text-slate-900 mb-4">Erfahrung ({filterExp}+ J.)</h4>
-            <input
-              type="range" min="0" max="20"
-              className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-orange-600"
-              value={filterExp}
-              onChange={(e) => setFilterExp(parseInt(e.target.value))}
-            />
-            <div className="flex justify-between text-[10px] font-black text-slate-400 mt-2 uppercase tracking-tighter">
-              <span>Junior</span>
-              <span>Senior</span>
-              <span>Expert</span>
+              <div className="h-px bg-slate-100" />
+
+              <div>
+                <h4 className="text-sm font-black text-[#101B31] mb-3">Verfügbarkeit</h4>
+                <div className="space-y-2.5">
+                  <label className="flex items-center gap-3 text-sm text-slate-600 cursor-pointer font-bold group">
+                    <input type="radio" name="availability" checked={filterAvailability === ''} onChange={() => setFilterAvailability('')} className="w-4 h-4 accent-orange-600 border-slate-300 focus:ring-2 focus:ring-orange-500/30" />
+                    <span className="group-hover:text-[#101B31]">Alle</span>
+                  </label>
+                  {AVAILABILITY_OPTIONS.map(opt => (
+                    <label key={opt} className="flex items-center gap-3 text-sm text-slate-600 cursor-pointer font-bold group">
+                      <input type="radio" name="availability" checked={filterAvailability === opt} onChange={() => setFilterAvailability(opt)} className="w-4 h-4 accent-orange-600 border-slate-300 focus:ring-2 focus:ring-orange-500/30" />
+                      <span className="group-hover:text-[#101B31]">{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="h-px bg-slate-100" />
+
+              <div>
+                <h4 className="text-sm font-black text-[#101B31] mb-3">Erfahrung</h4>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{filterExp}+ Jahre</span>
+                  <span className="text-[11px] font-black text-orange-600 uppercase tracking-widest">Minimum</span>
+                </div>
+                <input
+                  type="range" min="0" max="20"
+                  className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-orange-600 mt-3"
+                  value={filterExp}
+                  onChange={(e) => setFilterExp(parseInt(e.target.value))}
+                />
+                <div className="flex justify-between text-[10px] font-black text-slate-400 mt-2 uppercase tracking-tighter">
+                  <span>Junior</span>
+                  <span>Senior</span>
+                  <span>Expert</span>
+                </div>
+              </div>
             </div>
           </div>
         </aside>
 
         {/* Results */}
         <div className="flex-1">
-          <div className="mb-8 flex items-end justify-between">
+          <div className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
-              <h2 className="text-3xl font-black text-slate-900 tracking-tighter leading-none">
-                {filteredAndRanked.length} TALENTE
+              <div className="text-xs font-black tracking-[0.25em] text-slate-400 uppercase">Talent Marketplace</div>
+              <h2 className="text-3xl md:text-4xl font-black text-[#101B31] tracking-tighter leading-tight">
+                {filteredAndRanked.length} Talente
               </h2>
-              {debouncedSearch && <p className="text-slate-400 font-bold mt-1 uppercase text-xs tracking-widest">Suche für: "{debouncedSearch}"</p>}
+              {debouncedSearch && <p className="text-slate-500 font-bold mt-2 uppercase text-[11px] tracking-widest">Suche für: "{debouncedSearch}"</p>}
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sort:</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sortierung</span>
               <select
-                className="bg-transparent border-none text-xs font-black text-orange-600 outline-none cursor-pointer uppercase tracking-widest"
+                className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-xs font-black text-orange-600 outline-none cursor-pointer uppercase tracking-widest shadow-sm"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
               >
-                <option value="relevance">RELEVANZ</option>
-                <option value="newest">NEUESTE</option>
-                <option value="experience">ERFAHRUNG</option>
+                <option value="relevance">Relevanz</option>
+                <option value="newest">Neueste</option>
+                <option value="experience">Erfahrung</option>
               </select>
             </div>
           </div>
@@ -307,7 +357,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               }
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8" style={{ contain: 'layout' }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" style={{ contain: 'layout' }}>
               {filteredAndRanked.map((item) => (
                 <CandidateCard
                   key={item.candidate.userId}

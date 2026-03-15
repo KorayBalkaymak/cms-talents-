@@ -9,10 +9,9 @@ interface RecruiterAuthProps {
 }
 
 const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [verificationToken, setVerificationToken] = useState<string | null>(null);
@@ -25,17 +24,6 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
       setError('E-Mail und Passwort sind erforderlich.');
       return;
     }
-    if (!isLogin) {
-      if (password.length < 8) {
-        setError('Passwort muss mindestens 8 Zeichen haben.');
-        return;
-      }
-      if (password !== confirmPassword) {
-        setError('Passwörter stimmen nicht überein.');
-        return;
-      }
-    }
-
     setIsLoading(true);
 
     try {
@@ -48,16 +36,6 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
           setError('');
         } else {
           setError(result.error || 'Anmeldung fehlgeschlagen.');
-        }
-      } else {
-        const result = await authService.register(email, password, UserRole.RECRUITER);
-        if (result.success && result.user) {
-          onAuthSuccess(result.user);
-        } else if (result.success && result.verificationToken) {
-          setVerificationToken(result.verificationToken);
-          setError('');
-        } else {
-          setError(result.error || 'Registrierung fehlgeschlagen.');
         }
       }
     } catch (e) {
@@ -109,10 +87,15 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
               Zurück
             </a>
             <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-1">
-              {isLogin ? 'Login Recruiter' : 'Recruiter registrieren'}
+              Login Recruiter
             </h2>
             <p className="text-slate-500 text-sm">
-              {isLogin ? 'Bitte melden Sie sich an.' : 'Erstellen Sie Ihren Partner-Account.'}
+              Bitte melden Sie sich an.
+            </p>
+            <p className="mt-3 text-[11px] text-slate-500 font-semibold">
+              Nur freigeschaltete E-Mails: <span className="text-slate-700">haagen@industries-cms.com</span>,{' '}
+              <span className="text-slate-700">candau@industries-cms.com</span>, <span className="text-slate-700">fuhrmann@industries-cms.com</span>.<br />
+              Passwort: <span className="text-slate-700">A123</span>
             </p>
           </div>
 
@@ -142,7 +125,7 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
               <label className="text-[10px] font-black text-slate-900 uppercase tracking-wide ml-1">E-Mail</label>
               <Input
                 type="email"
-                placeholder="name@firma.de"
+                placeholder="haagen@industries-cms.com"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -169,43 +152,15 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
               />
             </div>
 
-            {!isLogin && (
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-900 uppercase tracking-wide ml-1">Passwort bestätigen</label>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  autoComplete="new-password"
-                  className="bg-slate-50 border-slate-200 focus:bg-white h-11 text-sm rounded-xl"
-                />
-              </div>
-            )}
-
             <Button
               type="submit"
               variant="primary"
               className="w-full py-3.5 text-sm rounded-xl shadow-lg shadow-orange-200 mt-2"
               isLoading={isLoading}
             >
-              {isLogin ? 'Zum Dashboard' : 'Kostenlos registrieren'}
+              Zum Dashboard
             </Button>
           </form>
-
-          <div className="mt-6 pt-6 border-t border-slate-100 text-center">
-            <p className="text-sm text-slate-500">
-              {isLogin ? 'Noch keinen Account?' : 'Bereits registriert?'}
-              <button
-                type="button"
-                onClick={() => { setIsLogin(!isLogin); setError(''); setConfirmPassword(''); setVerificationToken(null); }}
-                className="ml-2 text-orange-600 font-bold hover:text-orange-700"
-              >
-                {isLogin ? 'Jetzt registrieren' : 'Hier anmelden'}
-              </button>
-            </p>
-          </div>
             </>
           )}
 

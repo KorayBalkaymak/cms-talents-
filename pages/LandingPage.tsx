@@ -13,40 +13,58 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
       {/* ─── Navigation: weißer Header (nicht fixed) ─── */}
       <header className="bg-white border-b border-slate-200/80">
         <nav className="h-[72px] flex items-center justify-center">
-          <div className="w-full max-w-6xl mx-auto px-6 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => onNavigate('/')}
-              className="flex items-center gap-3 group"
-            >
-              <img
-                src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
-                alt="CMS Talents"
-                className="h-12 md:h-14 w-auto object-contain"
-              />
-            </button>
+          <div className="w-full max-w-6xl mx-auto px-6 flex items-center justify-end">
             <div className="flex items-center gap-4 md:gap-10">
               {user ? (
                 <>
                   <span className="text-sm text-slate-500 hidden md:inline">Hallo, {user.firstName || 'User'}</span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm bg-[#101B31] border-[#101B31] hover:bg-[#0B1324] active:bg-[#070D19]"
+                    onClick={() => onNavigate('/recruiter/auth')}
+                  >
+                    Als Recruiter anmelden
+                  </Button>
                   {user.role === UserRole.CANDIDATE ? (
-                    <Button variant="primary" size="sm" className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm" onClick={() => onNavigate('/candidate/profile')}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm bg-[#101B31] border-[#101B31] hover:bg-[#0B1324] active:bg-[#070D19]"
+                      onClick={() => onNavigate('/candidate/profile')}
+                    >
                       Mein Profil
                     </Button>
                   ) : (
-                    <Button variant="primary" size="sm" className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm" onClick={() => onNavigate('/recruiter/dashboard')}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm bg-[#101B31] border-[#101B31] hover:bg-[#0B1324] active:bg-[#070D19]"
+                      onClick={() => onNavigate('/recruiter/dashboard')}
+                    >
                       Dashboard
                     </Button>
                   )}
                 </>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => onNavigate('/recruiter/auth')}
-                  className="text-xs md:text-sm font-medium text-slate-600 hover:text-orange-500 transition-colors duration-200"
-                >
-                  Als Recruiter einloggen
-                </button>
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm bg-[#101B31] border-[#101B31] hover:bg-[#0B1324] active:bg-[#070D19]"
+                    onClick={() => onNavigate('/recruiter/auth')}
+                  >
+                    Als Recruiter anmelden
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm bg-[#101B31] border-[#101B31] hover:bg-[#0B1324] active:bg-[#070D19]"
+                    onClick={() => onNavigate('/candidate/auth')}
+                  >
+                    Mein Profil
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -62,16 +80,99 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
           <div className="relative max-w-6xl mx-auto px-6 pt-24 pb-28 md:pt-32 md:pb-36">
             <div className="grid lg:grid-cols-2 gap-20 items-center">
               <div className="max-w-xl">
-                <p className="text-sm font-medium text-orange-400 mb-6 tracking-wide animate-fade-in-up">
-                  Premium Talent-Plattform
-                </p>
+                <style>{`
+                  @keyframes cmsLogoShineSweep {
+                    0% { transform: translateX(-160%) rotate(25deg); opacity: 0; }
+                    8% { opacity: 1; }
+                    35% { transform: translateX(160%) rotate(25deg); opacity: 1; }
+                    100% { transform: translateX(160%) rotate(25deg); opacity: 0; }
+                  }
+                  @keyframes cmsLogoAuraPulse {
+                    0%, 100% { transform: scale(0.98); opacity: 0.35; }
+                    50% { transform: scale(1.06); opacity: 0.75; }
+                  }
+                  .cms-logo-shine {
+                    position: absolute;
+                    top: -70%;
+                    left: -70%;
+                    width: 55%;
+                    height: 240%;
+                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.95), transparent);
+                    filter: blur(0.5px);
+                    animation: cmsLogoShineSweep 2.8s ease-in-out infinite;
+                    opacity: 0;
+                  }
+                  .cms-logo-aura {
+                    position: absolute;
+                    inset: -22px;
+                    border-radius: 9999px;
+                    background: radial-gradient(circle at 50% 50%,
+                      rgba(255,255,255,0.22) 0%,
+                      rgba(255,255,255,0.10) 35%,
+                      rgba(249,115,22,0.38) 55%,
+                      rgba(249,115,22,0.10) 70%,
+                      transparent 78%);
+                    filter: blur(10px);
+                    animation: cmsLogoAuraPulse 2.8s ease-in-out infinite;
+                    pointer-events: none;
+                  }
+                  .cms-spotlight-beam {
+                    position: absolute;
+                    top: -260px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 260px;
+                    height: 340px;
+                    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+                    background: linear-gradient(to bottom, rgba(255,255,255,0.35), rgba(255,255,255,0.0));
+                    filter: blur(0.2px);
+                    opacity: 0.45;
+                    pointer-events: none;
+                  }
+                `}</style>
+
+                {/* Logo Badge (ultra modern) */}
+                <div className="mb-8 animate-fade-in-up flex justify-center lg:justify-start">
+                  <div className="relative inline-flex">
+                    {/* Spotlight beams (wie im Screenshot) */}
+                    <div className="cms-spotlight-beam" style={{ width: 320, opacity: 0.26 }} />
+                    <div className="cms-spotlight-beam" style={{ width: 240, opacity: 0.38 }} />
+                    <div className="cms-spotlight-beam" style={{ width: 170, opacity: 0.55 }} />
+
+                    {/* Orange Glow */}
+                    <div className="absolute -inset-10 rounded-full bg-orange-500/20 blur-3xl" />
+                    <div className="cms-logo-aura" />
+
+                    {/* Outer ring */}
+                    <div className="relative w-56 h-56 sm:w-64 sm:h-64 rounded-full bg-white/10 border border-white/25 shadow-[0_28px_90px_-60px_rgba(0,0,0,0.85)] backdrop-blur-sm flex items-center justify-center">
+                      {/* Outer glint */}
+                      <div className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
+                        <div className="cms-logo-shine" />
+                      </div>
+
+                      {/* Inner white fill */}
+                      <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-full bg-white shadow-[0_20px_50px_-35px_rgba(0,0,0,0.55)] flex items-center justify-center">
+                        {/* subtle inner highlight */}
+                        <div className="absolute inset-0 rounded-full pointer-events-none bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,1),rgba(255,255,255,0.75)_45%,rgba(255,255,255,1)_100%)]" />
+                        <img
+                          src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
+                          alt="CMS Talents"
+                          className="relative w-[92%] h-[92%] object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.18)]"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <h1 className="text-4xl md:text-5xl lg:text-[3.25rem] font-bold text-white tracking-tight leading-[1.1] mb-6 animate-fade-in-up-1">
                   Die besten Talente.
                   <br />
                   <span className="text-orange-400">Die besten Partner.</span>
                 </h1>
                 <p className="text-lg text-white/80 leading-relaxed mb-10 animate-fade-in-up-2">
-                  CMS Logo verbindet hochqualifizierte Fachkräfte mit führenden Arbeitgebern. Qualität, Vertrauen und passgenaues Matching – ohne Kompromisse.
+                  CMS Talents verbindet qualifizierte Fachkräfte mit führenden Arbeitgebern. Qualität, Vertrauen und passgenaues Matching – ohne Kompromisse.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in-up-3">
                   <Button
@@ -211,13 +312,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                 <div className="flex flex-col items-center text-center mb-10">
                   <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-white/90 text-xs font-semibold tracking-wide">
                     <span className="w-2 h-2 rounded-full bg-orange-400" />
-                    Warum es CMS Logo gibt
+                    Warum es CMS Talents gibt
                   </span>
                   <h2 className="mt-5 text-3xl md:text-4xl font-bold text-white tracking-tight">
-                    Der Zweck von <span className="text-orange-400">CMS Logo</span>
+                    Der Zweck von <span className="text-orange-400">CMS Talents</span>
                   </h2>
                   <p className="mt-4 max-w-3xl text-lg text-white/85 leading-relaxed">
-                    CMS Logo ist eine Recruiting-Plattform, die <span className="text-orange-300 font-semibold">hochqualifizierte Fachkräfte</span> mit <span className="text-orange-300 font-semibold">passenden Arbeitgebern</span> zusammenbringt.
+                    CMS Talents ist eine Recruiting-Plattform, die <span className="text-orange-300 font-semibold">qualifizierte Fachkräfte</span> mit <span className="text-orange-300 font-semibold">passenden Arbeitgebern</span> zusammenbringt.
                     Kandidaten erstellen ihr Profil, werden sichtbar und können von Recruitern gezielt gefunden werden.
                   </p>
                   <p className="mt-4 max-w-3xl text-base text-white/70 leading-relaxed">
@@ -234,7 +335,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center max-w-2xl mx-auto mb-16">
               <h2 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-4">
-                Warum CMS <span className="text-orange-500">Logo</span>?
+                Was CMS <span className="text-orange-500">Talents</span> auszeichnet
               </h2>
               <p className="text-lg text-slate-600 leading-relaxed">
                 Qualität und Vertrauen stehen im Mittelpunkt – für Kandidaten und Arbeitgeber.
@@ -243,22 +344,38 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
             <div className="grid md:grid-cols-3 gap-8">
               {[
                 {
-                  title: 'Exklusivität',
-                  description: 'Jedes Profil wird manuell geprüft. Maximale Qualität und Relevanz für beide Seiten.',
+                  title: 'Besseres Matching',
+                  description: 'Klare Profile – damit du schneller die richtigen Talente findest.',
                   icon: (
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.8">
+                      {/* Clipboard / Papier */}
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 4.5h6" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 3h6a2 2 0 012 2v15a2 2 0 01-2 2H9a2 2 0 01-2-2V5a2 2 0 012-2z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 8h6" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 11h6" />
+                      {/* Stift */}
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.75 14.25l4-4a1.75 1.75 0 012.475 2.475l-4 4-2.95.8.475-3.275z" />
+                    </svg>
                   ),
                 },
                 {
                   title: 'Datenschutz',
                   description: 'Kandidaten behalten die volle Kontrolle über Sichtbarkeit und Nutzung ihrer Daten.',
                   icon: (
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.8">
+                      {/* Bügel */}
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 11V8.8a3.5 3.5 0 017 0V11" />
+                      {/* Schlosskörper */}
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 11h10a2 2 0 012 2v6a2 2 0 01-2 2H7a2 2 0 01-2-2v-6a2 2 0 012-2z" />
+                      {/* Schlüsselloch */}
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 14.2a.8.8 0 100 1.6.8.8 0 000-1.6z" />
+                    </svg>
                   ),
                 },
                 {
-                  title: 'Schnelles Matching',
-                  description: 'Intelligente Suche und Keyword-Boosting für effizientes Recruiting ohne Zeitverschwendung.',
+                  title: 'Transparente Profile',
+                  description: 'Klare Angaben zu Skills, Erfahrung und Verfügbarkeit – damit Entscheidungen schneller und sicherer fallen.',
                   icon: (
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>
                   ),
@@ -284,8 +401,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
       <footer className="bg-[#101B31] border-t border-white/10 py-12">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-8 w-auto object-contain" />
-            <span className="text-sm font-medium text-white/70">CMS Logo © 2026</span>
+            <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-12 w-auto object-contain" />
+            <span className="text-sm font-medium text-white/70">CMS Talents © 2026</span>
           </div>
           <div className="flex gap-10 text-sm">
             <a href="#" className="text-white/70 hover:text-orange-400 transition-colors duration-200">Impressum</a>

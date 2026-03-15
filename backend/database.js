@@ -108,6 +108,9 @@ async function initPostgres() {
       avatar_seed TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'in Prüfung' CHECK(status IN ('aktiv', 'gesperrt', 'in Prüfung')),
       is_published INTEGER NOT NULL DEFAULT 0,
+      submitted_to_recruiter INTEGER NOT NULL DEFAULT 0,
+      cv_reviewed_at TIMESTAMPTZ,
+      cv_reviewed_by TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
       address TEXT,
@@ -157,6 +160,9 @@ async function initPostgres() {
   await pool.query('CREATE INDEX IF NOT EXISTS idx_profiles_published ON candidate_profiles(is_published, status)');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_skills_user ON candidate_skills(user_id)');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_documents_user ON candidate_documents(user_id)');
+  await pool.query('ALTER TABLE candidate_profiles ADD COLUMN IF NOT EXISTS submitted_to_recruiter INTEGER NOT NULL DEFAULT 0');
+  await pool.query('ALTER TABLE candidate_profiles ADD COLUMN IF NOT EXISTS cv_reviewed_at TIMESTAMPTZ');
+  await pool.query('ALTER TABLE candidate_profiles ADD COLUMN IF NOT EXISTS cv_reviewed_by TEXT');
 
   // Alte Accounts (vor Einführung der Spalte) als verifiziert markieren
   // Wichtig: neue Registrierungen mit email_verified=0 dürfen NICHT überschrieben werden.
@@ -213,6 +219,9 @@ async function initSqlite() {
       avatar_seed TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'in Prüfung' CHECK(status IN ('aktiv', 'gesperrt', 'in Prüfung')),
       is_published INTEGER NOT NULL DEFAULT 0,
+      submitted_to_recruiter INTEGER NOT NULL DEFAULT 0,
+      cv_reviewed_at TEXT,
+      cv_reviewed_by TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -258,6 +267,9 @@ async function initSqlite() {
 
   try {
     db.run('CREATE INDEX IF NOT EXISTS idx_profiles_published ON candidate_profiles(is_published, status)');
+  try { db.run('ALTER TABLE candidate_profiles ADD COLUMN submitted_to_recruiter INTEGER NOT NULL DEFAULT 0'); } catch { }
+  try { db.run('ALTER TABLE candidate_profiles ADD COLUMN cv_reviewed_at TEXT'); } catch { }
+  try { db.run('ALTER TABLE candidate_profiles ADD COLUMN cv_reviewed_by TEXT'); } catch { }
     db.run('CREATE INDEX IF NOT EXISTS idx_skills_user ON candidate_skills(user_id)');
     db.run('CREATE INDEX IF NOT EXISTS idx_documents_user ON candidate_documents(user_id)');
   } catch { /* ignore */ }

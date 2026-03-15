@@ -12,6 +12,37 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const IS_VERCEL = !!process.env.VERCEL;
 
+// =====================================================
+// Recruiter Access (Allowlist)
+// =====================================================
+const RECRUITER_FIXED_PASSWORD = 'A123';
+const RECRUITER_ALLOWLIST = new Set([
+    'haagen@industries-cms.com',
+    'candau@industries-cms.com',
+    'fuhrmann@industries-cms.com'
+]);
+
+async function ensureAllowlistedRecruiters() {
+    // On Vercel we don't rely on ephemeral DB; allowlist only matters locally.
+    // Seed/update allowlisted recruiter accounts so login works immediately.
+    for (const email of RECRUITER_ALLOWLIST) {
+        const existing = await queryOne('SELECT id FROM users WHERE email = ?', [email]);
+        const passwordHash = bcrypt.hashSync(RECRUITER_FIXED_PASSWORD, 10);
+        if (!existing) {
+            const userId = uuid();
+            await run(
+                'INSERT INTO users (id, email, password_hash, role, email_verified, verification_token, verification_token_expires_at) VALUES (?, ?, ?, ?, 1, NULL, NULL)',
+                [userId, email, passwordHash, 'recruiter']
+            );
+        } else {
+            await run(
+                'UPDATE users SET password_hash = ?, role = ?, email_verified = 1, verification_token = NULL, verification_token_expires_at = NULL WHERE email = ?',
+                [passwordHash, 'recruiter', email]
+            );
+        }
+    }
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -20,7 +51,12 @@ app.use(express.json({ limit: '50mb' }));
 let dbReady = false;
 let dbInitError = null;
 initDatabase()
-    .then(() => {
+    .then(async () => {
+        try {
+            await ensureAllowlistedRecruiters();
+        } catch (e) {
+            console.error('[RecruiterSeed] failed:', e);
+        }
         dbReady = true;
     })
     .catch((e) => {
@@ -98,6 +134,13 @@ app.post('/api/auth/register', async (req, res) => {
             return res.status(400).json({ error: 'Ungültige Rolle' });
         }
 
+        if (role === 'recruiter') {
+            return res.status(403).json({
+                error: 'Recruiter-Registrierung ist deaktiviert.',
+                hint: 'Bitte mit einer freigeschalteten Recruiter-E-Mail einloggen.'
+            });
+        }
+
         const existing = await queryOne('SELECT id FROM users WHERE email = ?', [emailTrimmed]);
         if (existing) {
             return res.status(400).json({ error: 'Diese E-Mail ist bereits registriert' });
@@ -154,11 +197,16 @@ app.post('/api/auth/register', async (req, res) => {
 // E-Mail bestätigen (Link mit Token)
 app.get('/api/auth/verify-email', async (req, res) => {
     try {
-        const { token } = req.query;
-        if (!token) {
+        const tokenRaw = req.query.token;
+        const token = Array.isArray(tokenRaw) ? tokenRaw[0] : tokenRaw;
+        const tokenTrimmed = token ? String(token).trim() : '';
+        if (!tokenTrimmed) {
             return res.status(400).json({ success: false, error: 'Token fehlt' });
         }
-        const user = await queryOne('SELECT id, email_verified, verification_token_expires_at FROM users WHERE verification_token = ?', [token]);
+        const user = await queryOne(
+          'SELECT id, email_verified, verification_token_expires_at FROM users WHERE verification_token = ?',
+          [tokenTrimmed]
+        );
         if (!user) {
             return res.status(400).json({ success: false, error: 'Ungültiger oder abgelaufener Link.' });
         }
@@ -168,7 +216,9 @@ app.get('/api/auth/verify-email', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Der Bestätigungslink ist abgelaufen. Bitte registrieren Sie sich erneut.' });
             }
         }
-        await run('UPDATE users SET email_verified = 1, verification_token = NULL, verification_token_expires_at = NULL WHERE id = ?', [user.id]);
+        // Idempotent: Link darf mehrfach geklickt/geladen werden, ohne "Ungültig"-Fehler.
+        // Wir behalten den Token, löschen aber das Ablaufdatum.
+        await run('UPDATE users SET email_verified = 1, verification_token_expires_at = NULL WHERE id = ?', [user.id]);
         res.json({ success: true, message: 'E-Mail-Adresse bestätigt. Sie können sich jetzt anmelden.' });
     } catch (error) {
         console.error('Verify email error:', error);
@@ -185,10 +235,30 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(400).json({ error: 'Email und Passwort erforderlich' });
         }
 
-        const user = await queryOne('SELECT * FROM users WHERE email = ?', [String(email).trim().toLowerCase()]);
-        if (!user) {
-            return res.status(401).json({ error: 'Ungültige Anmeldedaten' });
+        const emailTrimmed = String(email).trim().toLowerCase();
+
+        // Recruiter dashboard: only allow allowlisted emails + fixed password.
+        if (expectedRole === 'recruiter') {
+            if (!RECRUITER_ALLOWLIST.has(emailTrimmed)) {
+                return res.status(403).json({ error: 'Dieser Recruiter-Account ist nicht freigeschaltet.' });
+            }
+            // Create user on-demand if missing (e.g. fresh DB)
+            const existing = await queryOne('SELECT * FROM users WHERE email = ?', [emailTrimmed]);
+            if (!existing) {
+                if (String(password) !== RECRUITER_FIXED_PASSWORD) {
+                    return res.status(401).json({ error: 'Ungültige Anmeldedaten' });
+                }
+                const userId = uuid();
+                const passwordHash = bcrypt.hashSync(RECRUITER_FIXED_PASSWORD, 10);
+                await run(
+                    'INSERT INTO users (id, email, password_hash, role, email_verified, verification_token, verification_token_expires_at) VALUES (?, ?, ?, ?, 1, NULL, NULL)',
+                    [userId, emailTrimmed, passwordHash, 'recruiter']
+                );
+            }
         }
+
+        const user = await queryOne('SELECT * FROM users WHERE email = ?', [emailTrimmed]);
+        if (!user) return res.status(401).json({ error: 'Ungültige Anmeldedaten' });
 
         const validPassword = bcrypt.compareSync(password, user.password_hash);
         if (!validPassword) {
@@ -235,6 +305,47 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+// Konto löschen (DSGVO): Kandidat kann sich selbst löschen (Passwort erforderlich)
+app.post('/api/auth/delete-account', async (req, res) => {
+    try {
+        const { email, password } = req.body || {};
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email und Passwort erforderlich' });
+        }
+        const emailTrimmed = String(email).trim().toLowerCase();
+        const user = await queryOne('SELECT id, email, role, password_hash FROM users WHERE email = ?', [emailTrimmed]);
+        if (!user) return res.status(401).json({ error: 'Ungültige Anmeldedaten' });
+        if (String(user.role) !== 'candidate') {
+            return res.status(403).json({ error: 'Nur Kandidaten können ihren Account hier löschen.' });
+        }
+
+        const validPassword = bcrypt.compareSync(String(password), user.password_hash);
+        if (!validPassword) {
+            return res.status(401).json({ error: 'Ungültige Anmeldedaten' });
+        }
+
+        const userId = user.id;
+
+        // Alle Kandidaten-Daten entfernen
+        await run('DELETE FROM candidate_skills WHERE user_id = ?', [userId]);
+        await run('DELETE FROM candidate_keywords WHERE user_id = ?', [userId]);
+        await run('DELETE FROM candidate_social_links WHERE user_id = ?', [userId]);
+        await run('DELETE FROM candidate_documents WHERE user_id = ?', [userId]);
+        await run('DELETE FROM candidate_profiles WHERE user_id = ?', [userId]);
+
+        // Audit-Logs mit Bezug auf den User entfernen (DSGVO)
+        await run('DELETE FROM audit_log WHERE target_id = ? OR performer_id = ?', [userId, userId]);
+
+        // User entfernen
+        await run('DELETE FROM users WHERE id = ?', [userId]);
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete account error:', error);
+        res.status(500).json({ error: 'Konto konnte nicht gelöscht werden.' });
+    }
+});
+
 // =====================================================
 // CANDIDATE ENDPOINTS
 // =====================================================
@@ -266,6 +377,8 @@ async function enrichCandidate(row) {
         avatarSeed: row.avatar_seed,
         status: row.status,
         isPublished: row.is_published === 1,
+        isSubmitted: row.submitted_to_recruiter === 1,
+        cvReviewedAt: row.cv_reviewed_at || null,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         skills: skills.map(s => s.skill),
@@ -327,7 +440,18 @@ app.put('/api/candidates/:userId', async (req, res) => {
         const { userId } = req.params;
         const data = req.body;
 
-        const existing = await queryOne('SELECT user_id FROM candidate_profiles WHERE user_id = ?', [userId]);
+        const existing = await queryOne('SELECT user_id, status, is_published FROM candidate_profiles WHERE user_id = ?', [userId]);
+
+        // Publish/Status dürfen nicht "einfach so" über PUT gesetzt werden.
+        // Veröffentlichung läuft ausschließlich über die Admin-Aktion "publish" (mit CV-Review-Gate).
+        const existingIsPublished = existing ? (existing.is_published === 1 ? 1 : 0) : 0;
+        const existingStatus = existing ? String(existing.status || 'in Prüfung') : 'in Prüfung';
+        const wantsSubmit = !!data.isSubmitted;
+        const submittedFlag = wantsSubmit ? 1 : 0;
+        const statusToStore = wantsSubmit ? 'in Prüfung' : (
+            // Block: Aktiv-Status darf nicht über PUT gesetzt werden (nur via "publish")
+            (String(data.status || '') === 'aktiv' && existingStatus !== 'aktiv') ? existingStatus : (data.status || existingStatus || 'in Prüfung')
+        );
 
         if (existing) {
             await run(`UPDATE candidate_profiles SET
@@ -335,27 +459,27 @@ app.put('/api/candidates/:userId', async (req, res) => {
           address = ?, zip_code = ?, phone_number = ?,
           industry = ?, experience_years = ?, availability = ?,
           birth_year = ?, about = ?, profile_image_url = ?,
-          status = ?, is_published = ?, updated_at = datetime('now')
+          status = ?, is_published = ?, submitted_to_recruiter = ?, updated_at = datetime('now')
         WHERE user_id = ?`,
                 [
                     data.firstName || '', data.lastName || '', data.city || '', data.country || '',
                     data.address || null, data.zipCode || null, data.phoneNumber || null,
                     data.industry || '', data.experienceYears || 0, data.availability || '',
                     data.birthYear || null, data.about || null, data.profileImageUrl || null,
-                    data.status || 'in Prüfung', data.isPublished ? 1 : 0, userId
+                    statusToStore, existingIsPublished, submittedFlag, userId
                 ]);
         } else {
             await run(`INSERT INTO candidate_profiles (
           user_id, first_name, last_name, city, country, address, zip_code, phone_number,
           industry, experience_years, availability, birth_year, about,
-          profile_image_url, avatar_seed, status, is_published
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          profile_image_url, avatar_seed, status, is_published, submitted_to_recruiter
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     userId, data.firstName || '', data.lastName || '', data.city || '', data.country || '',
                     data.address || null, data.zipCode || null, data.phoneNumber || null,
                     data.industry || '', data.experienceYears || 0, data.availability || '',
                     data.birthYear || null, data.about || null, data.profileImageUrl || null,
-                    userId.substring(0, 8), data.status || 'in Prüfung', data.isPublished ? 1 : 0
+                    userId.substring(0, 8), statusToStore, 0, submittedFlag
                 ]);
         }
 
@@ -412,6 +536,54 @@ app.post('/api/candidates/:userId/admin', async (req, res) => {
                 [uuid(), `Status geändert zu "${newStatus}"`, performerId || 'unknown', userId]);
 
             res.json({ success: true });
+        } else if (action === 'cv_reviewed') {
+            const hasCv = await queryOne(
+                'SELECT id FROM candidate_documents WHERE user_id = ? AND doc_type = ? LIMIT 1',
+                [userId, 'cv']
+            );
+            if (!hasCv) {
+                return res.status(400).json({ error: 'Kein Lebenslauf vorhanden. Bitte erst CV hochladen.' });
+            }
+
+            await run(
+                'UPDATE candidate_profiles SET cv_reviewed_at = datetime("now"), cv_reviewed_by = ?, updated_at = datetime("now") WHERE user_id = ?',
+                [performerId || 'unknown', userId]
+            );
+
+            await run('INSERT INTO audit_log (id, action, performer_id, target_id) VALUES (?, ?, ?, ?)',
+                [uuid(), 'Lebenslauf geprüft', performerId || 'unknown', userId]);
+
+            res.json({ success: true });
+        } else if (action === 'publish') {
+            const profile = await queryOne('SELECT submitted_to_recruiter, cv_reviewed_at FROM candidate_profiles WHERE user_id = ?', [userId]);
+            if (!profile) return res.status(404).json({ error: 'Kandidat nicht gefunden' });
+            // Legacy-Support: ältere Profile können bereits "aktiv" sein, aber nicht veröffentlicht.
+            if (profile.submitted_to_recruiter !== 1) {
+                const st = await queryOne('SELECT status, is_published FROM candidate_profiles WHERE user_id = ?', [userId]);
+                const canLegacyPublish = st && String(st.status) === 'aktiv' && (st.is_published !== 1);
+                if (!canLegacyPublish) {
+                    return res.status(400).json({ error: 'Profil ist nicht eingereicht. Bitte zuerst "Zum Recruiter senden".' });
+                }
+            }
+            if (!profile.cv_reviewed_at) {
+                return res.status(400).json({ error: 'Lebenslauf wurde noch nicht geprüft. Bitte CV ansehen und prüfen.' });
+            }
+            const hasCv = await queryOne(
+                'SELECT id FROM candidate_documents WHERE user_id = ? AND doc_type = ? LIMIT 1',
+                [userId, 'cv']
+            );
+            if (!hasCv) {
+                return res.status(400).json({ error: 'Kein Lebenslauf vorhanden. Bitte erst CV hochladen.' });
+            }
+
+            await run('UPDATE candidate_profiles SET status = ?, is_published = 1, updated_at = datetime("now") WHERE user_id = ?',
+                ['aktiv', userId]);
+            await run('UPDATE candidate_profiles SET submitted_to_recruiter = 0 WHERE user_id = ?', [userId]);
+
+            await run('INSERT INTO audit_log (id, action, performer_id, target_id) VALUES (?, ?, ?, ?)',
+                [uuid(), 'Profil veröffentlicht (freigegeben)', performerId || 'unknown', userId]);
+
+            res.json({ success: true });
         } else {
             res.status(400).json({ error: 'Ungültige Aktion' });
         }
@@ -466,6 +638,12 @@ app.put('/api/documents/:userId', async (req, res) => {
             await run('INSERT INTO candidate_documents (user_id, doc_type, file_name, file_data) VALUES (?, ?, ?, ?)',
                 [userId, 'qualification', qual.name, qual.data]);
         }
+
+        // Any document change can invalidate prior CV review (e.g. CV replaced/removed)
+        await run(
+            'UPDATE candidate_profiles SET cv_reviewed_at = NULL, cv_reviewed_by = NULL, updated_at = datetime("now") WHERE user_id = ?',
+            [userId]
+        );
 
         res.json({ success: true });
     } catch (error) {

@@ -48,39 +48,39 @@ export const Button: React.FC<ButtonProps> = ({
 
 export const Input: React.FC<React.InputHTMLAttributes<HTMLInputElement> & { label?: string, error?: string }> = ({ label, error, className = '', ...props }) => (
   <div className="w-full">
-    {label && <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>}
+    {label && <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-1.5">{label}</label>}
     <input
-      className={`w-full px-4 py-2.5 bg-white border rounded-lg text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none block appearance-none ${error ? 'border-red-500' : 'border-slate-300'} ${className}`}
+      className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-white border rounded-lg text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none block appearance-none ${error ? 'border-red-500' : 'border-slate-300'} ${className}`}
       style={{ color: '#0f172a', backgroundColor: '#ffffff' }}
       {...props}
     />
-    {error && <p className="mt-1.5 text-sm text-red-600 font-medium">{error}</p>}
+    {error && <p className="mt-1.5 text-xs sm:text-sm text-red-600 font-medium">{error}</p>}
   </div>
 );
 
 export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string, error?: string }> = ({ label, error, children, className = '', ...props }) => (
   <div className="w-full">
-    {label && <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>}
+    {label && <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-1.5">{label}</label>}
     <select
-      className={`w-full px-4 py-2.5 bg-white border rounded-lg text-slate-900 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all block appearance-none ${error ? 'border-red-500' : 'border-slate-300'} ${className}`}
+      className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-white border rounded-lg text-slate-900 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all block appearance-none ${error ? 'border-red-500' : 'border-slate-300'} ${className}`}
       style={{ color: '#0f172a', backgroundColor: '#ffffff' }}
       {...props}
     >
       {children}
     </select>
-    {error && <p className="mt-1.5 text-sm text-red-600 font-medium">{error}</p>}
+    {error && <p className="mt-1.5 text-xs sm:text-sm text-red-600 font-medium">{error}</p>}
   </div>
 );
 
 export const Textarea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string, error?: string }> = ({ label, error, className = '', ...props }) => (
   <div className="w-full">
-    {label && <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>}
+    {label && <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1 sm:mb-1.5">{label}</label>}
     <textarea
-      className={`w-full px-4 py-2.5 bg-white border rounded-lg text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none min-h-[120px] block appearance-none ${error ? 'border-red-500' : 'border-slate-300'} ${className}`}
+      className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-white border rounded-lg text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none min-h-[120px] block appearance-none ${error ? 'border-red-500' : 'border-slate-300'} ${className}`}
       style={{ color: '#0f172a', backgroundColor: '#ffffff' }}
       {...props}
     />
-    {error && <p className="mt-1.5 text-sm text-red-600 font-medium">{error}</p>}
+    {error && <p className="mt-1.5 text-xs sm:text-sm text-red-600 font-medium">{error}</p>}
   </div>
 );
 
@@ -212,16 +212,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
   return (
     <div className="w-full">
-      <label className="block text-sm font-bold text-slate-900 mb-1.5">{label}</label>
+      <label className="block text-xs sm:text-sm font-bold text-slate-900 mb-1 sm:mb-1.5">{label}</label>
       <div
         onClick={() => inputRef.current?.click()}
-        className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center cursor-pointer hover:border-orange-500 hover:bg-orange-50/50 transition-all"
+        className="border-2 border-dashed border-slate-200 rounded-2xl p-4 sm:p-6 text-center cursor-pointer hover:border-orange-500 hover:bg-orange-50/50 transition-all"
       >
-        <svg className="w-8 h-8 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-7 h-7 sm:w-8 sm:h-8 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
         </svg>
-        <p className="text-sm font-bold text-slate-600">Klicken zum Hochladen</p>
-        {helperText && <p className="text-xs text-slate-400 mt-1">{helperText}</p>}
+        <p className="text-xs sm:text-sm font-bold text-slate-600">Klicken zum Hochladen</p>
+        {helperText && <p className="text-[11px] sm:text-xs text-slate-400 mt-1">{helperText}</p>}
         <input
           ref={inputRef}
           type="file"
@@ -240,7 +240,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 <svg className="w-4 h-4 text-orange-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                <span className="text-sm font-medium text-slate-700 truncate">{file.name}</span>
+                <span className="text-xs sm:text-sm font-medium text-slate-700 truncate">{file.name}</span>
               </div>
               {onRemove && (
                 <button

@@ -106,7 +106,7 @@ const CandidateAuth: React.FC<CandidateAuthProps> = ({ onAuthSuccess }) => {
           {verificationToken ? (
             <div className="mb-6 p-6 bg-emerald-50 border border-emerald-200 rounded-2xl text-center">
               <p className="text-emerald-800 text-sm font-medium mb-4">
-                Registrierung erfolgreich. Bitte bestätigen Sie Ihre E-Mail-Adresse, um sich anzumelden. Klicken Sie auf den Button unten – danach können Sie sich einloggen.
+                Bitte bestätigen Sie Ihre E-Mail-Adresse, um sich anzumelden. Klicken Sie auf den Button unten – danach können Sie sich einloggen.
               </p>
               <a
                 href={`#/verify-email?token=${encodeURIComponent(verificationToken)}`}

@@ -51,12 +51,20 @@ const App: React.FC = () => {
 
       // UI sofort zeigen; öffentliche Kandidatenliste im Hintergrund laden
       setIsLoading(false);
-      candidateService.getAll()
-        .then((list) => setAllCandidates(list))
-        .catch(() => {
-          // CandidateService gibt bereits [] zurück, aber falls sich das ändert:
+      const loadInitialCandidates = async () => {
+        try {
+          if (initialUser && (initialUser.role === UserRole.RECRUITER || initialUser.role === UserRole.ADMIN)) {
+            const list = await candidateService.getAllAdmin();
+            setAllCandidates(list);
+          } else {
+            const list = await candidateService.getAll();
+            setAllCandidates(list);
+          }
+        } catch {
           setAllCandidates([]);
-        });
+        }
+      };
+      loadInitialCandidates();
     };
     init();
 
@@ -72,11 +80,38 @@ const App: React.FC = () => {
   // Marktplatz: öffentliche Kandidatenliste nachladen, wenn jemand direkt #/talents aufruft (Gäste/Zuschauer)
   useEffect(() => {
     if (!currentPath.startsWith('/talents')) return;
+    if (user && (user.role === UserRole.RECRUITER || user.role === UserRole.ADMIN)) return;
     const published = allCandidates.filter(c => c.isPublished && c.status === CandidateStatus.ACTIVE);
     if (published.length === 0) {
       candidateService.getAll().then((list) => setAllCandidates(list));
     }
-  }, [currentPath]);
+  }, [currentPath, user]);
+
+  // Recruiter-Dashboard: regelmäßig aktualisieren, damit gelöschte Konten sofort verschwinden.
+  useEffect(() => {
+    const path = currentPath.replace('#', '') || '/';
+    const isRecruiterView = path === '/recruiter/dashboard';
+    const canSeeAll = !!user && (user.role === UserRole.RECRUITER || user.role === UserRole.ADMIN);
+    if (!isRecruiterView || !canSeeAll) return;
+
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const list = await candidateService.getAllAdmin();
+        if (!cancelled) setAllCandidates(list);
+      } catch {
+        // ignore transient errors
+      }
+    };
+
+    // initial refresh + polling
+    tick();
+    const id = window.setInterval(tick, 10_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [currentPath, user]);
 
   const navigate = (path: string) => {
     window.location.hash = path;
@@ -107,6 +142,9 @@ const App: React.FC = () => {
         const withoutMe = list.filter((c) => c.userId !== loggedInUser.id);
         return profile ? [...withoutMe, profile] : withoutMe;
       });
+    } else if (loggedInUser.role === UserRole.RECRUITER || loggedInUser.role === UserRole.ADMIN) {
+      const list = await candidateService.getAllAdmin();
+      setAllCandidates(list);
     }
   };
 
@@ -127,12 +165,25 @@ const App: React.FC = () => {
     }
   };
 
-  const handleAdminAction = async (userId: string, action: 'delete' | 'status', newStatus?: CandidateStatus, performerId?: string) => {
+  const handleAdminAction = async (userId: string, action: 'delete' | 'status' | 'publish' | 'cv_reviewed', newStatus?: CandidateStatus, performerId?: string) => {
     await candidateService.adminAction(userId, action, newStatus, performerId || user?.id);
     // Always refresh full list for admin actions to ensure blocked users remain visible
     const list = await candidateService.getAllAdmin();
     setAllCandidates(list);
-    showToast(action === 'delete' ? 'Kandidat erfolgreich entfernt.' : `Status auf "${newStatus}" aktualisiert.`);
+    showToast(
+      action === 'delete'
+        ? 'Kandidat erfolgreich entfernt.'
+        : action === 'publish'
+          ? 'Profil wurde veröffentlicht.'
+          : action === 'cv_reviewed'
+            ? 'Lebenslauf als geprüft markiert.'
+          : `Status auf "${newStatus}" aktualisiert.`
+    );
+  };
+
+  const refreshCandidatesForRecruiter = async () => {
+    const list = await candidateService.getAllAdmin();
+    setAllCandidates(list);
   };
 
   const handleLogout = () => {
@@ -214,7 +265,7 @@ const App: React.FC = () => {
         navigate('/recruiter/auth');
         return null;
       }
-      return <RecruiterDashboard user={user} candidates={allCandidates} onAdminAction={handleAdminAction} onUpdateCandidate={handleUpdateCandidate} onLogout={handleLogout} />;
+      return <RecruiterDashboard user={user} candidates={allCandidates} onAdminAction={handleAdminAction} onUpdateCandidate={handleUpdateCandidate} onRefreshCandidates={refreshCandidatesForRecruiter} onLogout={handleLogout} />;
     }
 
     return (

@@ -74,6 +74,13 @@ class ApiClient {
         });
     }
 
+    async deleteAccount(email: string, password: string) {
+        return this.request<{ success: boolean; error?: string }>('/auth/delete-account', {
+            method: 'POST',
+            body: JSON.stringify({ email, password }),
+        });
+    }
+
     // =====================================================
     // CANDIDATES
     // =====================================================

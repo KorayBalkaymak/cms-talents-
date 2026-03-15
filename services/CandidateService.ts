@@ -46,6 +46,7 @@ class CandidateService {
       avatarSeed: userId.substring(0, 8),
       status: CandidateStatus.REVIEW,
       isPublished: false,
+      isSubmitted: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       firstName: '',
@@ -67,7 +68,7 @@ class CandidateService {
     return await api.updateCandidate(profile.userId, profile);
   }
 
-  async adminAction(userId: string, action: 'delete' | 'status', newStatus?: CandidateStatus, performerId?: string): Promise<void> {
+  async adminAction(userId: string, action: 'delete' | 'status' | 'publish' | 'cv_reviewed', newStatus?: CandidateStatus, performerId?: string): Promise<void> {
     await api.adminAction(userId, action, newStatus, performerId);
   }
 
