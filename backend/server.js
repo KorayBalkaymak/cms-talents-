@@ -268,9 +268,9 @@ app.get('/api/auth/verify-email', async (req, res) => {
 });
 
 // Login (nur wenn E-Mail bestätigt)
-app.post('/api/auth/login', async (req, res) => {
+async function handleLogin(req, res) {
     try {
-        const { email, password, expectedRole } = req.body;
+        const { email, password, expectedRole } = req.body || {};
 
         if (!email || !password) {
             return res.status(400).json({ error: 'Email und Passwort erforderlich' });
@@ -344,7 +344,9 @@ app.post('/api/auth/login', async (req, res) => {
         console.error('Login error:', error);
         res.status(500).json({ error: 'Anmeldung fehlgeschlagen' });
     }
-});
+}
+app.post('/api/auth/login', (req, res) => handleLogin(req, res));
+app.post('/auth/login', (req, res) => handleLogin(req, res)); // Vercel: Pfad kann ohne /api ankommen
 
 // Konto löschen (DSGVO): Kandidat kann sich selbst löschen (Passwort erforderlich)
 app.post('/api/auth/delete-account', async (req, res) => {
