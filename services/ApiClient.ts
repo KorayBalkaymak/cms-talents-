@@ -1,138 +1,751 @@
-// =====================================================
-// API CLIENT - Connects frontend to backend
-// =====================================================
-// In dev Vite proxies /api to localhost:3001 – Backend muss laufen: cd backend && npm run dev
+import { supabase } from '../utils/supabase';
+import {
+  AuditLog,
+  CandidateDocuments,
+  CandidateProfile,
+  CandidateStatus,
+  SocialLink,
+  User,
+  UserRole,
+} from '../types';
 
-const API_BASE = '/api';
+const SESSION_KEY = 'cms_talents_session';
+
+const RECRUITER_ROLE_BY_EMAIL: Record<string, UserRole> = {
+  'haagen@industries-cms.com': UserRole.ADMIN,
+  'candau@industries-cms.com': UserRole.RECRUITER,
+  'fuhrmann@industries-cms.com': UserRole.RECRUITER,
+};
+
+export const RECRUITER_EMAILS = Object.keys(RECRUITER_ROLE_BY_EMAIL);
+
+export function isRecruiterEmail(email: string): boolean {
+  return !!RECRUITER_ROLE_BY_EMAIL[email.trim().toLowerCase()];
+}
+
+type ProfileRow = {
+  id: string;
+  email: string;
+  role: UserRole;
+  first_name: string;
+  last_name: string;
+  city: string;
+  country: string;
+  address: string | null;
+  zip_code: string | null;
+  phone_number: string | null;
+  industry: string;
+  experience_years: number;
+  availability: string;
+  birth_year: string | null;
+  about: string | null;
+  profile_image_url: string | null;
+  avatar_seed: string;
+  status: CandidateStatus;
+  is_published: boolean;
+  is_submitted: boolean;
+  cv_reviewed_at: string | null;
+  cv_reviewed_by: string | null;
+  skills: string[] | null;
+  boosted_keywords: string[] | null;
+  social_links: SocialLink[] | null;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type DocumentRow = {
+  user_id: string;
+  cv_pdf: { name: string; data: string } | null;
+  certificates: { name: string; data: string }[] | null;
+  qualifications: { name: string; data: string }[] | null;
+  updated_at: string | null;
+};
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+function formatAuthError(message?: string): string {
+  const text = (message || '').toLowerCase();
+  if (text.includes('invalid login credentials')) return 'Ungültige Anmeldedaten';
+  if (text.includes('email not confirmed')) return 'Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.';
+  if (text.includes('user already registered')) return 'Diese E-Mail ist bereits registriert.';
+  if (text.includes('password should be at least')) return 'Passwort muss mindestens 8 Zeichen haben.';
+  if (text.includes('signup is disabled')) return 'Registrierung ist derzeit deaktiviert.';
+  return message || 'Anfrage fehlgeschlagen';
+}
+
+function isRecruiterRole(role?: string | null): boolean {
+  return role === UserRole.RECRUITER || role === UserRole.ADMIN;
+}
+
+function recruiterRoleFromEmail(email?: string | null): UserRole {
+  if (!email) return UserRole.CANDIDATE;
+  return RECRUITER_ROLE_BY_EMAIL[normalizeEmail(email)] || UserRole.CANDIDATE;
+}
 
 class ApiClient {
-    private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-        const url = `${API_BASE}${endpoint}`;
+  private async currentAuthUser() {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      return null;
+    }
+    return data.user ?? null;
+  }
 
-        let response: Response;
-        try {
-            const controller = new AbortController();
-            // Vercel Cold Start kann >12s dauern → etwas großzügiger, damit Register/Login nicht abbrechen
-            const timeoutMs = 30000;
-            const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  private async fetchProfileRow(userId: string): Promise<ProfileRow | null> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
 
-            response = await fetch(url, {
-                ...options,
-                signal: controller.signal,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...options.headers,
-                },
-            });
-            clearTimeout(timeout);
-        } catch (e) {
-            const isAbort = typeof e === 'object' && e !== null && 'name' in e && (e as any).name === 'AbortError';
-            throw new Error(isAbort
-              ? 'Server startet gerade (Timeout). Bitte in 10 Sekunden erneut versuchen.'
-              : 'Backend nicht erreichbar. Bitte im Ordner "backend" starten: npm run dev'
-            );
-        }
-
-        const text = await response.text();
-        let data: any;
-        try {
-            data = text ? JSON.parse(text) : {};
-        } catch {
-            throw new Error('Backend nicht erreichbar. Bitte im Ordner "backend" starten: npm run dev');
-        }
-
-        if (!response.ok) {
-            const msg = data?.error || data?.message || (response.status === 404 ? 'Backend nicht erreichbar. Bitte Backend starten: im Ordner "backend" → npm run dev' : `Anfrage fehlgeschlagen (${response.status})`);
-            const err: any = new Error(msg);
-            err.status = response.status;
-            err.data = data;
-            throw err;
-        }
-
-        return data;
+    if (error) {
+      return null;
     }
 
-    // =====================================================
-    // AUTH
-    // =====================================================
+    return (data as ProfileRow | null) ?? null;
+  }
 
-    async register(email: string, password: string, role: string) {
-        return this.request<{ success: boolean; user?: any; message?: string; verificationToken?: string; error?: string }>('/auth/register', {
-            method: 'POST',
-            body: JSON.stringify({ email, password, role }),
-        });
+  private async fetchDocumentRow(userId: string): Promise<DocumentRow | null> {
+    const { data, error } = await supabase
+      .from('candidate_documents')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      return null;
     }
 
-    async verifyEmail(token: string) {
-        return this.request<{ success: boolean; message?: string; error?: string }>(`/auth/verify-email?token=${encodeURIComponent(token)}`, { method: 'GET' });
+    return (data as DocumentRow | null) ?? null;
+  }
+
+  private documentsToList(row: DocumentRow | null | undefined): { type: string; name: string }[] {
+    if (!row) return [];
+
+    const items: { type: string; name: string }[] = [];
+    if (row.cv_pdf?.name) items.push({ type: 'cv', name: row.cv_pdf.name });
+    for (const cert of row.certificates || []) {
+      if (cert?.name) items.push({ type: 'certificate', name: cert.name });
+    }
+    for (const qual of row.qualifications || []) {
+      if (qual?.name) items.push({ type: 'qualification', name: qual.name });
+    }
+    return items;
+  }
+
+  private documentRowToDocuments(row: DocumentRow | null | undefined): CandidateDocuments {
+    return {
+      userId: row?.user_id || '',
+      cvPdf: row?.cv_pdf || undefined,
+      certificates: row?.certificates || [],
+      qualifications: row?.qualifications || [],
+    };
+  }
+
+  private profileRowToCandidate(row: ProfileRow, docs?: DocumentRow | null): CandidateProfile {
+    return {
+      userId: row.id,
+      avatarSeed: row.avatar_seed || row.id.substring(0, 8),
+      status: row.status,
+      isPublished: !!row.is_published,
+      isSubmitted: !!row.is_submitted,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      firstName: row.first_name || '',
+      lastName: row.last_name || '',
+      city: row.city || '',
+      country: row.country || '',
+      address: row.address || undefined,
+      zipCode: row.zip_code || undefined,
+      phoneNumber: row.phone_number || undefined,
+      industry: row.industry || '',
+      experienceYears: row.experience_years || 0,
+      availability: row.availability || '',
+      birthYear: row.birth_year || undefined,
+      about: row.about || undefined,
+      skills: row.skills || [],
+      boostedKeywords: row.boosted_keywords || [],
+      socialLinks: row.social_links || [],
+      profileImageUrl: row.profile_image_url || undefined,
+      cvReviewedAt: row.cv_reviewed_at || null,
+      documents: this.documentsToList(docs),
+    };
+  }
+
+  private profileRowToUser(row: ProfileRow): User {
+    return {
+      id: row.id,
+      email: row.email,
+      role: row.role,
+      createdAt: row.created_at,
+      firstName: row.first_name || undefined,
+    };
+  }
+
+  private async ensureOwnProfile(userId: string): Promise<ProfileRow | null> {
+    const authUser = await this.currentAuthUser();
+    if (!authUser || authUser.id !== userId) {
+      return null;
     }
 
-    async login(email: string, password: string, expectedRole?: string) {
-        return this.request<{ success: boolean; user: any; error?: string }>('/auth/login', {
-            method: 'POST',
-            body: JSON.stringify({ email, password, expectedRole }),
-        });
+    const existing = await this.fetchProfileRow(userId);
+    if (existing) {
+      return existing.deleted_at ? null : existing;
     }
 
-    async deleteAccount(email: string, password: string) {
-        return this.request<{ success: boolean; error?: string }>('/auth/delete-account', {
-            method: 'POST',
-            body: JSON.stringify({ email, password }),
-        });
+    const role = recruiterRoleFromEmail(authUser.email);
+    const now = new Date().toISOString();
+    const payload = {
+      id: userId,
+      email: authUser.email || '',
+      role,
+      first_name: '',
+      last_name: '',
+      city: '',
+      country: '',
+      address: null,
+      zip_code: null,
+      phone_number: null,
+      industry: '',
+      experience_years: 0,
+      availability: '',
+      birth_year: null,
+      about: null,
+      profile_image_url: null,
+      avatar_seed: userId.substring(0, 8),
+      status: CandidateStatus.REVIEW,
+      is_published: false,
+      is_submitted: false,
+      cv_reviewed_at: null,
+      cv_reviewed_by: null,
+      skills: [],
+      boosted_keywords: [],
+      social_links: [],
+      deleted_at: null,
+      created_at: now,
+      updated_at: now,
+    };
+
+    const { error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
+    if (error) {
+      return null;
     }
 
-    // =====================================================
-    // CANDIDATES
-    // =====================================================
+    const inserted = await this.fetchProfileRow(userId);
+    return inserted?.deleted_at ? null : inserted;
+  }
 
-    async getCandidates() {
-        return this.request<any[]>('/candidates');
+  private async loadDocumentIndex(userIds: string[]): Promise<Map<string, DocumentRow>> {
+    const uniqueIds = Array.from(new Set(userIds.filter(Boolean)));
+    if (uniqueIds.length === 0) {
+      return new Map();
     }
 
-    async getAllCandidates() {
-        return this.request<any[]>('/candidates/all');
+    const { data, error } = await supabase
+      .from('candidate_documents')
+      .select('*')
+      .in('user_id', uniqueIds);
+
+    if (error || !data) {
+      return new Map();
     }
 
-    async getCandidate(userId: string) {
-        return this.request<any>(`/candidates/${userId}`);
+    return new Map((data as DocumentRow[]).map((row) => [row.user_id, row]));
+  }
+
+  async getSessionUser(): Promise<User | null> {
+    const authUser = await this.currentAuthUser();
+    if (!authUser) {
+      return null;
     }
 
-    async updateCandidate(userId: string, data: any) {
-        return this.request<any>(`/candidates/${userId}`, {
-            method: 'PUT',
-            body: JSON.stringify(data),
-        });
+    const profile = await this.ensureOwnProfile(authUser.id) || await this.fetchProfileRow(authUser.id);
+    if (!profile || profile.deleted_at) {
+      return null;
     }
 
-    async adminAction(userId: string, action: string, newStatus?: string, performerId?: string) {
-        return this.request<{ success: boolean }>(`/candidates/${userId}/admin`, {
-            method: 'POST',
-            body: JSON.stringify({ action, newStatus, performerId }),
-        });
+    return this.profileRowToUser(profile);
+  }
+
+  async verifyEmail(): Promise<{ success: boolean; message?: string; error?: string }> {
+    const url = new URL(window.location.href);
+    const code = url.searchParams.get('code');
+    const tokenHash = url.searchParams.get('token_hash');
+    const type = url.searchParams.get('type');
+
+    if (code) {
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (!error) {
+        return { success: true, message: 'E-Mail-Adresse bestätigt. Sie können sich jetzt anmelden.' };
+      }
+      if (!tokenHash) {
+        return { success: false, error: formatAuthError(error.message) };
+      }
     }
 
-    // =====================================================
-    // DOCUMENTS
-    // =====================================================
+    if (tokenHash && type) {
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: type as any,
+      });
 
-    async getDocuments(userId: string) {
-        return this.request<any>(`/documents/${userId}`);
+      if (error) {
+        return { success: false, error: formatAuthError(error.message) };
+      }
+
+      return { success: true, message: 'E-Mail-Adresse bestätigt. Sie können sich jetzt anmelden.' };
     }
 
-    async updateDocuments(userId: string, data: any) {
-        return this.request<{ success: boolean }>(`/documents/${userId}`, {
-            method: 'PUT',
-            body: JSON.stringify(data),
-        });
+    const { data } = await supabase.auth.getSession();
+    if (data.session) {
+      return { success: true, message: 'E-Mail-Adresse bestätigt. Sie können sich jetzt anmelden.' };
     }
 
-    // =====================================================
-    // AUDIT LOG
-    // =====================================================
+    return {
+      success: false,
+      error: 'Kein Bestätigungslink gefunden. Bitte nutzen Sie den Link aus Ihrer E-Mail.',
+    };
+  }
 
-    async getAuditLog() {
-        return this.request<any[]>('/audit-log');
+  async register(email: string, password: string, role: string) {
+    const normalizedEmail = normalizeEmail(email);
+
+    if (role !== UserRole.CANDIDATE) {
+      return {
+        success: false,
+        error: 'Recruiter-Registrierung ist deaktiviert. Bitte mit einem Supabase-Auth-Account anmelden.',
+      };
     }
+
+    if (isRecruiterEmail(normalizedEmail)) {
+      return {
+        success: false,
+        error: 'Diese E-Mail ist für Recruiter reserviert. Bitte mit dem bestehenden Account anmelden.',
+      };
+    }
+
+    const redirectTo = `${window.location.origin}/verify-email`;
+    const { data, error } = await supabase.auth.signUp({
+      email: normalizedEmail,
+      password,
+      options: {
+        emailRedirectTo: redirectTo,
+        data: { role: UserRole.CANDIDATE },
+      },
+    });
+
+    if (error) {
+      return { success: false, error: formatAuthError(error.message) };
+    }
+
+    const user = await this.getSessionUser();
+    if (user) {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      return { success: true, user };
+    }
+
+    return {
+      success: true,
+      needsVerification: true,
+      message:
+        'Registrierung erfolgreich. Bitte bestätigen Sie Ihre E-Mail-Adresse über den Link, den Supabase an Sie sendet.',
+    };
+  }
+
+  async login(email: string, password: string, expectedRole?: string) {
+    const normalizedEmail = normalizeEmail(email);
+
+    if (expectedRole === UserRole.RECRUITER && !isRecruiterEmail(normalizedEmail)) {
+      return { success: false, error: 'Dieser Recruiter-Account ist nicht freigeschaltet.' };
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
+
+    if (error) {
+      return { success: false, error: formatAuthError(error.message) };
+    }
+
+    const user = await this.getSessionUser();
+    if (!user) {
+      await supabase.auth.signOut();
+      return { success: false, error: 'Anmeldung fehlgeschlagen.' };
+    }
+
+    if (expectedRole === UserRole.CANDIDATE && user.role !== UserRole.CANDIDATE) {
+      await supabase.auth.signOut();
+      return { success: false, error: 'Keine Berechtigung für diesen Bereich.' };
+    }
+
+    if (expectedRole === UserRole.RECRUITER && !isRecruiterRole(user.role)) {
+      await supabase.auth.signOut();
+      return { success: false, error: 'Keine Berechtigung für diesen Bereich.' };
+    }
+
+    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    return { success: true, user };
+  }
+
+  async deleteAccount(email: string, password: string) {
+    const normalizedEmail = normalizeEmail(email);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
+
+    if (error) {
+      return { success: false, error: formatAuthError(error.message) };
+    }
+
+    const user = await this.getSessionUser();
+    if (!user) {
+      await supabase.auth.signOut();
+      return { success: false, error: 'Nicht eingeloggt.' };
+    }
+
+    if (user.role !== UserRole.CANDIDATE) {
+      await supabase.auth.signOut();
+      return { success: false, error: 'Nur Kandidaten können ihr Konto hier löschen.' };
+    }
+
+    const now = new Date().toISOString();
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        deleted_at: now,
+        is_published: false,
+        is_submitted: false,
+        status: CandidateStatus.BLOCKED,
+        updated_at: now,
+      })
+      .eq('id', user.id);
+
+    if (profileError) {
+      await supabase.auth.signOut();
+      return { success: false, error: 'Konto konnte nicht gelöscht werden.' };
+    }
+
+    await supabase.from('candidate_documents').delete().eq('user_id', user.id);
+    localStorage.removeItem(SESSION_KEY);
+    await supabase.auth.signOut();
+    return { success: true };
+  }
+
+  async getCandidates() {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .is('deleted_at', null)
+      .eq('is_published', true)
+      .eq('status', CandidateStatus.ACTIVE)
+      .order('created_at', { ascending: false });
+
+    if (error || !data) {
+      return [];
+    }
+
+    const rows = data as ProfileRow[];
+    const docs = await this.loadDocumentIndex(rows.map((row) => row.id));
+    return rows.map((row) => this.profileRowToCandidate(row, docs.get(row.id)));
+  }
+
+  async getAllCandidates() {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+
+    if (error || !data) {
+      return [];
+    }
+
+    const rows = data as ProfileRow[];
+    const docs = await this.loadDocumentIndex(rows.map((row) => row.id));
+    return rows.map((row) => this.profileRowToCandidate(row, docs.get(row.id)));
+  }
+
+  async getCandidate(userId: string) {
+    const row = await this.fetchProfileRow(userId);
+    if (!row) {
+      const created = await this.ensureOwnProfile(userId);
+      if (!created || created.deleted_at) {
+        return null;
+      }
+      const docs = await this.fetchDocumentRow(userId);
+      return this.profileRowToCandidate(created, docs);
+    }
+
+    if (row.deleted_at) {
+      return null;
+    }
+
+    const docs = await this.fetchDocumentRow(userId);
+    return this.profileRowToCandidate(row, docs);
+  }
+
+  async updateCandidate(userId: string, data: any) {
+    const current = await this.fetchProfileRow(userId);
+    const authUser = await this.currentAuthUser();
+    const currentRole = current?.role || recruiterRoleFromEmail(authUser?.email ?? null);
+    const isAdmin = currentRole === UserRole.ADMIN;
+    const isOwnerCandidate = !!authUser && authUser.id === userId && currentRole === UserRole.CANDIDATE;
+    const nextSubmitted = isAdmin ? !!data.isSubmitted : !!current?.is_submitted || !!data.isSubmitted;
+    const nextStatus = isAdmin
+      ? (data.status || CandidateStatus.REVIEW)
+      : nextSubmitted
+        ? CandidateStatus.REVIEW
+        : (current?.status || data.status || CandidateStatus.REVIEW);
+    const nextPublished = isAdmin
+      ? !!data.isPublished
+      : nextSubmitted
+        ? false
+        : !!current?.is_published;
+
+    const now = new Date().toISOString();
+    const payload = {
+      id: userId,
+      email: current?.email || authUser?.email || '',
+      role: current?.role || recruiterRoleFromEmail(authUser?.email ?? null),
+      first_name: data.firstName || current?.first_name || '',
+      last_name: data.lastName || current?.last_name || '',
+      city: data.city || current?.city || '',
+      country: data.country || current?.country || '',
+      address: data.address ?? current?.address ?? null,
+      zip_code: data.zipCode ?? current?.zip_code ?? null,
+      phone_number: data.phoneNumber ?? current?.phone_number ?? null,
+      industry: data.industry || current?.industry || '',
+      experience_years: Number(data.experienceYears ?? current?.experience_years ?? 0),
+      availability: data.availability || current?.availability || '',
+      birth_year: data.birthYear ?? current?.birth_year ?? null,
+      about: data.about ?? current?.about ?? null,
+      profile_image_url: data.profileImageUrl ?? current?.profile_image_url ?? null,
+      avatar_seed: current?.avatar_seed || userId.substring(0, 8),
+      status: nextStatus,
+      is_published: nextPublished,
+      is_submitted: nextSubmitted,
+      cv_reviewed_at: current?.cv_reviewed_at ?? null,
+      cv_reviewed_by: current?.cv_reviewed_by ?? null,
+      skills: Array.isArray(data.skills) ? data.skills : current?.skills || [],
+      boosted_keywords: Array.isArray(data.boostedKeywords) ? data.boostedKeywords : current?.boosted_keywords || [],
+      social_links: Array.isArray(data.socialLinks) ? data.socialLinks : current?.social_links || [],
+      deleted_at: current?.deleted_at ?? null,
+      created_at: current?.created_at || now,
+      updated_at: now,
+    };
+
+    const { error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const updated = await this.fetchProfileRow(userId);
+    if (!updated || updated.deleted_at) {
+      throw new Error('Profil konnte nicht gespeichert werden.');
+    }
+
+    const docs = await this.fetchDocumentRow(userId);
+    return this.profileRowToCandidate(updated, docs);
+  }
+
+  async adminAction(
+    userId: string,
+    action: 'delete' | 'status' | 'publish' | 'cv_reviewed',
+    newStatus?: CandidateStatus,
+    performerId?: string
+  ): Promise<void> {
+    const current = await this.getSessionUser();
+    if (!current || !isRecruiterRole(current.role)) {
+      throw new Error('Keine Berechtigung für diese Aktion.');
+    }
+
+    const effectivePerformerId = performerId || current.id;
+    const now = new Date().toISOString();
+
+    if (action === 'delete') {
+      await supabase.from('candidate_documents').delete().eq('user_id', userId);
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          deleted_at: now,
+          is_published: false,
+          is_submitted: false,
+          status: CandidateStatus.BLOCKED,
+          updated_at: now,
+        })
+        .eq('id', userId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      await supabase.from('audit_log').insert({
+        id: crypto.randomUUID(),
+        action: 'Kandidat gelöscht',
+        performer_id: effectivePerformerId,
+        target_id: userId,
+        timestamp: now,
+      });
+      return;
+    }
+
+    if (action === 'status' && newStatus) {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ status: newStatus, updated_at: now })
+        .eq('id', userId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      await supabase.from('audit_log').insert({
+        id: crypto.randomUUID(),
+        action: `Status geändert zu "${newStatus}"`,
+        performer_id: effectivePerformerId,
+        target_id: userId,
+        timestamp: now,
+      });
+      return;
+    }
+
+    if (action === 'cv_reviewed') {
+      const docs = await this.fetchDocumentRow(userId);
+      if (!docs?.cv_pdf?.name) {
+        throw new Error('Kein Lebenslauf vorhanden. Bitte erst CV hochladen.');
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          cv_reviewed_at: now,
+          cv_reviewed_by: effectivePerformerId,
+          updated_at: now,
+        })
+        .eq('id', userId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      await supabase.from('audit_log').insert({
+        id: crypto.randomUUID(),
+        action: 'Lebenslauf geprüft',
+        performer_id: effectivePerformerId,
+        target_id: userId,
+        timestamp: now,
+      });
+      return;
+    }
+
+    if (action === 'publish') {
+      const profile = await this.fetchProfileRow(userId);
+      const docs = await this.fetchDocumentRow(userId);
+
+      if (!profile || profile.deleted_at) {
+        throw new Error('Kandidat nicht gefunden.');
+      }
+
+      if (!docs?.cv_pdf?.name) {
+        throw new Error('Kein Lebenslauf vorhanden. Bitte erst CV hochladen.');
+      }
+
+      const canLegacyPublish = profile.status === CandidateStatus.ACTIVE && !profile.is_published;
+      if (!profile.is_submitted && !canLegacyPublish) {
+        throw new Error('Profil ist nicht eingereicht. Bitte zuerst "Zum Recruiter senden".');
+      }
+
+      if (!profile.cv_reviewed_at) {
+        throw new Error('Lebenslauf wurde noch nicht geprüft. Bitte CV ansehen und prüfen.');
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          status: CandidateStatus.ACTIVE,
+          is_published: true,
+          is_submitted: false,
+          updated_at: now,
+        })
+        .eq('id', userId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      await supabase.from('audit_log').insert({
+        id: crypto.randomUUID(),
+        action: 'Profil veröffentlicht (freigegeben)',
+        performer_id: effectivePerformerId,
+        target_id: userId,
+        timestamp: now,
+      });
+    }
+  }
+
+  async getDocuments(userId: string): Promise<CandidateDocuments | undefined> {
+    const row = await this.fetchDocumentRow(userId);
+    return row ? this.documentRowToDocuments(row) : {
+      userId,
+      certificates: [],
+      qualifications: [],
+    };
+  }
+
+  async updateDocuments(userId: string, data: CandidateDocuments) {
+    const now = new Date().toISOString();
+    const payload = {
+      user_id: userId,
+      cv_pdf: data.cvPdf || null,
+      certificates: data.certificates || [],
+      qualifications: data.qualifications || [],
+      updated_at: now,
+    };
+
+    const { error } = await supabase.from('candidate_documents').upsert(payload, { onConflict: 'user_id' });
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    await supabase
+      .from('profiles')
+      .update({
+        cv_reviewed_at: null,
+        cv_reviewed_by: null,
+        updated_at: now,
+      })
+      .eq('id', userId);
+  }
+
+  async getAuditLog(): Promise<AuditLog[]> {
+    const current = await this.getSessionUser();
+    if (!current || !isRecruiterRole(current.role)) {
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('audit_log')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .limit(100);
+
+    if (error || !data) {
+      return [];
+    }
+
+    return (data as any[]).map((row) => ({
+      id: row.id,
+      action: row.action,
+      performerId: row.performer_id,
+      targetId: row.target_id,
+      timestamp: row.timestamp,
+    }));
+  }
 }
 
 export const api = new ApiClient();

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button, Input } from '../components/UI';
 import { User, UserRole } from '../types';
@@ -15,7 +14,7 @@ const CandidateAuth: React.FC<CandidateAuthProps> = ({ onAuthSuccess }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [verificationToken, setVerificationToken] = useState<string | null>(null);
+  const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
 
   const validateForm = (): boolean => {
     setError('');
@@ -52,15 +51,13 @@ const CandidateAuth: React.FC<CandidateAuthProps> = ({ onAuthSuccess }) => {
 
     setIsLoading(true);
     setError('');
+    setConfirmationMessage(null);
 
     try {
       if (isLogin) {
         const result = await authService.login(email, password, UserRole.CANDIDATE);
         if (result.success && result.user) {
           onAuthSuccess(result.user);
-        } else if (result.needsVerification && result.verificationToken) {
-          setVerificationToken(result.verificationToken);
-          setError('');
         } else {
           setError(result.error || 'Anmeldung fehlgeschlagen.');
         }
@@ -68,9 +65,10 @@ const CandidateAuth: React.FC<CandidateAuthProps> = ({ onAuthSuccess }) => {
         const result = await authService.register(email, password, UserRole.CANDIDATE);
         if (result.success && result.user) {
           onAuthSuccess(result.user);
-        } else if (result.success && result.verificationToken) {
-          setVerificationToken(result.verificationToken);
-          setError('');
+        } else if (result.success && result.needsVerification) {
+          setConfirmationMessage(
+            result.message || 'Bitte bestätigen Sie Ihre E-Mail-Adresse über den Link aus Ihrem Postfach.'
+          );
         } else {
           setError(result.error || 'Registrierung fehlgeschlagen.');
         }
@@ -103,80 +101,80 @@ const CandidateAuth: React.FC<CandidateAuthProps> = ({ onAuthSuccess }) => {
             Elite-Matching für Ihre Karriere
           </p>
 
-          {verificationToken ? (
+          {confirmationMessage ? (
             <div className="mb-6 p-6 bg-emerald-50 border border-emerald-200 rounded-2xl text-center">
-              <p className="text-emerald-800 text-sm font-medium mb-4">
-                Bitte bestätigen Sie Ihre E-Mail-Adresse, um sich anzumelden. Klicken Sie auf den Button unten – danach können Sie sich einloggen.
-              </p>
+              <p className="text-emerald-800 text-sm font-medium mb-4">{confirmationMessage}</p>
               <a
-                href={`#/verify-email?token=${encodeURIComponent(verificationToken)}`}
+                href="/verify-email"
                 className="inline-block w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors text-center"
               >
-                E-Mail jetzt bestätigen
+                Zur Bestätigungsseite
               </a>
-              <p className="text-slate-500 text-xs mt-4">
-                Sie können diesen Link auch in einer E-Mail erhalten (wenn E-Mail-Versand eingerichtet ist).
-              </p>
             </div>
           ) : (
             <>
-          {error && (
-            <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl">
-              <p className="text-rose-600 text-sm font-bold text-center">{error}</p>
-            </div>
-          )}
+              {error && (
+                <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl">
+                  <p className="text-rose-600 text-sm font-bold text-center">{error}</p>
+                </div>
+              )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <Input
-              label="E-Mail Adresse"
-              type="email"
-              placeholder="name@beispiel.de"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-            />
-            <Input
-              label="Passwort"
-              type="password"
-              placeholder="••••••••"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete={isLogin ? "current-password" : "new-password"}
-            />
-            {!isLogin && (
-              <Input
-                label="Passwort bestätigen"
-                type="password"
-                placeholder="••••••••"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                autoComplete="new-password"
-              />
-            )}
-            <Button
-              type="submit"
-              variant="primary"
-              className="w-full py-4 text-lg rounded-2xl shadow-xl shadow-orange-600/20"
-              isLoading={isLoading}
-            >
-              {isLogin ? 'Anmelden' : 'Kostenlos Registrieren'}
-            </Button>
-          </form>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <Input
+                  label="E-Mail Adresse"
+                  type="email"
+                  placeholder="name@beispiel.de"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                />
+                <Input
+                  label="Passwort"
+                  type="password"
+                  placeholder="••••••••"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete={isLogin ? 'current-password' : 'new-password'}
+                />
+                {!isLogin && (
+                  <Input
+                    label="Passwort bestätigen"
+                    type="password"
+                    placeholder="••••••••"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    autoComplete="new-password"
+                  />
+                )}
+                <Button
+                  type="submit"
+                  variant="primary"
+                  className="w-full py-4 text-lg rounded-2xl shadow-xl shadow-orange-600/20"
+                  isLoading={isLoading}
+                >
+                  {isLogin ? 'Anmelden' : 'Kostenlos Registrieren'}
+                </Button>
+              </form>
 
-          <div className="mt-10 pt-8 border-t border-slate-50 text-center">
-            <p className="text-sm text-slate-500 font-medium">
-              {isLogin ? 'Noch keinen Account?' : 'Bereits Mitglied?'}
-              <button
-                onClick={() => { setIsLogin(!isLogin); setError(''); setConfirmPassword(''); setVerificationToken(null); }}
-                className="ml-2 text-orange-600 font-black hover:text-orange-700 transition-colors uppercase text-xs tracking-widest"
-              >
-                {isLogin ? 'Jetzt registrieren' : 'Hier anmelden'}
-              </button>
-            </p>
-          </div>
+              <div className="mt-10 pt-8 border-t border-slate-50 text-center">
+                <p className="text-sm text-slate-500 font-medium">
+                  {isLogin ? 'Noch keinen Account?' : 'Bereits Mitglied?'}
+                  <button
+                    onClick={() => {
+                      setIsLogin(!isLogin);
+                      setError('');
+                      setConfirmPassword('');
+                      setConfirmationMessage(null);
+                    }}
+                    className="ml-2 text-orange-600 font-black hover:text-orange-700 transition-colors uppercase text-xs tracking-widest"
+                  >
+                    {isLogin ? 'Jetzt registrieren' : 'Hier anmelden'}
+                  </button>
+                </p>
+              </div>
             </>
           )}
         </div>

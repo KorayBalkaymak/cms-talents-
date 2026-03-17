@@ -1,68 +1,90 @@
-# CMS Talents - Recruiting Marketplace
+# CMS Talents - Supabase Edition
 
-A full-stack candidate management system connecting top talents with exclusive employers.
+CMS Talents runs as a Vite/React frontend that connects directly to Supabase for Auth, profile data, documents and audit logs.
 
-## 🚀 Features
+## Stack
 
-- **Candidate Portal**: Profile creation, CV/Certificate uploads (PDF), real-time status updates.
-- **Recruiter Dashboard**: Admin view, candidate status management, document previews.
-- **Talent Marketplace**: Advanced search, filtering, and "Speed Match" layout.
-- **Privacy First**: Granular visibility controls (Public vs Admin Only data).
-- **Tech Stack**: React, Vite, TypeScript, Tailwind CSS, Node.js, Express, SQLite.
+- React
+- Vite
+- TypeScript
+- Supabase Auth + Postgres
 
-## 🛠️ Local Development
+## Local Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd cms-talents
-   ```
-
-2. **Backend Setup**
-   ```bash
-   cd backend
-   npm install
-   npm start
-   ```
-   The backend runs on port 3001.
-
-3. **Frontend Setup**
-   Open a new terminal:
+1. Install dependencies
    ```bash
    npm install
+   ```
+
+2. Create a local `.env` file from the example
+   ```bash
+   cp .env.example .env
+   ```
+
+3. Run the app
+   ```bash
    npm run dev
    ```
-   The frontend runs on port 3000.
 
-## 📦 Deployment (Vercel)
+   Frontend:
+   `http://localhost:5174`
 
-This project is configured for Vercel deployment with some considerations:
+## Required Environment Variables
 
-1. **Frontend**: Deployed as a standard Vite app.
-2. **Backend**: Deployed as Serverless Functions via `vercel.json` rewrites.
-3. **Database**: 
-   > **⚠️ IMPORTANT**: This project uses a local SQLite file (`cms_talents.db`). 
-   > On Vercel, the file system is **ephemeral**. This means any data you register or save will be **LOST** when the serverless function restarts (typically immediately or after a short idle time).
-   > **For a persistent production deployment**, you must switch the database adapter to a cloud provider like Turso, Supabase, or use a VPS instead of Vercel Serverless.
+Use these on both local development and Vercel:
 
-### How to Deploy
+```env
+VITE_SUPABASE_URL=https://stzhqhianafrgtxqmqyo.supabase.co
+VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=sb_publishable_...
+```
 
-1. Push this code to GitHub.
-2. Import the project in Vercel.
-3. Vercel should auto-detect the settings.
-   - **Framework Preset**: Vite
-   - **Root Directory**: `./`
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
-4. Add Environment Variables if necessary.
-5. Deploy!
+Do not put the service role key into the frontend. It must stay server-side only.
 
-## 🔒 Credentials
+## Supabase Migration
 
-**Demo Admin Login**:
-- Email: `admin@cms.com`
-- Password: `password`
-*(Note: These are created on first backend start if database is empty)*
+Run this SQL file in the Supabase SQL editor before the first deploy:
 
----
-© 2024 CMS Talents
+- `supabase/migrations/20260317_0001_init.sql`
+
+It creates:
+
+- `profiles`
+- `candidate_documents`
+- `audit_log`
+- `recruiter_allowlist`
+- the auth trigger that auto-creates the profile/document rows
+- the RLS policies used by the app
+
+## Recruiter Access
+
+The app expects these recruiter emails:
+
+- `haagen@industries-cms.com`
+- `candau@industries-cms.com`
+- `fuhrmann@industries-cms.com`
+
+The migration seeds them into `recruiter_allowlist`.
+
+Create matching users once in Supabase Auth:
+
+- `haagen@industries-cms.com` -> `recruiter_admin`
+- `candau@industries-cms.com` -> `recruiter`
+- `fuhrmann@industries-cms.com` -> `recruiter`
+
+After that, the auth trigger assigns the correct role automatically.
+
+## Vercel Deployment
+
+1. Import the repository into Vercel.
+2. Add the two `VITE_SUPABASE_*` environment variables.
+3. Set them for both `Production` and `Preview`.
+4. Deploy.
+
+Because the app uses hash routing for the UI and `/verify-email` for the Supabase callback, no custom backend or API routes are required.
+
+## Auth Flow
+
+- Candidates register via Supabase Auth.
+- If email confirmation is enabled in Supabase, the confirmation link sends them to `/verify-email`.
+- Recruiters sign in with their Supabase Auth account.
+- Public talent browsing only shows published candidates.

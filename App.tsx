@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, UserRole, CandidateProfile, CandidateStatus } from './types';
 import { authService } from './services/AuthService';
@@ -12,21 +11,28 @@ import RecruiterDashboard from './pages/RecruiterDashboard';
 import VerifyEmail from './pages/VerifyEmail';
 import { Toast, Button } from './components/UI';
 
+const resolveInitialPath = () => {
+  if (window.location.pathname === '/verify-email') {
+    return '/verify-email';
+  }
+  return window.location.hash || '#/';
+};
+
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [currentPath, setCurrentPath] = useState(window.location.hash || '#/');
+  const [currentPath, setCurrentPath] = useState(resolveInitialPath());
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [allCandidates, setAllCandidates] = useState<CandidateProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const init = async () => {
-      // Ensure auth service is initialized (creates demo recruiters)
+      // Ensure auth service is initialized before reading session state.
       await authService.ensureInit();
 
       const initialUser = authService.getCurrentUser();
 
-      // If we have a user, validate against backend and get profile data
+      // If we have a user, validate against Supabase and get profile data.
       if (initialUser) {
         if (initialUser.role === UserRole.CANDIDATE) {
           try {
@@ -36,11 +42,11 @@ const App: React.FC = () => {
             } else if (profile) {
               setUser(initialUser);
             } else {
-              // Profil existiert nicht mehr im Backend – Session ungültig
+              // Profile does not exist anymore in Supabase. Session is invalid.
               authService.logout();
             }
           } catch (e) {
-            // Backend nicht erreichbar oder User existiert nicht – Session aufräumen
+            // Supabase is not reachable or the user does not exist.
             console.warn('[App] Session validation failed, logging out:', e);
             authService.logout();
           }
@@ -49,7 +55,7 @@ const App: React.FC = () => {
         }
       }
 
-      // UI sofort zeigen; öffentliche Kandidatenliste im Hintergrund laden
+      // Show UI immediately; load public candidate list in the background.
       setIsLoading(false);
       const loadInitialCandidates = async () => {
         try {
@@ -66,18 +72,25 @@ const App: React.FC = () => {
       };
       loadInitialCandidates();
     };
+
     init();
 
-    const handleHashChange = () => {
-      const hash = window.location.hash || '#/';
-      setCurrentPath(hash);
+    const handleLocationChange = () => {
+      const path = window.location.pathname === '/verify-email'
+        ? '/verify-email'
+        : (window.location.hash || '#/');
+      setCurrentPath(path);
     };
 
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    window.addEventListener('popstate', handleLocationChange);
+    return () => {
+      window.removeEventListener('hashchange', handleLocationChange);
+      window.removeEventListener('popstate', handleLocationChange);
+    };
   }, []);
 
-  // Marktplatz: öffentliche Kandidatenliste nachladen, wenn jemand direkt #/talents aufruft (Gäste/Zuschauer)
+  // Load public candidates again when someone opens the marketplace directly.
   useEffect(() => {
     if (!currentPath.startsWith('/talents')) return;
     if (user && (user.role === UserRole.RECRUITER || user.role === UserRole.ADMIN)) return;
@@ -87,7 +100,7 @@ const App: React.FC = () => {
     }
   }, [currentPath, user]);
 
-  // Recruiter-Dashboard: regelmäßig aktualisieren, damit gelöschte Konten sofort verschwinden.
+  // Refresh recruiter dashboard periodically so deleted records disappear quickly.
   useEffect(() => {
     const path = currentPath.replace('#', '') || '/';
     const isRecruiterView = path === '/recruiter/dashboard';
@@ -104,7 +117,6 @@ const App: React.FC = () => {
       }
     };
 
-    // initial refresh + polling
     tick();
     const id = window.setInterval(tick, 10_000);
     return () => {
@@ -124,19 +136,16 @@ const App: React.FC = () => {
   const handleAuthSuccess = async (loggedInUser: User) => {
     setUser(loggedInUser);
 
-    // If candidate, ensure they have a profile and it's in the list
     if (loggedInUser.role === UserRole.CANDIDATE) {
       let profile = await candidateService.getById(loggedInUser.id);
       if (!profile) {
         profile = await candidateService.createProfile(loggedInUser.id);
       }
 
-      // Update user state with firstName from profile for Greeting
       if (profile && profile.firstName) {
         setUser({ ...loggedInUser, firstName: profile.firstName });
       }
 
-      // Refresh list (getAll = nur veröffentlichte) und eigenes Profil drin behalten
       const list = await candidateService.getAll();
       setAllCandidates((prev) => {
         const withoutMe = list.filter((c) => c.userId !== loggedInUser.id);
@@ -155,9 +164,8 @@ const App: React.FC = () => {
         const exists = prev.find(c => c.userId === res.userId);
         if (exists) {
           return prev.map(c => c.userId === res.userId ? res : c);
-        } else {
-          return [...prev, res];
         }
+        return [...prev, res];
       });
       showToast('Profil erfolgreich gespeichert!');
     } catch (e: any) {
@@ -165,9 +173,13 @@ const App: React.FC = () => {
     }
   };
 
-  const handleAdminAction = async (userId: string, action: 'delete' | 'status' | 'publish' | 'cv_reviewed', newStatus?: CandidateStatus, performerId?: string) => {
+  const handleAdminAction = async (
+    userId: string,
+    action: 'delete' | 'status' | 'publish' | 'cv_reviewed',
+    newStatus?: CandidateStatus,
+    performerId?: string
+  ) => {
     await candidateService.adminAction(userId, action, newStatus, performerId || user?.id);
-    // Always refresh full list for admin actions to ensure blocked users remain visible
     const list = await candidateService.getAllAdmin();
     setAllCandidates(list);
     showToast(
@@ -177,7 +189,7 @@ const App: React.FC = () => {
           ? 'Profil wurde veröffentlicht.'
           : action === 'cv_reviewed'
             ? 'Lebenslauf als geprüft markiert.'
-          : `Status auf "${newStatus}" aktualisiert.`
+            : `Status auf "${newStatus}" aktualisiert.`
     );
   };
 
@@ -192,11 +204,13 @@ const App: React.FC = () => {
     navigate('/');
   };
 
-  if (isLoading) return (
-    <div className="h-screen flex items-center justify-center bg-[#fafafa]">
-      <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-200 border-t-orange-600"></div>
-    </div>
-  );
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-[#fafafa]">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-200 border-t-orange-600"></div>
+      </div>
+    );
+  }
 
   const renderRoute = () => {
     const path = currentPath.replace('#', '') || '/';
@@ -216,9 +230,8 @@ const App: React.FC = () => {
         navigate('/candidate/auth');
         return null;
       }
-      let profile = allCandidates.find(c => c.userId === user.id);
+      const profile = allCandidates.find(c => c.userId === user.id);
       if (!profile) {
-        // Profil laden oder anlegen (z. B. nach Reload oder wenn Liste nur veröffentlichte enthält)
         candidateService.createProfile(user.id)
           .then((p) => {
             setAllCandidates((prev) => {
@@ -231,6 +244,7 @@ const App: React.FC = () => {
             showToast('Sitzung abgelaufen. Bitte erneut anmelden.', 'error');
             handleLogout();
           });
+
         return (
           <div className="h-screen flex items-center justify-center bg-[#fafafa]">
             <div className="animate-spin rounded-full h-10 w-10 border-2 border-slate-200 border-t-orange-600"></div>
@@ -240,15 +254,16 @@ const App: React.FC = () => {
       return <CandidateProfilePage profile={profile} onNavigate={navigate} onSave={handleUpdateCandidate} onLogout={handleLogout} />;
     }
 
-    // Marktplatz: für alle frei zugänglich (Zuschauer, Kunden, Interessenten) – kein Recruiter-Login nötig
-    if (path === '/talents') return <TalentMarketplace candidates={allCandidates.filter(c => c.isPublished && c.status === CandidateStatus.ACTIVE)} onNavigate={navigate} user={user} />;
+    if (path === '/talents') {
+      return <TalentMarketplace candidates={allCandidates.filter(c => c.isPublished && c.status === CandidateStatus.ACTIVE)} onNavigate={navigate} user={user} />;
+    }
 
     if (path.startsWith('/talents/')) {
       const id = path.split('/').pop();
       return <TalentMarketplace candidates={allCandidates.filter(c => c.isPublished && c.status === CandidateStatus.ACTIVE)} selectedId={id} onNavigate={navigate} user={user} />;
     }
 
-    if (path.startsWith('/verify-email')) {
+    if (path.startsWith('/verify-email') || window.location.pathname === '/verify-email') {
       return <VerifyEmail onNavigate={navigate} />;
     }
 
@@ -265,7 +280,16 @@ const App: React.FC = () => {
         navigate('/recruiter/auth');
         return null;
       }
-      return <RecruiterDashboard user={user} candidates={allCandidates} onAdminAction={handleAdminAction} onUpdateCandidate={handleUpdateCandidate} onRefreshCandidates={refreshCandidatesForRecruiter} onLogout={handleLogout} />;
+      return (
+        <RecruiterDashboard
+          user={user}
+          candidates={allCandidates}
+          onAdminAction={handleAdminAction}
+          onUpdateCandidate={handleUpdateCandidate}
+          onRefreshCandidates={refreshCandidatesForRecruiter}
+          onLogout={handleLogout}
+        />
+      );
     }
 
     return (

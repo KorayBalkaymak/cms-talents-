@@ -1,20 +1,18 @@
-
 import React, { useState } from 'react';
 import { Button, Input } from '../components/UI';
 import { User, UserRole } from '../types';
 import { authService } from '../services/AuthService';
+import { RECRUITER_EMAILS } from '../services/ApiClient';
 
 interface RecruiterAuthProps {
   onAuthSuccess: (user: User) => void;
 }
 
 const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
-  const [isLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [verificationToken, setVerificationToken] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,19 +22,15 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
       setError('E-Mail und Passwort sind erforderlich.');
       return;
     }
+
     setIsLoading(true);
 
     try {
-      if (isLogin) {
-        const result = await authService.login(email, password, UserRole.RECRUITER);
-        if (result.success && result.user) {
-          onAuthSuccess(result.user);
-        } else if (result.needsVerification && result.verificationToken) {
-          setVerificationToken(result.verificationToken);
-          setError('');
-        } else {
-          setError(result.error || 'Anmeldung fehlgeschlagen.');
-        }
+      const result = await authService.login(email, password, UserRole.RECRUITER);
+      if (result.success && result.user) {
+        onAuthSuccess(result.user);
+      } else {
+        setError(result.error || 'Anmeldung fehlgeschlagen.');
       }
     } catch (e) {
       setError('Ein unerwarteter Fehler ist aufgetreten.');
@@ -47,14 +41,10 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
 
   return (
     <div className="min-h-screen bg-white flex">
-      {/* Visual Side (Left) - SCALED DOWN */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-slate-900 overflow-hidden items-center justify-center p-8">
-        {/* Abstract Background Shapes */}
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-orange-600/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-indigo-600/20 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/4 pointer-events-none"></div>
-
-        {/* Pattern overlay */}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-20"></div>
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zz4+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-20"></div>
 
         <div className="relative z-10 max-w-md text-center">
           <div className="mb-6 inline-flex items-center justify-center">
@@ -71,14 +61,13 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
           <div className="mt-8 flex items-center justify-center gap-3 text-[10px] font-bold text-slate-600 uppercase tracking-widest">
             <span>Security First</span>
             <span className="w-1 h-1 bg-slate-600 rounded-full"></span>
-            <span>GDPR Compliant</span>
+            <span>Supabase Auth</span>
             <span className="w-1 h-1 bg-slate-600 rounded-full"></span>
             <span>Premium Talent</span>
           </div>
         </div>
       </div>
 
-      {/* Login Form Side (Right) - SCALED DOWN */}
       <div className="flex-1 flex flex-col justify-center p-8 bg-white relative">
         <div className="w-full max-w-sm mx-auto">
           <div className="mb-8">
@@ -90,29 +79,13 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
               Login Recruiter
             </h2>
             <p className="text-slate-500 text-sm">
-              Bitte melden Sie sich an.
+              Bitte melden Sie sich mit Ihrem Supabase-Auth-Account an.
             </p>
             <p className="mt-3 text-[11px] text-slate-500 font-semibold">
-              Nur freigeschaltete E-Mails: <span className="text-slate-700">haagen@industries-cms.com</span>,{' '}
-              <span className="text-slate-700">candau@industries-cms.com</span>, <span className="text-slate-700">fuhrmann@industries-cms.com</span>.<br />
-              Passwort: <span className="text-slate-700">A123</span>
+              Freigeschaltete E-Mails: <span className="text-slate-700">{RECRUITER_EMAILS.join(', ')}</span>
             </p>
           </div>
 
-          {verificationToken ? (
-            <div className="mb-6 p-5 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
-              <p className="text-emerald-800 text-sm font-medium mb-4">
-                Registrierung erfolgreich. Bitte bestätigen Sie Ihre E-Mail-Adresse. Klicken Sie auf den Button unten – danach können Sie sich anmelden.
-              </p>
-              <a
-                href={`#/verify-email?token=${encodeURIComponent(verificationToken)}`}
-                className="inline-block w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors text-center text-sm"
-              >
-                E-Mail jetzt bestätigen
-              </a>
-            </div>
-          ) : (
-            <>
           {error && (
             <div className="mb-6 p-3 bg-rose-50 border-l-4 border-rose-500 rounded-r-lg flex items-start gap-2">
               <svg className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -137,9 +110,6 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
             <div className="space-y-1.5">
               <div className="flex justify-between items-center ml-1">
                 <label className="text-[10px] font-black text-slate-900 uppercase tracking-wide">Passwort</label>
-                {isLogin && (
-                  <button type="button" className="text-[10px] font-bold text-orange-600 hover:text-orange-700">Vergessen?</button>
-                )}
               </div>
               <Input
                 type="password"
@@ -147,7 +117,7 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                autoComplete={isLogin ? 'current-password' : 'new-password'}
+                autoComplete="current-password"
                 className="bg-slate-50 border-slate-200 focus:bg-white h-11 text-sm rounded-xl"
               />
             </div>
@@ -161,8 +131,6 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
               Zum Dashboard
             </Button>
           </form>
-            </>
-          )}
 
           <div className="mt-8 pt-6 border-t border-slate-100 text-center">
             <p className="text-slate-400 text-[10px]">

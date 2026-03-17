@@ -2,7 +2,7 @@ import { AuditLog } from '../types';
 import { api } from './ApiClient';
 
 // =====================================================
-// AUDIT SERVICE - Using Backend API
+// AUDIT SERVICE - Using Supabase-backed data access
 // =====================================================
 
 class AuditService {

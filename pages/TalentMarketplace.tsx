@@ -3,6 +3,7 @@ import React, { useState, useMemo, useEffect, useCallback, memo } from 'react';
 import { CandidateProfile, UserRole } from '../types';
 import { rankCandidates, highlightText } from '../services/SearchService';
 import { candidateService } from '../services/CandidateService';
+import { authService } from '../services/AuthService';
 import { Input, Avatar, Badge, Button, Modal, EmptyState } from '../components/UI';
 import { INDUSTRIES, AVAILABILITY_OPTIONS } from '../constants';
 import { User } from '../types';
@@ -162,7 +163,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   }, [candidates, debouncedSearch, filterIndustry, filterAvailability, filterExp, sortBy]);
 
   const handleLogout = () => {
-    localStorage.removeItem('cms_user');
+    authService.logout();
     window.location.hash = '/';
     window.location.reload();
   };

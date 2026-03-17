@@ -1,9 +1,6 @@
-import { User, UserRole } from '../types';
 import { api } from './ApiClient';
-
-// =====================================================
-// AUTH SERVICE - Using Backend API
-// =====================================================
+import { User, UserRole } from '../types';
+import { supabase } from '../utils/supabase';
 
 const SESSION_KEY = 'cms_talents_session';
 
@@ -12,15 +9,6 @@ class AuthService {
 
   constructor() {
     this.loadSession();
-  }
-
-  private isLocalhost(): boolean {
-    try {
-      const h = window.location.hostname;
-      return h === 'localhost' || h === '127.0.0.1';
-    } catch {
-      return false;
-    }
   }
 
   private loadSession(): void {
@@ -40,7 +28,25 @@ class AuthService {
   }
 
   async ensureInit(): Promise<void> {
-    // No longer need to create demo accounts - backend does this
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        this.currentUser = null;
+        localStorage.removeItem(SESSION_KEY);
+        return;
+      }
+
+      const user = await api.getSessionUser();
+      if (user) {
+        this.saveSession(user);
+      } else {
+        this.currentUser = null;
+        localStorage.removeItem(SESSION_KEY);
+        await supabase.auth.signOut();
+      }
+    } catch (e) {
+      console.error('[Auth] ensureInit failed:', e);
+    }
   }
 
   getCurrentUser(): User | null {
@@ -51,7 +57,7 @@ class AuthService {
     email: string,
     password: string,
     role: UserRole
-  ): Promise<{ success: boolean; user?: User; message?: string; verificationToken?: string; error?: string }> {
+  ): Promise<{ success: boolean; user?: User; message?: string; needsVerification?: boolean; error?: string }> {
     try {
       const result = await api.register(email, password, role);
 
@@ -59,40 +65,21 @@ class AuthService {
         const user: User = {
           id: result.user.id,
           email: result.user.email,
-          passwordHash: '',
           role: result.user.role as UserRole,
-          createdAt: result.user.createdAt ?? result.user.created_at ?? new Date().toISOString()
+          createdAt: result.user.createdAt ?? new Date().toISOString(),
+          firstName: result.user.firstName,
         };
         this.saveSession(user);
         return { success: true, user };
       }
 
-      if (result.success && result.verificationToken) {
-        // Lokal (ohne E-Mail-Versand): automatisch verifizieren + einloggen,
-        // damit der Nutzer nicht "festhängt".
-        if (this.isLocalhost()) {
-          try {
-            await api.verifyEmail(result.verificationToken);
-            const loginRes = await api.login(email, password, role);
-            if (loginRes?.success && loginRes.user) {
-              const user: User = {
-                id: loginRes.user.id,
-                email: loginRes.user.email,
-                passwordHash: '',
-                role: loginRes.user.role as UserRole,
-                createdAt: loginRes.user.createdAt ?? loginRes.user.created_at ?? new Date().toISOString()
-              };
-              this.saveSession(user);
-              return { success: true, user };
-            }
-          } catch {
-            // fallback to manual verification UI
-          }
-        }
+      if (result.success && result.needsVerification) {
         return {
           success: true,
-          message: result.message || 'Bitte bestätigen Sie Ihre E-Mail-Adresse.',
-          verificationToken: result.verificationToken
+          message:
+            result.message ||
+            'Bitte bestätigen Sie Ihre E-Mail-Adresse über den Link, den Supabase an Sie sendet.',
+          needsVerification: true,
         };
       }
 
@@ -106,7 +93,7 @@ class AuthService {
     email: string,
     password: string,
     expectedRole?: UserRole
-  ): Promise<{ success: boolean; user?: User; error?: string; needsVerification?: boolean; verificationToken?: string }> {
+  ): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
       const result = await api.login(email, password, expectedRole);
 
@@ -114,9 +101,9 @@ class AuthService {
         const user: User = {
           id: result.user.id,
           email: result.user.email,
-          passwordHash: '',
           role: result.user.role as UserRole,
-          createdAt: result.user.createdAt ?? result.user.created_at ?? new Date().toISOString()
+          createdAt: result.user.createdAt ?? new Date().toISOString(),
+          firstName: result.user.firstName,
         };
         this.saveSession(user);
         return { success: true, user };
@@ -124,48 +111,25 @@ class AuthService {
 
       return { success: false, error: result.error || 'Anmeldung fehlgeschlagen' };
     } catch (e: any) {
-      const needsVerification = !!e?.data?.needsVerification;
-      const verificationToken = e?.data?.verificationToken;
-      if (needsVerification) {
-        // Lokal: automatisch verifizieren und einmal erneut versuchen
-        if (this.isLocalhost() && verificationToken) {
-          try {
-            await api.verifyEmail(verificationToken);
-            const retry = await api.login(email, password, expectedRole);
-            if (retry?.success && retry.user) {
-              const user: User = {
-                id: retry.user.id,
-                email: retry.user.email,
-                passwordHash: '',
-                role: retry.user.role as UserRole,
-                createdAt: retry.user.createdAt ?? retry.user.created_at ?? new Date().toISOString()
-              };
-              this.saveSession(user);
-              return { success: true, user };
-            }
-          } catch {
-            // fallback to showing verification UI
-          }
-        }
-        return {
-          success: false,
-          error: e?.message || 'Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.',
-          needsVerification: true,
-          verificationToken
-        };
-      }
       return { success: false, error: e.message || 'Anmeldung fehlgeschlagen' };
     }
+  }
+
+  async refreshCurrentUser(): Promise<User | null> {
+    await this.ensureInit();
+    return this.currentUser;
   }
 
   logout(): void {
     this.currentUser = null;
     localStorage.removeItem(SESSION_KEY);
+    void supabase.auth.signOut();
   }
 
   async deleteMyAccount(password: string): Promise<{ success: boolean; error?: string }> {
     const me = this.getCurrentUser();
     if (!me?.email) return { success: false, error: 'Nicht eingeloggt.' };
+
     try {
       const res = await api.deleteAccount(me.email, password);
       if (res?.success) {

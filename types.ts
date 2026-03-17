@@ -28,7 +28,6 @@ export interface SocialLink {
 export interface User {
   id: string;              // REQUIRED - Auto-generated UUID
   email: string;           // REQUIRED - Unique, validated format
-  passwordHash: string;    // REQUIRED - SHA-256 hashed
   role: UserRole;          // REQUIRED - candidate/recruiter/admin
   createdAt: string;       // REQUIRED - ISO timestamp
   firstName?: string;      // OPTIONAL - Derived from profile

@@ -2,7 +2,7 @@ import { CandidateProfile, CandidateStatus, CandidateDocuments } from '../types'
 import { api } from './ApiClient';
 
 // =====================================================
-// CANDIDATE SERVICE - Using Backend API
+// CANDIDATE SERVICE - Using Supabase-backed data access
 // =====================================================
 
 class CandidateService {
