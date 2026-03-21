@@ -139,3 +139,15 @@ export function validateProfileForPublishing(profile: CandidateProfile): string[
 export function canPublishProfile(profile: CandidateProfile): boolean {
   return validateProfileForPublishing(profile).length === 0;
 }
+
+/** Beim Absenden an den Recruiter: Lebenslauf + mindestens eine Qualifikation (PDF) Pflicht */
+export function validateDocumentsForRecruiterSubmit(documents: CandidateDocuments): string[] {
+  const missing: string[] = [];
+  if (!documents.cvPdf?.data?.trim() || !documents.cvPdf?.name?.trim()) {
+    missing.push('Lebenslauf (PDF)');
+  }
+  if (!documents.qualifications?.length) {
+    missing.push('Qualifikationen (mindestens ein PDF)');
+  }
+  return missing;
+}

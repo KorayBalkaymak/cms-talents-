@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { CandidateProfile, CandidateStatus, CandidateDocuments, SocialLink, validateProfileForPublishing, canPublishProfile } from '../types';
+import { CandidateProfile, CandidateStatus, CandidateDocuments, SocialLink, validateProfileForPublishing, validateDocumentsForRecruiterSubmit, canPublishProfile } from '../types';
 import { Button, Input, Select, Avatar, Badge, Textarea, FileUpload } from '../components/UI';
 import { INDUSTRIES, AVAILABILITY_OPTIONS, SUGGESTED_KEYWORDS } from '../constants';
 import { documentService } from '../services/DocumentService';
@@ -37,6 +37,8 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  /** Pflichtfeld-Hinweise für Lebenslauf / Qualifikationen beim Absenden an Recruiter */
+  const [documentFieldErrors, setDocumentFieldErrors] = useState<{ cv?: string; qualifications?: string }>({});
 
   // Load documents on mount
   useEffect(() => {
@@ -115,6 +117,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
     const result = await documentService.uploadPdf(files[0]);
     if (result.success && result.data && result.name) {
       setDocuments(prev => ({ ...prev, cvPdf: { name: result.name!, data: result.data! } }));
+      setDocumentFieldErrors(prev => ({ ...prev, cv: undefined }));
     }
   };
 
@@ -127,7 +130,13 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
   const handleQualificationsUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const results = await documentService.uploadMultiplePdfs(files);
-    setDocuments(prev => ({ ...prev, qualifications: [...prev.qualifications, ...results] }));
+    setDocuments(prev => {
+      const next = { ...prev, qualifications: [...prev.qualifications, ...results] };
+      if (next.qualifications.length > 0) {
+        setDocumentFieldErrors(er => ({ ...er, qualifications: undefined }));
+      }
+      return next;
+    });
   };
 
   // Validate required fields
@@ -145,14 +154,24 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
   };
 
   const handleSubmit = async (sendToRecruiter: boolean = false) => {
-    // For sending to recruiter, validate all required fields
+    // For sending to recruiter, validate all required fields + Dokumente
     if (sendToRecruiter) {
-      const missing = validateProfileForPublishing(formData);
-      if (missing.length > 0) {
-        setMissingFields(missing);
+      const missingProfile = validateProfileForPublishing(formData);
+      const missingDocs = validateDocumentsForRecruiterSubmit(documents);
+      setDocumentFieldErrors({
+        cv: missingDocs.includes('Lebenslauf (PDF)') ? 'Pflichtfeld beim Absenden an den Recruiter' : undefined,
+        qualifications: missingDocs.includes('Qualifikationen (mindestens ein PDF)')
+          ? 'Pflichtfeld beim Absenden an den Recruiter (mind. eine Datei)'
+          : undefined
+      });
+      if (missingProfile.length > 0 || missingDocs.length > 0) {
+        setMissingFields([...missingProfile, ...missingDocs]);
         setShowPublishWarning(true);
         return;
       }
+      setDocumentFieldErrors({});
+    } else {
+      setDocumentFieldErrors({});
     }
 
     setIsSaving(true);
@@ -190,7 +209,10 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
               </div>
               <h3 className="text-xl font-black text-slate-900">Pflichtfelder fehlen</h3>
             </div>
-            <p className="text-slate-600 mb-4">Um dein Profil an den Recruiter zu senden, müssen folgende Felder ausgefüllt werden:</p>
+            <p className="text-slate-600 mb-4">
+              Um dein Profil an den Recruiter zu senden, müssen alle Pflichtfelder ausgefüllt sein – inklusive{' '}
+              <strong>Lebenslauf</strong> und mindestens einer <strong>Qualifikation</strong> (jeweils als PDF):
+            </p>
             <ul className="bg-orange-50 rounded-xl p-4 mb-6">
               {missingFields.map(field => (
                 <li key={field} className="flex items-center gap-2 text-orange-700 font-bold text-sm py-1">
@@ -561,19 +583,30 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
 
           {/* Documents Section */}
           <section className="bg-white p-2.5 sm:p-8 md:p-10 rounded-xl sm:rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
-            <h3 className="text-base sm:text-xl font-black text-slate-900 mb-4 sm:mb-8 flex items-center gap-3">
-              <span className="w-2 h-8 bg-orange-600 rounded-full"></span>
-              DOKUMENTE (optional)
+            <h3 className="text-base sm:text-xl font-black text-slate-900 mb-2 sm:mb-1 flex items-center gap-3 flex-wrap">
+              <span className="w-2 h-8 bg-orange-600 rounded-full shrink-0" />
+              <span>DOKUMENTE</span>
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 border border-slate-200">
+                Zertifikate optional
+              </span>
             </h3>
+            <p className="text-xs sm:text-sm text-slate-800 mb-4 sm:mb-8 font-bold leading-relaxed">
+              <span className="text-rose-700">Pflicht bei „Zum Recruiter senden“:</span> ein PDF-Lebenslauf und mindestens eine PDF-Qualifikation.
+              Mit <strong>Entwurf speichern</strong> kannst du auch ohne diese Dateien weiterarbeiten.
+            </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               <FileUpload
                 label="Lebenslauf (CV)"
+                required
                 accept="application/pdf"
                 onChange={handleCvUpload}
                 files={documents.cvPdf ? [{ name: documents.cvPdf.name }] : []}
-                onRemove={() => setDocuments(prev => ({ ...prev, cvPdf: undefined }))}
+                onRemove={() => {
+                  setDocuments(prev => ({ ...prev, cvPdf: undefined }));
+                }}
                 helperText="PDF, max 10MB"
+                error={documentFieldErrors.cv}
               />
 
               <FileUpload
@@ -583,17 +616,21 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                 onChange={handleCertificatesUpload}
                 files={documents.certificates}
                 onRemove={(idx) => setDocuments(prev => ({ ...prev, certificates: prev.certificates.filter((_, i) => i !== idx) }))}
-                helperText="PDFs, max 10MB"
+                helperText="PDFs, max 10MB – freiwillig"
               />
 
               <FileUpload
                 label="Qualifikationen"
+                required
                 accept="application/pdf"
                 multiple
                 onChange={handleQualificationsUpload}
                 files={documents.qualifications}
-                onRemove={(idx) => setDocuments(prev => ({ ...prev, qualifications: prev.qualifications.filter((_, i) => i !== idx) }))}
-                helperText="PDFs, max 10MB"
+                onRemove={(idx) =>
+                  setDocuments(prev => ({ ...prev, qualifications: prev.qualifications.filter((_, i) => i !== idx) }))
+                }
+                helperText="PDFs, max 10MB – mindestens eine Datei"
+                error={documentFieldErrors.qualifications}
               />
             </div>
           </section>

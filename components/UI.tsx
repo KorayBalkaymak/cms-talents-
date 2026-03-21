@@ -197,6 +197,10 @@ interface FileUploadProps {
   files?: { name: string }[];
   onRemove?: (index: number) => void;
   helperText?: string;
+  /** Fehlertext (z. B. Pflichtfeld) – roter Rahmen */
+  error?: string;
+  /** Sichtbares „Pflichtfeld“-Badge (z. B. bei Einreichung an Recruiter) */
+  required?: boolean;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
@@ -206,27 +210,51 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   onChange,
   files = [],
   onRemove,
-  helperText
+  helperText,
+  error,
+  required
 }) => {
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const hasFile = files.length > 0;
 
   return (
     <div className="w-full">
-      <label className="block text-xs sm:text-sm font-bold text-slate-900 mb-1 sm:mb-1.5">{label}</label>
+      <div className="flex flex-wrap items-center gap-2 mb-1 sm:mb-1.5">
+        <span className="text-xs sm:text-sm font-bold text-slate-900">
+          {label}
+          {required && <span className="text-rose-600 ml-0.5" aria-hidden="true">*</span>}
+        </span>
+        {required && (
+          <span
+            className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 border border-rose-200"
+            title="Erforderlich beim Absenden an den Recruiter"
+          >
+            Pflichtfeld
+          </span>
+        )}
+      </div>
       <div
         onClick={() => inputRef.current?.click()}
-        className="border-2 border-dashed border-slate-200 rounded-2xl p-4 sm:p-6 text-center cursor-pointer hover:border-orange-500 hover:bg-orange-50/50 transition-all"
+        className={`border-2 border-dashed rounded-2xl p-4 sm:p-6 text-center cursor-pointer transition-all ${
+          error
+            ? 'border-rose-400 bg-rose-50/40 hover:border-rose-500'
+            : required && !hasFile
+              ? 'border-orange-300 bg-orange-50/30 hover:border-orange-500 hover:bg-orange-50/50'
+            : 'border-slate-200 hover:border-orange-500 hover:bg-orange-50/50'
+        }`}
       >
         <svg className="w-7 h-7 sm:w-8 sm:h-8 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
         </svg>
         <p className="text-xs sm:text-sm font-bold text-slate-600">Klicken zum Hochladen</p>
         {helperText && <p className="text-[11px] sm:text-xs text-slate-400 mt-1">{helperText}</p>}
+        {error && <p className="text-[11px] sm:text-xs text-rose-600 font-bold mt-2">{error}</p>}
         <input
           ref={inputRef}
           type="file"
           accept={accept}
           multiple={multiple}
+          aria-required={required ? true : undefined}
           onChange={(e) => onChange(e.target.files)}
           className="hidden"
         />

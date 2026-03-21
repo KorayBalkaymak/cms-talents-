@@ -507,6 +507,25 @@ class ApiClient {
         ? false
         : !!current?.is_published;
 
+    // Kandidat: bei eingereichtem Profil müssen Lebenslauf + mind. eine Qualifikation in der DB liegen
+    if (isOwnerCandidate && nextSubmitted) {
+      const docRow = await this.fetchDocumentRow(userId);
+      const hasCv = !!docRow?.cv_pdf?.data?.trim() && !!docRow?.cv_pdf?.name?.trim();
+      const hasQual =
+        Array.isArray(docRow?.qualifications) &&
+        docRow.qualifications.some((q) => q?.data?.trim() && q?.name?.trim());
+      if (!hasCv) {
+        throw new Error(
+          'Zum Einreichen ist ein Lebenslauf (PDF) erforderlich. Bitte unter „Dokumente“ hochladen und zuerst speichern.'
+        );
+      }
+      if (!hasQual) {
+        throw new Error(
+          'Zum Einreichen ist mindestens eine Qualifikation (PDF) erforderlich. Bitte unter „Dokumente“ hochladen und zuerst speichern.'
+        );
+      }
+    }
+
     const now = new Date().toISOString();
     const payload = {
       id: userId,
