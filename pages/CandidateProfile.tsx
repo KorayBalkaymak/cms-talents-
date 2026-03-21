@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { CandidateProfile, CandidateStatus, CandidateDocuments, SocialLink, validateProfileForPublishing, validateDocumentsForRecruiterSubmit, canPublishProfile } from '../types';
 import { Button, Input, Select, Avatar, Badge, Textarea, FileUpload } from '../components/UI';
-import { INDUSTRIES, AVAILABILITY_OPTIONS, SUGGESTED_KEYWORDS } from '../constants';
+import { INDUSTRIES, AVAILABILITY_OPTIONS, BOOSTER_KEYWORD_CATEGORIES } from '../constants';
 import { documentService } from '../services/DocumentService';
 import { candidateService } from '../services/CandidateService';
 import { authService } from '../services/AuthService';
@@ -519,17 +519,28 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
               </div>
 
               <div className="pt-3 sm:pt-6 border-t border-slate-50">
-                <label className="text-[11px] sm:text-xs font-black text-slate-400 block mb-3 sm:mb-4 uppercase tracking-[0.2em]">Sichtbarkeits-Boosters (Klick zum Aktivieren)</label>
-                <div className="flex flex-wrap gap-2.5 sm:gap-3">
-                  {SUGGESTED_KEYWORDS.map(kw => (
-                    <button
-                      key={kw}
-                      type="button"
-                      onClick={() => toggleKeyword(kw)}
-                      className={`px-3.5 sm:px-5 py-1.5 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-black transition-all border-2 ${formData.boostedKeywords.includes(kw) ? 'bg-slate-900 text-orange-500 border-slate-900 shadow-lg' : 'bg-slate-50 text-slate-500 border-transparent hover:border-slate-200'}`}
-                    >
-                      {kw.toUpperCase()}
-                    </button>
+                <label className="text-[11px] sm:text-xs font-black text-slate-400 block mb-4 sm:mb-5 uppercase tracking-[0.2em]">
+                  Sichtbarkeits-Boosters (Klick zum Aktivieren)
+                </label>
+                <div className="space-y-6 sm:space-y-8">
+                  {BOOSTER_KEYWORD_CATEGORIES.map((cat) => (
+                    <div key={cat.title}>
+                      <h4 className="text-[10px] sm:text-xs font-black text-slate-800 uppercase tracking-[0.15em] mb-3 pb-2 border-b border-slate-200">
+                        {cat.title}
+                      </h4>
+                      <div className="flex flex-wrap gap-2.5 sm:gap-3">
+                        {cat.keywords.map((kw) => (
+                          <button
+                            key={`${cat.title}::${kw}`}
+                            type="button"
+                            onClick={() => toggleKeyword(kw)}
+                            className={`px-3.5 sm:px-5 py-1.5 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-black transition-all border-2 ${formData.boostedKeywords.includes(kw) ? 'bg-slate-900 text-orange-500 border-slate-900 shadow-lg' : 'bg-slate-50 text-slate-500 border-transparent hover:border-slate-200'}`}
+                          >
+                            {kw.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
