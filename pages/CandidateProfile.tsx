@@ -196,7 +196,12 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
   };
 
   return (
-    <div className="min-h-screen bg-[#101B31] pb-20">
+    <div className="relative min-h-screen bg-white pb-24">
+      {/* Dezente Premium-Atmosphäre auf Weiß */}
+      <div
+        className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_100%_60%_at_50%_-20%,rgba(251,146,60,0.07),transparent_55%),radial-gradient(ellipse_55%_45%_at_100%_20%,rgba(14,165,233,0.04),transparent_50%),radial-gradient(ellipse_50%_40%_at_0%_80%,rgba(251,146,60,0.03),transparent_50%)]"
+        aria-hidden
+      />
       {/* Publish Warning Modal */}
       {showPublishWarning && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -312,8 +317,8 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
         </div>
       )}
 
-      <header className="bg-white sticky top-0 z-30 shadow-sm border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 sm:py-0 sm:h-20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+      <header className="sticky top-0 z-30 border-b border-slate-100/90 bg-white/80 backdrop-blur-xl shadow-[0_4px_30px_-18px_rgba(15,23,42,0.12)]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-0 sm:h-[4.25rem] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
           <div className="flex items-center gap-3 min-w-0">
             <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-12 w-auto object-contain shrink-0" />
           </div>
@@ -360,34 +365,40 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-2.5 sm:px-4 mt-4 sm:mt-12">
+      <main className="mx-auto mt-6 max-w-5xl px-4 sm:mt-10 sm:px-6">
+        <div className="mb-6 sm:mb-8">
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-orange-600/90">Kandidatenbereich</p>
+          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Mein Profil</h1>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">Pflege deine Daten, Dokumente und Matching-Signale – alles auf einen Blick.</p>
+        </div>
+
         {/* Required fields notice */}
-        <div className="bg-orange-500 border border-orange-300/40 rounded-xl sm:rounded-2xl p-2.5 sm:p-6 mb-4 sm:mb-8 flex items-start gap-3 sm:gap-4 shadow-[0_18px_60px_-45px_rgba(0,0,0,0.75)]">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/15 border border-white/20 rounded-xl flex items-center justify-center text-white shrink-0">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="mb-6 sm:mb-10 flex items-start gap-4 rounded-2xl sm:rounded-3xl border border-orange-100 bg-gradient-to-br from-orange-50/90 via-white to-amber-50/40 p-4 sm:p-6 shadow-[0_12px_40px_-20px_rgba(234,88,12,0.18)]">
+          <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25">
+            <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
           <div>
-            <h4 className="font-black text-white">Pflichtfelder</h4>
-            <p className="text-xs sm:text-sm text-white/90">
-              Felder mit <span className="text-white font-black">*</span> sind erforderlich, um dein Profil zu veröffentlichen.
+            <h4 className="font-black text-slate-900 tracking-tight">Pflichtfelder</h4>
+            <p className="mt-1 text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Felder mit <span className="font-black text-orange-600">*</span> sind erforderlich, um dein Profil an den Recruiter zu senden.
             </p>
           </div>
         </div>
 
-        <div className="space-y-3 sm:space-y-8">
+        <div className="space-y-5 sm:space-y-8">
           {/* Identity Section */}
-          <section className="bg-white p-2.5 sm:p-8 md:p-10 rounded-xl sm:rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
+          <section className="rounded-[1.75rem] border border-slate-200/70 bg-white p-5 sm:p-8 md:p-10 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04),0_24px_56px_-28px_rgba(15,23,42,0.1)] transition-shadow hover:shadow-[0_24px_60px_-24px_rgba(15,23,42,0.12)]">
             <div className="flex flex-col md:flex-row items-center gap-3.5 sm:gap-8 md:gap-10">
               <div className="relative">
                 <Avatar
                   seed={formData.firstName + formData.lastName || 'user'}
                   size="md"
-                  className="w-16 h-16 text-lg sm:w-32 sm:h-32 sm:text-3xl ring-[6px] sm:ring-[12px] ring-orange-50"
+                  className="w-16 h-16 text-lg sm:w-32 sm:h-32 sm:text-3xl ring-[5px] sm:ring-[10px] ring-orange-100 shadow-inner"
                   imageUrl={formData.profileImageUrl}
                 />
-                <label className="absolute -bottom-2 -right-2 p-2 bg-slate-900 text-orange-500 rounded-2xl shadow-xl cursor-pointer hover:bg-slate-800 transition-colors">
+                <label className="absolute -bottom-2 -right-2 cursor-pointer rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-2 text-orange-400 shadow-lg shadow-slate-900/20 transition-transform hover:scale-105 hover:text-orange-300">
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
                   <input
                     type="file"
@@ -457,9 +468,9 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Details Section */}
-          <section className="bg-white p-2.5 sm:p-8 md:p-10 rounded-xl sm:rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
-            <h3 className="text-base sm:text-xl font-black text-slate-900 mb-4 sm:mb-8 flex items-center gap-3">
-              <span className="w-2 h-8 bg-orange-600 rounded-full"></span>
+          <section className="rounded-[1.75rem] border border-slate-200/70 bg-white p-5 sm:p-8 md:p-10 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04),0_24px_56px_-28px_rgba(15,23,42,0.1)]">
+            <h3 className="mb-6 sm:mb-8 flex items-center gap-3 text-base font-black tracking-tight text-slate-900 sm:text-xl">
+              <span className="h-8 w-1.5 rounded-full bg-gradient-to-b from-orange-500 to-amber-500 shadow-sm shadow-orange-500/30" />
               BERUFLICHER FOKUS
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 mb-5 sm:mb-8">
@@ -492,83 +503,67 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             />
           </section>
 
-          {/* Skills Section – Premium / Tech-Matching */}
-          <section className="relative overflow-hidden rounded-2xl sm:rounded-[2rem] border border-white/[0.08] shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset,0_32px_80px_-24px_rgba(0,0,0,0.85),0_0_120px_-40px_rgba(249,115,22,0.15)]">
-            {/* Deep space base */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#050a14] via-[#0c1220] to-[#060d18]" aria-hidden />
-            {/* Tech grid */}
+          {/* Skills & Matching-Boost – hell, modern */}
+          <section className="relative overflow-hidden rounded-[1.75rem] border border-slate-200/70 bg-gradient-to-br from-white via-orange-50/30 to-slate-50/50 p-5 sm:p-8 md:p-10 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04),0_28px_64px_-28px_rgba(15,23,42,0.12)]">
             <div
-              className="pointer-events-none absolute inset-0 opacity-[0.35] bg-[linear-gradient(rgba(148,163,184,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.07)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:linear-gradient(to_bottom,black_40%,transparent_100%)]"
+              className="pointer-events-none absolute inset-0 opacity-[0.45] bg-[linear-gradient(rgba(15,23,42,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.025)_1px,transparent_1px)] bg-[size:28px_28px]"
               aria-hidden
             />
-            {/* Ambient glows */}
-            <div className="pointer-events-none absolute -top-28 -right-20 h-[22rem] w-[22rem] rounded-full bg-orange-500/[0.12] blur-[100px]" aria-hidden />
-            <div className="pointer-events-none absolute -bottom-36 -left-24 h-[24rem] w-[24rem] rounded-full bg-cyan-500/[0.08] blur-[110px]" aria-hidden />
-            <div className="pointer-events-none absolute top-1/2 left-1/2 h-[min(80%,28rem)] w-[min(90%,48rem)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600/[0.06] blur-[80px]" aria-hidden />
+            <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-orange-200/25 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute -bottom-24 -left-16 h-48 w-48 rounded-full bg-sky-200/20 blur-3xl" aria-hidden />
 
-            <div className="relative z-10 p-4 sm:p-8 md:p-12 lg:p-14">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between mb-8 sm:mb-10 lg:mb-12">
+            <div className="relative z-10">
+              <div className="mb-8 flex flex-col gap-5 lg:mb-10 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-2xl">
-                  <p className="font-mono text-[10px] sm:text-[11px] text-cyan-400/90 tracking-[0.28em] uppercase mb-3">
-                    Matching Intelligence · Signal Layer
+                  <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-orange-600/80 sm:text-[11px]">
+                    Matching · Sichtbarkeit
                   </p>
-                  <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.5rem] font-black tracking-tight leading-[1.1]">
-                    <span className="bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-                      Skills &
-                    </span>{' '}
-                    <span className="bg-gradient-to-r from-orange-300 via-amber-200 to-orange-500 bg-clip-text text-transparent">
+                  <h3 className="text-2xl font-black leading-tight tracking-tight text-slate-900 sm:text-3xl md:text-4xl">
+                    Skills &{' '}
+                    <span className="bg-gradient-to-r from-orange-600 to-amber-500 bg-clip-text text-transparent">
                       Matching-Boost
                     </span>
                   </h3>
-                  <p className="mt-3 text-sm sm:text-base text-slate-400 font-medium leading-relaxed">
-                    Optional – schärfe dein Profil für präziseres Recruiter-Matching. Boosters erhöhen die{' '}
-                    <span className="text-slate-300">Sichtbarkeit</span> in der Talent-Matrix.
+                  <p className="mt-3 text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
+                    Optional – ergänze Skills und Booster für besseres Recruiter-Matching.
                   </p>
                 </div>
-                <div className="flex shrink-0 flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] px-4 py-2.5 backdrop-blur-sm">
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-800 shadow-sm">
                     <span className="relative flex h-2 w-2">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
                     </span>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100/90">
-                      Live Signal
-                    </span>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 font-mono text-[10px] text-slate-400 backdrop-blur-sm tracking-wider">
-                    v2 · HYBRID
-                  </div>
+                    Profil aktiv
+                  </span>
                 </div>
               </div>
 
-              <div className="space-y-10 sm:space-y-12">
-                {/* Skills input – glass island */}
-                <div className="rounded-2xl sm:rounded-3xl border border-white/[0.1] bg-white/[0.04] p-5 sm:p-7 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
-                  <div className="mb-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-orange-300/90">
-                    <span className="h-px w-6 bg-gradient-to-r from-orange-500 to-transparent" />
-                    Core Skills
+              <div className="space-y-8 sm:space-y-10">
+                <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-sm backdrop-blur-sm sm:p-7">
+                  <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-orange-600">
+                    <span className="h-px w-8 bg-gradient-to-r from-orange-500 to-transparent" />
+                    Fachliche Skills
                   </div>
-                  <div className="[&_label]:mb-2 [&_label]:text-xs [&_label]:font-bold [&_label]:uppercase [&_label]:tracking-wider [&_label]:text-slate-300">
-                    <Input
-                      label="Fachliche Skills"
-                      placeholder="Eingeben & Enter — z. B. SAP, Rohrleitungsbau, BIM"
-                      value={newSkill}
-                      onChange={(e) => setNewSkill(e.target.value)}
-                      onKeyDown={handleAddSkill}
-                      className="h-11 rounded-xl border-slate-200/80 shadow-sm"
-                    />
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2 sm:gap-2.5">
+                  <Input
+                    label="Skills hinzufügen"
+                    placeholder="Eingeben & Enter — z. B. SAP, Rohrleitungsbau, BIM"
+                    value={newSkill}
+                    onChange={(e) => setNewSkill(e.target.value)}
+                    onKeyDown={handleAddSkill}
+                    className="h-11 rounded-xl border-slate-200"
+                  />
+                  <div className="mt-4 flex flex-wrap gap-2">
                     {formData.skills.map((skill) => (
                       <span
                         key={skill}
-                        className="group inline-flex items-center gap-2 rounded-xl border border-orange-500/25 bg-gradient-to-br from-orange-500/15 to-transparent px-3.5 py-1.5 text-xs font-bold text-orange-100 shadow-[0_0_24px_-8px_rgba(249,115,22,0.45)] backdrop-blur-sm transition-all hover:border-orange-400/50 sm:text-sm"
+                        className="inline-flex items-center gap-2 rounded-xl border border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50/50 px-3 py-1.5 text-xs font-bold text-orange-900 shadow-sm transition-all hover:border-orange-300 sm:text-sm"
                       >
                         {skill}
                         <button
                           type="button"
                           onClick={() => removeSkill(skill)}
-                          className="rounded-md px-1 text-lg leading-none text-orange-200/80 transition-colors hover:bg-white/10 hover:text-white"
+                          className="rounded-md px-1 text-lg leading-none text-orange-600/70 transition-colors hover:bg-orange-100 hover:text-orange-900"
                           aria-label={`${skill} entfernen`}
                         >
                           ×
@@ -578,28 +573,27 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                   </div>
                 </div>
 
-                {/* Boosters – visibility matrix */}
-                <div className="relative pt-4">
-                  <div className="absolute left-0 right-0 top-0 flex items-center gap-4">
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
-                    <span className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.35em] text-cyan-400/80">
-                      Visibility Matrix
+                <div>
+                  <div className="mb-6 flex items-center gap-3">
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+                    <span className="shrink-0 text-center text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">
+                      Sichtbarkeits-Booster
                     </span>
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
                   </div>
-                  <p className="pt-8 text-center text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500 sm:pt-10">
-                    Sichtbarkeits-Booster · <span className="text-slate-400">Tap to activate</span>
-                  </p>
+                  <p className="mb-6 text-center text-xs font-semibold text-slate-500">Zum Aktivieren antippen</p>
 
-                  <div className="mt-8 space-y-8 sm:space-y-10 sm:mt-10">
+                  <div className="space-y-5 sm:space-y-6">
                     {BOOSTER_KEYWORD_CATEGORIES.map((cat) => (
-                      <div key={cat.title} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 sm:p-6 backdrop-blur-sm transition-colors hover:border-white/[0.1]">
-                        <h4 className="mb-4 flex flex-wrap items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300/95 sm:text-[11px]">
-                          <span className="h-1 w-1 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.7)]" />
+                      <div
+                        key={cat.title}
+                        className="rounded-2xl border border-slate-100 bg-white/80 p-4 shadow-sm transition-all hover:border-slate-200 hover:shadow-md sm:p-5"
+                      >
+                        <h4 className="mb-3 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-800 sm:text-[11px]">
+                          <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-orange-500 to-amber-400" />
                           {cat.title}
-                          <span className="hidden h-px flex-1 bg-gradient-to-r from-cyan-500/30 to-transparent sm:block min-w-[2rem]" />
                         </h4>
-                        <div className="flex flex-wrap gap-2 sm:gap-2.5">
+                        <div className="flex flex-wrap gap-2">
                           {cat.keywords.map((kw) => {
                             const active = formData.boostedKeywords.includes(kw);
                             return (
@@ -607,10 +601,10 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                                 key={`${cat.title}::${kw}`}
                                 type="button"
                                 onClick={() => toggleKeyword(kw)}
-                                className={`rounded-xl px-3.5 py-2 text-[9px] font-black uppercase tracking-wide transition-all duration-300 sm:px-4 sm:py-2.5 sm:text-[10px] ${
+                                className={`rounded-xl px-3 py-2 text-[9px] font-black uppercase tracking-wide transition-all duration-200 sm:px-3.5 sm:py-2 sm:text-[10px] ${
                                   active
-                                    ? 'border border-orange-400/40 bg-gradient-to-br from-orange-600 via-amber-500 to-orange-600 text-white shadow-[0_0_28px_-6px_rgba(249,115,22,0.55),inset_0_1px_0_0_rgba(255,255,255,0.2)] scale-[1.02]'
-                                    : 'border border-white/[0.08] bg-white/[0.04] text-slate-400 hover:border-cyan-500/35 hover:bg-white/[0.07] hover:text-slate-200 hover:shadow-[0_0_24px_-8px_rgba(34,211,238,0.2)]'
+                                    ? 'border border-orange-300 bg-gradient-to-br from-orange-600 to-amber-500 text-white shadow-md shadow-orange-500/25'
+                                    : 'border border-slate-200 bg-slate-50 text-slate-600 hover:border-orange-200 hover:bg-white hover:text-slate-900 hover:shadow-sm'
                                 }`}
                               >
                                 {kw.toUpperCase()}
@@ -627,17 +621,17 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Social Links Section */}
-          <section className="bg-white p-2.5 sm:p-8 md:p-10 rounded-xl sm:rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
-            <h3 className="text-base sm:text-xl font-black text-slate-900 mb-4 sm:mb-8 flex items-center gap-3">
-              <span className="w-2 h-8 bg-orange-600 rounded-full"></span>
-              SOCIAL LINKS (optional)
+          <section className="rounded-[1.75rem] border border-slate-200/70 bg-white p-5 sm:p-8 md:p-10 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04),0_24px_56px_-28px_rgba(15,23,42,0.1)]">
+            <h3 className="mb-6 sm:mb-8 flex items-center gap-3 text-base font-black tracking-tight text-slate-900 sm:text-xl">
+              <span className="h-8 w-1.5 rounded-full bg-gradient-to-b from-orange-500 to-amber-500 shadow-sm shadow-orange-500/30" />
+              SOCIAL LINKS <span className="text-slate-400 font-bold text-sm normal-case tracking-normal">(optional)</span>
             </h3>
 
             {/* Existing links */}
             {formData.socialLinks.length > 0 && (
               <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
                 {formData.socialLinks.map((link, idx) => (
-                  <div key={idx} className="flex items-center gap-3 sm:gap-4 bg-slate-50 p-2.5 sm:p-4 rounded-xl">
+                  <div key={idx} className="flex items-center gap-3 sm:gap-4 rounded-xl border border-slate-100 bg-slate-50/80 p-3 sm:p-4">
                     <span className="font-bold text-slate-700 text-sm">{link.label}:</span>
                     <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline truncate flex-1">{link.url}</a>
                     <button type="button" onClick={() => removeLink(idx)} className="text-slate-400 hover:text-red-500">
@@ -722,11 +716,11 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 pt-6 sm:pt-10">
+          <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:gap-4 sm:pt-4">
             <Button
               variant="outline"
               size="lg"
-              className="flex-1 py-3.5 sm:py-5 rounded-xl sm:rounded-2xl border-2 border-slate-200"
+              className="flex-1 rounded-2xl border-2 border-slate-200 py-4 font-bold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 sm:py-5"
               onClick={() => handleSubmit(false)}
               isLoading={isSaving}
             >
@@ -735,7 +729,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             <Button
               size="lg"
               variant="primary"
-              className="flex-1 py-3.5 sm:py-5 rounded-xl sm:rounded-2xl shadow-2xl shadow-orange-600/20 text-base sm:text-lg uppercase font-black tracking-widest"
+              className="flex-1 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-500 py-4 text-base font-black uppercase tracking-widest shadow-lg shadow-orange-500/30 transition-all hover:from-orange-500 hover:to-amber-400 sm:py-5 sm:text-lg"
               onClick={() => handleSubmit(true)}
               isLoading={isSaving}
             >
@@ -744,8 +738,8 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </div>
 
           {/* DSGVO: Account deletion */}
-          <div className="mt-6 sm:mt-10">
-            <div className="bg-white/95 rounded-2xl border border-red-100 p-4 sm:p-6">
+          <div className="mt-8 sm:mt-10">
+            <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50/50 to-white p-5 shadow-sm sm:p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h4 className="text-sm sm:text-base font-black text-slate-900">Konto löschen</h4>
