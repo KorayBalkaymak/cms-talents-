@@ -583,17 +583,13 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
 
           {/* Documents Section */}
           <section className="bg-white p-2.5 sm:p-8 md:p-10 rounded-xl sm:rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
-            <h3 className="text-base sm:text-xl font-black text-slate-900 mb-2 sm:mb-1 flex items-center gap-3 flex-wrap">
+            <h3 className="text-base sm:text-xl font-black text-slate-900 mb-4 sm:mb-8 flex items-center gap-3 flex-wrap">
               <span className="w-2 h-8 bg-orange-600 rounded-full shrink-0" />
               <span>DOKUMENTE</span>
               <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 border border-slate-200">
                 Zertifikate optional
               </span>
             </h3>
-            <p className="text-xs sm:text-sm text-slate-800 mb-4 sm:mb-8 font-bold leading-relaxed">
-              <span className="text-rose-700">Pflicht bei „Zum Recruiter senden“:</span> ein PDF-Lebenslauf und mindestens eine PDF-Qualifikation.
-              Mit <strong>Entwurf speichern</strong> kannst du auch ohne diese Dateien weiterarbeiten.
-            </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               <FileUpload
