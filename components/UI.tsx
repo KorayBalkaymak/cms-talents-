@@ -207,6 +207,8 @@ interface FileUploadProps {
   error?: string;
   /** Sichtbares „Pflichtfeld“-Badge (z. B. bei Einreichung an Recruiter) */
   required?: boolean;
+  /** Helle Labels/Zonen auf dunkelblauem Kartenhintergrund (Profil) */
+  darkSurface?: boolean;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
@@ -218,21 +220,42 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   onRemove,
   helperText,
   error,
-  required
+  required,
+  darkSurface = false
 }) => {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const hasFile = files.length > 0;
 
+  const dropZoneClass = darkSurface
+    ? error
+      ? 'border-rose-400 bg-rose-950/40 hover:border-rose-400'
+      : required && !hasFile
+        ? 'border-amber-400/50 bg-amber-950/20 hover:border-amber-400/70 hover:bg-amber-950/30'
+        : 'border-white/20 bg-white/5 hover:border-orange-400/60 hover:bg-white/10'
+    : error
+      ? 'border-rose-400 bg-rose-50/40 hover:border-rose-500'
+      : required && !hasFile
+        ? 'border-orange-300 bg-orange-50/30 hover:border-orange-500 hover:bg-orange-50/50'
+        : 'border-slate-200 hover:border-orange-500 hover:bg-orange-50/50';
+
   return (
     <div className="w-full">
-      <div className="flex flex-wrap items-center gap-2 mb-1 sm:mb-1.5">
-        <span className="text-xs sm:text-sm font-bold text-slate-900">
+      <div className="mb-1 flex flex-wrap items-center gap-2 sm:mb-1.5">
+        <span className={`text-xs font-bold sm:text-sm ${darkSurface ? 'text-slate-200' : 'text-slate-900'}`}>
           {label}
-          {required && <span className="text-rose-600 ml-0.5" aria-hidden="true">*</span>}
+          {required && (
+            <span className={`ml-0.5 ${darkSurface ? 'text-amber-400' : 'text-rose-600'}`} aria-hidden="true">
+              *
+            </span>
+          )}
         </span>
         {required && (
           <span
-            className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 border border-rose-200"
+            className={`rounded-md px-2 py-0.5 text-[9px] font-black uppercase tracking-widest sm:text-[10px] ${
+              darkSurface
+                ? 'border border-white/15 bg-white/10 text-amber-200'
+                : 'border border-rose-200 bg-rose-100 text-rose-800'
+            }`}
             title="Erforderlich beim Absenden an den Recruiter"
           >
             Pflichtfeld
@@ -241,20 +264,23 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       </div>
       <div
         onClick={() => inputRef.current?.click()}
-        className={`border-2 border-dashed rounded-2xl p-4 sm:p-6 text-center cursor-pointer transition-all ${
-          error
-            ? 'border-rose-400 bg-rose-50/40 hover:border-rose-500'
-            : required && !hasFile
-              ? 'border-orange-300 bg-orange-50/30 hover:border-orange-500 hover:bg-orange-50/50'
-            : 'border-slate-200 hover:border-orange-500 hover:bg-orange-50/50'
-        }`}
+        className={`cursor-pointer rounded-2xl border-2 border-dashed p-4 text-center transition-all sm:p-6 ${dropZoneClass}`}
       >
-        <svg className="w-7 h-7 sm:w-8 sm:h-8 text-slate-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          className={`mx-auto mb-2 h-7 w-7 sm:h-8 sm:w-8 ${darkSurface ? 'text-slate-500' : 'text-slate-400'}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
         </svg>
-        <p className="text-xs sm:text-sm font-bold text-slate-600">Klicken zum Hochladen</p>
-        {helperText && <p className="text-[11px] sm:text-xs text-slate-400 mt-1">{helperText}</p>}
-        {error && <p className="text-[11px] sm:text-xs text-rose-600 font-bold mt-2">{error}</p>}
+        <p className={`text-xs font-bold sm:text-sm ${darkSurface ? 'text-slate-300' : 'text-slate-600'}`}>Klicken zum Hochladen</p>
+        {helperText && (
+          <p className={`mt-1 text-[11px] sm:text-xs ${darkSurface ? 'text-slate-400' : 'text-slate-400'}`}>{helperText}</p>
+        )}
+        {error && (
+          <p className={`mt-2 text-[11px] font-bold sm:text-xs ${darkSurface ? 'text-red-300' : 'text-rose-600'}`}>{error}</p>
+        )}
         <input
           ref={inputRef}
           type="file"
@@ -269,12 +295,24 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       {files.length > 0 && (
         <div className="mt-3 space-y-2">
           {files.map((file, idx) => (
-            <div key={idx} className="flex items-center justify-between bg-slate-50 rounded-lg px-4 py-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <svg className="w-4 h-4 text-orange-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div
+              key={idx}
+              className={`flex items-center justify-between rounded-lg px-4 py-2 ${darkSurface ? 'bg-white/10' : 'bg-slate-50'}`}
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <svg
+                  className={`h-4 w-4 shrink-0 ${darkSurface ? 'text-orange-400' : 'text-orange-600'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                <span className="text-xs sm:text-sm font-medium text-slate-700 truncate">{file.name}</span>
+                <span
+                  className={`truncate text-xs font-medium sm:text-sm ${darkSurface ? 'text-slate-200' : 'text-slate-700'}`}
+                >
+                  {file.name}
+                </span>
               </div>
               {onRemove && (
                 <button
