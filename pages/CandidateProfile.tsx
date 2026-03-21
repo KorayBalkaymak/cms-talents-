@@ -15,8 +15,13 @@ interface CandidateProfileProps {
 }
 
 // Required field marker component
-const RequiredBadge = () => (
-  <span className="ml-1 text-orange-600 font-black text-xs">*</span>
+const RequiredBadge: React.FC<{ onDark?: boolean }> = ({ onDark }) => (
+  <span
+    className={`ml-1 font-black text-xs ${onDark ? 'text-amber-400' : 'text-blue-950'}`}
+    title="Pflichtfeld"
+  >
+    *
+  </span>
 );
 
 const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavigate, onSave, onLogout }) => {
@@ -196,12 +201,18 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
   };
 
   return (
-    <div className="relative min-h-screen bg-white pb-24">
-      {/* Dezente Premium-Atmosphäre auf Weiß */}
-      <div
-        className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_100%_60%_at_50%_-20%,rgba(251,146,60,0.07),transparent_55%),radial-gradient(ellipse_55%_45%_at_100%_20%,rgba(14,165,233,0.04),transparent_50%),radial-gradient(ellipse_50%_40%_at_0%_80%,rgba(251,146,60,0.03),transparent_50%)]"
-        aria-hidden
-      />
+    <div className="relative min-h-screen bg-slate-50 pb-24">
+      {/* Mesh: Navy / Dunkelblau + Orange / Amber + Cyan – weniger „nur weiß“ */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-slate-50" aria-hidden>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_55%_at_50%_-25%,rgba(255,237,213,0.75),transparent_62%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_42%_at_0%_15%,rgba(23,37,84,0.11),transparent_55%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_45%_40%_at_100%_85%,rgba(30,58,138,0.1),transparent_58%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_42%_38%_at_100%_8%,rgba(224,231,255,0.4),transparent_58%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_38%_32%_at_0%_92%,rgba(254,243,199,0.45),transparent_55%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_55%_35%_at_50%_105%,rgba(207,250,254,0.3),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(108deg,rgba(23,37,84,0.06)_0%,transparent_32%,transparent_68%,rgba(251,146,60,0.04)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(30,58,138,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.05)_1px,transparent_1px)] bg-[size:32px_32px] opacity-[0.6]" />
+      </div>
       {/* Publish Warning Modal */}
       {showPublishWarning && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -317,7 +328,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
         </div>
       )}
 
-      <header className="sticky top-0 z-30 border-b border-slate-100/90 bg-white/80 backdrop-blur-xl shadow-[0_4px_30px_-18px_rgba(15,23,42,0.12)]">
+      <header className="sticky top-0 z-30 border-b border-blue-950/10 bg-slate-50/75 backdrop-blur-2xl shadow-[0_8px_40px_-20px_rgba(15,23,42,0.12),inset_0_-1px_0_0_rgba(23,37,84,0.18),inset_0_-2px_0_0_rgba(251,146,60,0.1)]">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-0 sm:h-[4.25rem] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
           <div className="flex items-center gap-3 min-w-0">
             <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-12 w-auto object-contain shrink-0" />
@@ -327,7 +338,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             {/* Mobile: icon-only, Desktop: text link */}
             <button
               onClick={() => onNavigate('/talents')}
-              className="inline-flex sm:hidden items-center justify-center h-9 w-9 rounded-xl border border-slate-200 text-slate-600 hover:text-orange-600 hover:border-slate-300 transition-colors"
+              className="inline-flex sm:hidden items-center justify-center h-9 w-9 rounded-xl border border-slate-200 text-slate-600 transition-colors hover:border-blue-950/25 hover:text-blue-950"
               aria-label="Zurück zum Marktplatz"
               title="Zurück zum Marktplatz"
               type="button"
@@ -338,7 +349,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             </button>
             <button
               onClick={() => onNavigate('/talents')}
-              className="hidden sm:inline-flex text-xs font-black text-slate-600 hover:text-orange-600 transition-colors uppercase tracking-widest px-3 py-2 rounded-xl hover:bg-slate-50"
+              className="hidden sm:inline-flex rounded-xl px-3 py-2 text-xs font-black uppercase tracking-widest text-slate-600 transition-colors hover:bg-blue-950/5 hover:text-blue-950"
               type="button"
             >
               Zum Marktplatz
@@ -347,7 +358,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             <Button
               variant="ghost"
               size="sm"
-              className="text-slate-600 hover:text-orange-600 px-3 py-2 rounded-xl text-xs"
+              className="rounded-xl px-3 py-2 text-xs text-slate-600 hover:text-blue-950"
               onClick={onLogout}
             >
               Abmelden
@@ -355,7 +366,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             <Button
               size="sm"
               variant="primary"
-              className="rounded-xl px-4 py-2 text-xs"
+              className="rounded-xl border-0 bg-gradient-to-r from-blue-950 via-blue-900 to-orange-600 px-4 py-2 text-xs shadow-md shadow-blue-950/25 transition-all hover:bg-transparent hover:from-blue-900 hover:via-blue-800 hover:to-orange-500 active:bg-transparent"
               onClick={() => handleSubmit(formData.isPublished)}
               isLoading={isSaving}
             >
@@ -367,14 +378,23 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
 
       <main className="mx-auto mt-6 max-w-5xl px-4 sm:mt-10 sm:px-6">
         <div className="mb-6 sm:mb-8">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-orange-600/90">Kandidatenbereich</p>
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Mein Profil</h1>
-          <p className="mt-2 max-w-2xl text-sm text-slate-600">Pflege deine Daten, Dokumente und Matching-Signale – alles auf einen Blick.</p>
+          <p className="bg-gradient-to-r from-blue-950 via-slate-800 to-orange-600 bg-clip-text font-mono text-[10px] font-bold uppercase tracking-[0.32em] text-transparent sm:text-[11px]">
+            Kandidatenbereich
+          </p>
+          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-4xl">
+            Mein{' '}
+            <span className="bg-gradient-to-r from-blue-950 via-blue-800 to-orange-500 bg-clip-text text-transparent">
+              Profil
+            </span>
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
+            Pflege deine Daten, Dokumente und Matching-Signale – präzise, sicher, recruiter-ready.
+          </p>
         </div>
 
         {/* Required fields notice */}
-        <div className="mb-6 sm:mb-10 flex items-start gap-4 rounded-2xl sm:rounded-3xl border border-orange-100 bg-gradient-to-br from-orange-50/90 via-white to-amber-50/40 p-4 sm:p-6 shadow-[0_12px_40px_-20px_rgba(234,88,12,0.18)]">
-          <div className="flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25">
+        <div className="mb-6 sm:mb-10 flex items-start gap-4 rounded-2xl border border-blue-950/15 bg-gradient-to-br from-slate-100/90 via-white to-blue-50/50 p-4 shadow-[0_20px_60px_-24px_rgba(23,37,84,0.12),0_0_0_1px_rgba(255,255,255,0.75)_inset,0_0_48px_-24px_rgba(234,88,12,0.08)] backdrop-blur-sm sm:rounded-3xl sm:p-6">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-950 via-blue-800 to-orange-600 text-white shadow-lg shadow-blue-950/35 sm:h-12 sm:w-12">
             <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
@@ -382,23 +402,23 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           <div>
             <h4 className="font-black text-slate-900 tracking-tight">Pflichtfelder</h4>
             <p className="mt-1 text-xs sm:text-sm text-slate-600 leading-relaxed">
-              Felder mit <span className="font-black text-orange-600">*</span> sind erforderlich, um dein Profil an den Recruiter zu senden.
+              Felder mit <span className="font-black text-blue-950">*</span> sind erforderlich, um dein Profil an den Recruiter zu senden.
             </p>
           </div>
         </div>
 
         <div className="space-y-5 sm:space-y-8">
           {/* Identity Section */}
-          <section className="rounded-[1.75rem] border border-slate-200/70 bg-white p-5 sm:p-8 md:p-10 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04),0_24px_56px_-28px_rgba(15,23,42,0.1)] transition-shadow hover:shadow-[0_24px_60px_-24px_rgba(15,23,42,0.12)]">
+          <section className="relative overflow-hidden rounded-[1.75rem] border border-blue-950/10 bg-white/85 p-5 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.05),0_24px_56px_-28px_rgba(23,37,84,0.08),0_0_0_1px_rgba(30,58,138,0.08)_inset] backdrop-blur-sm transition-shadow hover:shadow-[0_28px_64px_-28px_rgba(15,23,42,0.12)] sm:p-8 md:p-10 before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-blue-950/30 before:via-orange-400/30 before:to-blue-900/25">
             <div className="flex flex-col md:flex-row items-center gap-3.5 sm:gap-8 md:gap-10">
               <div className="relative">
                 <Avatar
                   seed={formData.firstName + formData.lastName || 'user'}
                   size="md"
-                  className="w-16 h-16 text-lg sm:w-32 sm:h-32 sm:text-3xl ring-[5px] sm:ring-[10px] ring-orange-100 shadow-inner"
+                  className="w-16 h-16 text-lg shadow-[0_0_0_1px_rgba(30,58,138,0.2)] ring-[5px] ring-blue-100 ring-offset-2 ring-offset-slate-50 sm:w-32 sm:h-32 sm:text-3xl sm:ring-[10px]"
                   imageUrl={formData.profileImageUrl}
                 />
-                <label className="absolute -bottom-2 -right-2 cursor-pointer rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-2 text-orange-400 shadow-lg shadow-slate-900/20 transition-transform hover:scale-105 hover:text-orange-300">
+                <label className="absolute -bottom-2 -right-2 cursor-pointer rounded-2xl bg-gradient-to-br from-blue-950 to-slate-900 p-2 text-amber-400 shadow-lg shadow-blue-950/35 transition-transform hover:scale-105 hover:text-amber-300">
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
                   <input
                     type="file"
@@ -431,7 +451,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                 </div>
 
                 {/* PRIVATE CONTACT INFO */}
-                <div className="mt-3 sm:mt-6 pt-3 sm:pt-6 border-t border-slate-100">
+                <div className="mt-3 border-t border-blue-950/10 pt-3 sm:mt-6 sm:pt-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
                     <div>
                       <label className="block text-xs sm:text-sm font-bold text-slate-900 mb-1 sm:mb-1.5">Straße & Hausnummer</label>
@@ -467,60 +487,108 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             </div>
           </section>
 
-          {/* Details Section */}
-          <section className="rounded-[1.75rem] border border-slate-200/70 bg-white p-5 sm:p-8 md:p-10 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04),0_24px_56px_-28px_rgba(15,23,42,0.1)]">
-            <h3 className="mb-6 sm:mb-8 flex items-center gap-3 text-base font-black tracking-tight text-slate-900 sm:text-xl">
-              <span className="h-8 w-1.5 rounded-full bg-gradient-to-b from-orange-500 to-amber-500 shadow-sm shadow-orange-500/30" />
+          {/* Details Section – dunkelblauer Kasten */}
+          <section className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-blue-950 via-blue-950 to-slate-950 p-5 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.06)_inset,inset_0_1px_0_0_rgba(255,255,255,0.08)] sm:p-8 md:p-10 before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-orange-400/45 before:to-transparent">
+            <div
+              className="pointer-events-none absolute -right-20 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full bg-orange-500/10 blur-3xl"
+              aria-hidden
+            />
+            <h3 className="relative mb-6 flex items-center gap-3 text-base font-black tracking-tight text-white sm:mb-8 sm:text-xl">
+              <span className="h-8 w-1.5 rounded-full bg-gradient-to-b from-amber-400 via-orange-400 to-orange-600 shadow-[0_0_22px_rgba(251,146,60,0.55)]" />
               BERUFLICHER FOKUS
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 mb-5 sm:mb-8">
+            <div className="relative grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-8 mb-5 sm:mb-8">
               <div>
-                <label className="block text-xs sm:text-sm font-bold text-slate-900 mb-1 sm:mb-1.5">Hauptbranche<RequiredBadge /></label>
-                <Select name="industry" value={formData.industry} onChange={handleChange} error={errors.industry} className="h-9 sm:h-10 text-sm rounded-xl">
+                <label className="mb-1.5 block text-xs font-bold text-slate-200 sm:text-sm">
+                  Hauptbranche
+                  <RequiredBadge onDark />
+                </label>
+                <Select
+                  name="industry"
+                  value={formData.industry}
+                  onChange={handleChange}
+                  error={errors.industry}
+                  errorClassName="text-red-300"
+                  className="h-9 sm:h-10 text-sm rounded-xl"
+                >
                   <option value="">Branche wählen...</option>
                   {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
                 </Select>
               </div>
               <div>
-                <label className="block text-xs sm:text-sm font-bold text-slate-900 mb-1 sm:mb-1.5">Erfahrung (Jahre)<RequiredBadge /></label>
-                <Input type="number" name="experienceYears" value={formData.experienceYears} onChange={handleNumberChange} min="0" max="50" className="h-9 sm:h-10 text-sm rounded-xl" />
+                <label className="mb-1.5 block text-xs font-bold text-slate-200 sm:text-sm">
+                  Erfahrung (Jahre)
+                  <RequiredBadge onDark />
+                </label>
+                <Input
+                  type="number"
+                  name="experienceYears"
+                  value={formData.experienceYears}
+                  onChange={handleNumberChange}
+                  min="0"
+                  max="50"
+                  className="h-9 sm:h-10 text-sm rounded-xl"
+                />
               </div>
               <div>
-                <label className="block text-xs sm:text-sm font-bold text-slate-900 mb-1 sm:mb-1.5">Verfügbarkeit<RequiredBadge /></label>
-                <Select name="availability" value={formData.availability} onChange={handleChange} error={errors.availability} className="h-9 sm:h-10 text-sm rounded-xl">
+                <label className="mb-1.5 block text-xs font-bold text-slate-200 sm:text-sm">
+                  Verfügbarkeit
+                  <RequiredBadge onDark />
+                </label>
+                <Select
+                  name="availability"
+                  value={formData.availability}
+                  onChange={handleChange}
+                  error={errors.availability}
+                  errorClassName="text-red-300"
+                  className="h-9 sm:h-10 text-sm rounded-xl"
+                >
                   <option value="">Status wählen...</option>
                   {AVAILABILITY_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
                 </Select>
               </div>
             </div>
-            <Textarea
-              label="Kurz-Bio (optional)"
-              name="about"
-              placeholder="Beschreiben Sie kurz Ihren beruflichen Hintergrund…"
-              value={formData.about || ''}
-              onChange={handleChange}
-              className="text-sm rounded-xl min-h-[120px]"
-            />
+            <div className="relative">
+              <Textarea
+                label="Kurz-Bio (optional)"
+                name="about"
+                placeholder="Beschreiben Sie kurz Ihren beruflichen Hintergrund…"
+                value={formData.about || ''}
+                onChange={handleChange}
+                labelClassName="text-slate-200 font-bold"
+                errorClassName="text-red-300"
+                className="min-h-[120px] rounded-xl text-sm"
+              />
+            </div>
           </section>
 
-          {/* Skills & Matching-Boost – hell, modern */}
-          <section className="relative overflow-hidden rounded-[1.75rem] border border-slate-200/70 bg-gradient-to-br from-white via-orange-50/30 to-slate-50/50 p-5 sm:p-8 md:p-10 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04),0_28px_64px_-28px_rgba(15,23,42,0.12)]">
+          {/* Skills & Matching-Boost – hell, high-tech Mesh */}
+          <section className="relative overflow-hidden rounded-[1.75rem] border border-blue-950/12 bg-white p-5 shadow-[0_4px_24px_-8px_rgba(23,37,84,0.08),0_28px_72px_-32px_rgba(249,115,22,0.08),0_0_0_1px_rgba(30,58,138,0.06)_inset] ring-1 ring-blue-950/12 sm:p-8 md:p-10">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-100/80 via-white to-blue-50/40" aria-hidden />
             <div
-              className="pointer-events-none absolute inset-0 opacity-[0.45] bg-[linear-gradient(rgba(15,23,42,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.025)_1px,transparent_1px)] bg-[size:28px_28px]"
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(30,58,138,0.06),transparent_58%)]"
               aria-hidden
             />
-            <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-orange-200/25 blur-3xl" aria-hidden />
-            <div className="pointer-events-none absolute -bottom-24 -left-16 h-48 w-48 rounded-full bg-sky-200/20 blur-3xl" aria-hidden />
+            <div
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(251,146,60,0.04),transparent_45%)]"
+              aria-hidden
+            />
+            <div
+              className="pointer-events-none absolute inset-0 opacity-[0.55] bg-[linear-gradient(rgba(30,58,138,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(251,146,60,0.03)_1px,transparent_1px)] bg-[size:24px_24px]"
+              aria-hidden
+            />
+            <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-gradient-to-br from-orange-300/18 to-amber-200/10 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-gradient-to-tr from-blue-900/15 to-cyan-200/14 blur-3xl" aria-hidden />
 
             <div className="relative z-10">
               <div className="mb-8 flex flex-col gap-5 lg:mb-10 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-2xl">
-                  <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-orange-600/80 sm:text-[11px]">
+                  <p className="mb-2 bg-gradient-to-r from-blue-950 via-slate-700 to-orange-600 bg-clip-text font-mono text-[10px] font-bold uppercase tracking-[0.28em] text-transparent sm:text-[11px]">
                     Matching · Sichtbarkeit
                   </p>
                   <h3 className="text-2xl font-black leading-tight tracking-tight text-slate-900 sm:text-3xl md:text-4xl">
                     Skills &{' '}
-                    <span className="bg-gradient-to-r from-orange-600 to-amber-500 bg-clip-text text-transparent">
+                    <span className="bg-gradient-to-r from-blue-950 via-blue-800 to-orange-500 bg-clip-text text-transparent">
                       Matching-Boost
                     </span>
                   </h3>
@@ -529,10 +597,10 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-800 shadow-sm">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-blue-950/15 bg-blue-950/[0.06] px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-blue-950 shadow-sm">
                     <span className="relative flex h-2 w-2">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-50" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-40" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-700" />
                     </span>
                     Profil aktiv
                   </span>
@@ -540,9 +608,9 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
               </div>
 
               <div className="space-y-8 sm:space-y-10">
-                <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-sm backdrop-blur-sm sm:p-7">
-                  <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-orange-600">
-                    <span className="h-px w-8 bg-gradient-to-r from-orange-500 to-transparent" />
+                <div className="rounded-2xl border border-blue-950/10 bg-white/95 p-5 shadow-sm backdrop-blur-sm sm:p-7">
+                  <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-blue-950">
+                    <span className="h-px w-10 bg-gradient-to-r from-blue-950 via-blue-700 to-orange-500" />
                     Fachliche Skills
                   </div>
                   <Input
@@ -551,19 +619,19 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                     value={newSkill}
                     onChange={(e) => setNewSkill(e.target.value)}
                     onKeyDown={handleAddSkill}
-                    className="h-11 rounded-xl border-slate-200"
+                    className="h-11 rounded-xl border-slate-200 focus:border-blue-900"
                   />
                   <div className="mt-4 flex flex-wrap gap-2">
                     {formData.skills.map((skill) => (
                       <span
                         key={skill}
-                        className="inline-flex items-center gap-2 rounded-xl border border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50/50 px-3 py-1.5 text-xs font-bold text-orange-900 shadow-sm transition-all hover:border-orange-300 sm:text-sm"
+                        className="inline-flex items-center gap-2 rounded-xl border border-blue-950/15 bg-gradient-to-br from-slate-50 to-blue-50/60 px-3 py-1.5 text-xs font-bold text-blue-950 shadow-sm transition-all hover:border-blue-900/30 sm:text-sm"
                       >
                         {skill}
                         <button
                           type="button"
                           onClick={() => removeSkill(skill)}
-                          className="rounded-md px-1 text-lg leading-none text-orange-600/70 transition-colors hover:bg-orange-100 hover:text-orange-900"
+                          className="rounded-md px-1 text-lg leading-none text-blue-800/60 transition-colors hover:bg-blue-950/10 hover:text-blue-950"
                           aria-label={`${skill} entfernen`}
                         >
                           ×
@@ -575,11 +643,11 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
 
                 <div>
                   <div className="mb-6 flex items-center gap-3">
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-                    <span className="shrink-0 text-center text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-blue-900/25 to-transparent" />
+                    <span className="shrink-0 bg-gradient-to-r from-blue-950 via-blue-800 to-orange-600 bg-clip-text text-center text-[10px] font-black uppercase tracking-[0.28em] text-transparent">
                       Sichtbarkeits-Booster
                     </span>
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-orange-200/50 to-transparent" />
                   </div>
                   <p className="mb-6 text-center text-xs font-semibold text-slate-500">Zum Aktivieren antippen</p>
 
@@ -587,10 +655,10 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                     {BOOSTER_KEYWORD_CATEGORIES.map((cat) => (
                       <div
                         key={cat.title}
-                        className="rounded-2xl border border-slate-100 bg-white/80 p-4 shadow-sm transition-all hover:border-slate-200 hover:shadow-md sm:p-5"
+                        className="rounded-2xl border border-blue-950/10 bg-white/90 p-4 shadow-[0_8px_30px_-18px_rgba(23,37,84,0.07)] backdrop-blur-sm transition-all hover:border-blue-900/25 hover:shadow-[0_12px_40px_-20px_rgba(30,58,138,0.12)] sm:p-5"
                       >
-                        <h4 className="mb-3 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-800 sm:text-[11px]">
-                          <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-orange-500 to-amber-400" />
+                        <h4 className="mb-3 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-blue-950 sm:text-[11px]">
+                          <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-blue-950 via-blue-700 to-orange-500 shadow-[0_0_12px_rgba(23,37,84,0.5)]" />
                           {cat.title}
                         </h4>
                         <div className="flex flex-wrap gap-2">
@@ -603,8 +671,8 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                                 onClick={() => toggleKeyword(kw)}
                                 className={`rounded-xl px-3 py-2 text-[9px] font-black uppercase tracking-wide transition-all duration-200 sm:px-3.5 sm:py-2 sm:text-[10px] ${
                                   active
-                                    ? 'border border-orange-300 bg-gradient-to-br from-orange-600 to-amber-500 text-white shadow-md shadow-orange-500/25'
-                                    : 'border border-slate-200 bg-slate-50 text-slate-600 hover:border-orange-200 hover:bg-white hover:text-slate-900 hover:shadow-sm'
+                                    ? 'border border-blue-950/40 bg-gradient-to-br from-blue-950 via-blue-800 to-orange-600 text-white shadow-lg shadow-blue-950/35'
+                                    : 'border border-slate-200/90 bg-slate-50/95 text-slate-600 hover:border-blue-900/35 hover:bg-white hover:text-blue-950 hover:shadow-[0_0_24px_-10px_rgba(30,58,138,0.2)]'
                                 }`}
                               >
                                 {kw.toUpperCase()}
@@ -621,9 +689,9 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Social Links Section */}
-          <section className="rounded-[1.75rem] border border-slate-200/70 bg-white p-5 sm:p-8 md:p-10 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.04),0_24px_56px_-28px_rgba(15,23,42,0.1)]">
+          <section className="relative overflow-hidden rounded-[1.75rem] border border-blue-950/10 bg-white/85 p-5 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.05),0_24px_56px_-28px_rgba(23,37,84,0.08),0_0_0_1px_rgba(30,58,138,0.08)_inset] backdrop-blur-sm sm:p-8 md:p-10 before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-blue-950/30 before:via-orange-400/30 before:to-blue-900/25">
             <h3 className="mb-6 sm:mb-8 flex items-center gap-3 text-base font-black tracking-tight text-slate-900 sm:text-xl">
-              <span className="h-8 w-1.5 rounded-full bg-gradient-to-b from-orange-500 to-amber-500 shadow-sm shadow-orange-500/30" />
+              <span className="h-8 w-1.5 rounded-full bg-gradient-to-b from-blue-950 via-blue-800 to-orange-500 shadow-[0_0_20px_rgba(23,37,84,0.45),0_0_12px_rgba(249,115,22,0.2)]" />
               SOCIAL LINKS <span className="text-slate-400 font-bold text-sm normal-case tracking-normal">(optional)</span>
             </h3>
 
@@ -631,9 +699,16 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             {formData.socialLinks.length > 0 && (
               <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
                 {formData.socialLinks.map((link, idx) => (
-                  <div key={idx} className="flex items-center gap-3 sm:gap-4 rounded-xl border border-slate-100 bg-slate-50/80 p-3 sm:p-4">
-                    <span className="font-bold text-slate-700 text-sm">{link.label}:</span>
-                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline truncate flex-1">{link.url}</a>
+                  <div key={idx} className="flex items-center gap-3 sm:gap-4 rounded-xl border border-blue-950/10 bg-slate-50/90 p-3 sm:p-4">
+                    <span className="text-sm font-bold text-blue-950">{link.label}:</span>
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 truncate text-blue-800 underline-offset-2 hover:text-orange-600 hover:underline"
+                    >
+                      {link.url}
+                    </a>
                     <button type="button" onClick={() => removeLink(idx)} className="text-slate-400 hover:text-red-500">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
@@ -659,18 +734,24 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                 onChange={(e) => setNewLink(prev => ({ ...prev, url: e.target.value }))}
                 className="h-9 sm:h-10 text-sm rounded-xl"
               />
-              <Button type="button" variant="outline" onClick={handleAddLink} disabled={!newLink.label || !newLink.url} className="h-9 sm:h-10 rounded-xl text-sm">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddLink}
+                disabled={!newLink.label || !newLink.url}
+                className="h-9 rounded-xl border-blue-950/20 text-sm text-blue-950 hover:border-blue-900/40 hover:bg-blue-950/[0.04] sm:h-10"
+              >
                 Link hinzufügen
               </Button>
             </div>
           </section>
 
           {/* Documents Section */}
-          <section className="bg-white p-2.5 sm:p-8 md:p-10 rounded-xl sm:rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
-            <h3 className="text-base sm:text-xl font-black text-slate-900 mb-4 sm:mb-8 flex items-center gap-3 flex-wrap">
-              <span className="w-2 h-8 bg-orange-600 rounded-full shrink-0" />
+          <section className="relative overflow-hidden rounded-[1.75rem] border border-blue-950/10 bg-white/85 p-4 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.05),0_24px_56px_-28px_rgba(23,37,84,0.08),0_0_0_1px_rgba(30,58,138,0.08)_inset] backdrop-blur-sm sm:p-8 md:p-10 before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-blue-950/30 before:via-orange-400/30 before:to-blue-900/25">
+            <h3 className="mb-4 flex flex-wrap items-center gap-3 text-base font-black text-slate-900 sm:mb-8 sm:text-xl">
+              <span className="h-8 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-blue-950 via-blue-800 to-orange-500 shadow-[0_0_20px_rgba(23,37,84,0.45),0_0_12px_rgba(249,115,22,0.2)]" />
               <span>DOKUMENTE</span>
-              <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 border border-slate-200">
+              <span className="rounded-lg border border-blue-950/15 bg-blue-950/[0.06] px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-blue-950 sm:text-xs">
                 Zertifikate optional
               </span>
             </h3>
@@ -720,7 +801,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             <Button
               variant="outline"
               size="lg"
-              className="flex-1 rounded-2xl border-2 border-slate-200 py-4 font-bold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 sm:py-5"
+              className="flex-1 rounded-2xl border-2 border-blue-950/20 py-4 font-bold text-blue-950 shadow-sm transition-all hover:border-blue-900/40 hover:bg-blue-950/[0.04] sm:py-5"
               onClick={() => handleSubmit(false)}
               isLoading={isSaving}
             >
@@ -729,7 +810,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             <Button
               size="lg"
               variant="primary"
-              className="flex-1 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-500 py-4 text-base font-black uppercase tracking-widest shadow-lg shadow-orange-500/30 transition-all hover:from-orange-500 hover:to-amber-400 sm:py-5 sm:text-lg"
+              className="flex-1 rounded-2xl border-0 bg-gradient-to-r from-blue-950 via-blue-800 to-orange-600 py-4 text-base font-black uppercase tracking-widest shadow-lg shadow-blue-950/30 transition-all hover:bg-transparent hover:from-blue-900 hover:via-blue-700 hover:to-orange-500 active:bg-transparent sm:py-5 sm:text-lg"
               onClick={() => handleSubmit(true)}
               isLoading={isSaving}
             >
