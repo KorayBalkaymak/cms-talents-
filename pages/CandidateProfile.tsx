@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { CandidateProfile, CandidateStatus, CandidateDocuments, SocialLink, validateProfileForPublishing, validateDocumentsForRecruiterSubmit, canPublishProfile } from '../types';
-import { Button, Input, Select, Avatar, Badge, Textarea, FileUpload } from '../components/UI';
+import { Button, Input, Select, Avatar, Textarea, FileUpload } from '../components/UI';
 import { INDUSTRIES, AVAILABILITY_OPTIONS, BOOSTER_KEYWORD_CATEGORIES } from '../constants';
 import { documentService } from '../services/DocumentService';
 import { candidateService } from '../services/CandidateService';
@@ -492,56 +492,135 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             />
           </section>
 
-          {/* Skills Section */}
-          <section className="bg-white p-2.5 sm:p-8 md:p-10 rounded-xl sm:rounded-3xl shadow-[0_22px_70px_-45px_rgba(2,6,23,0.45)] border border-slate-200/70">
-            <h3 className="text-base sm:text-xl font-black text-slate-900 mb-4 sm:mb-8 flex items-center gap-3">
-              <span className="w-2 h-8 bg-orange-600 rounded-full"></span>
-              SKILLS & MATCHING-BOOST (optional)
-            </h3>
-            <div className="space-y-4 sm:space-y-8">
-              <div>
-                <Input
-                  label="Fachliche Skills"
-                  placeholder="Skill eingeben & Enter drücken (z.B. React, SEO, SAP)"
-                  value={newSkill}
-                  onChange={(e) => setNewSkill(e.target.value)}
-                  onKeyDown={handleAddSkill}
-                  className="h-9 sm:h-10 text-sm rounded-xl"
-                />
-                <div className="flex flex-wrap gap-2 mt-3 sm:mt-4">
-                  {formData.skills.map(skill => (
-                    <Badge key={skill} variant="orange" className="gap-2 px-3 py-1.5 text-xs sm:text-sm shadow-sm border-orange-200">
-                      {skill}
-                      <button type="button" onClick={() => removeSkill(skill)} className="hover:text-red-600 font-bold transition-colors">×</button>
-                    </Badge>
-                  ))}
+          {/* Skills Section – Premium / Tech-Matching */}
+          <section className="relative overflow-hidden rounded-2xl sm:rounded-[2rem] border border-white/[0.08] shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset,0_32px_80px_-24px_rgba(0,0,0,0.85),0_0_120px_-40px_rgba(249,115,22,0.15)]">
+            {/* Deep space base */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#050a14] via-[#0c1220] to-[#060d18]" aria-hidden />
+            {/* Tech grid */}
+            <div
+              className="pointer-events-none absolute inset-0 opacity-[0.35] bg-[linear-gradient(rgba(148,163,184,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.07)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:linear-gradient(to_bottom,black_40%,transparent_100%)]"
+              aria-hidden
+            />
+            {/* Ambient glows */}
+            <div className="pointer-events-none absolute -top-28 -right-20 h-[22rem] w-[22rem] rounded-full bg-orange-500/[0.12] blur-[100px]" aria-hidden />
+            <div className="pointer-events-none absolute -bottom-36 -left-24 h-[24rem] w-[24rem] rounded-full bg-cyan-500/[0.08] blur-[110px]" aria-hidden />
+            <div className="pointer-events-none absolute top-1/2 left-1/2 h-[min(80%,28rem)] w-[min(90%,48rem)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600/[0.06] blur-[80px]" aria-hidden />
+
+            <div className="relative z-10 p-4 sm:p-8 md:p-12 lg:p-14">
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between mb-8 sm:mb-10 lg:mb-12">
+                <div className="max-w-2xl">
+                  <p className="font-mono text-[10px] sm:text-[11px] text-cyan-400/90 tracking-[0.28em] uppercase mb-3">
+                    Matching Intelligence · Signal Layer
+                  </p>
+                  <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.5rem] font-black tracking-tight leading-[1.1]">
+                    <span className="bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
+                      Skills &
+                    </span>{' '}
+                    <span className="bg-gradient-to-r from-orange-300 via-amber-200 to-orange-500 bg-clip-text text-transparent">
+                      Matching-Boost
+                    </span>
+                  </h3>
+                  <p className="mt-3 text-sm sm:text-base text-slate-400 font-medium leading-relaxed">
+                    Optional – schärfe dein Profil für präziseres Recruiter-Matching. Boosters erhöhen die{' '}
+                    <span className="text-slate-300">Sichtbarkeit</span> in der Talent-Matrix.
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] px-4 py-2.5 backdrop-blur-sm">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100/90">
+                      Live Signal
+                    </span>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 font-mono text-[10px] text-slate-400 backdrop-blur-sm tracking-wider">
+                    v2 · HYBRID
+                  </div>
                 </div>
               </div>
 
-              <div className="pt-3 sm:pt-6 border-t border-slate-50">
-                <label className="text-[11px] sm:text-xs font-black text-slate-400 block mb-4 sm:mb-5 uppercase tracking-[0.2em]">
-                  Sichtbarkeits-Boosters (Klick zum Aktivieren)
-                </label>
-                <div className="space-y-6 sm:space-y-8">
-                  {BOOSTER_KEYWORD_CATEGORIES.map((cat) => (
-                    <div key={cat.title}>
-                      <h4 className="text-[10px] sm:text-xs font-black text-slate-800 uppercase tracking-[0.15em] mb-3 pb-2 border-b border-slate-200">
-                        {cat.title}
-                      </h4>
-                      <div className="flex flex-wrap gap-2.5 sm:gap-3">
-                        {cat.keywords.map((kw) => (
-                          <button
-                            key={`${cat.title}::${kw}`}
-                            type="button"
-                            onClick={() => toggleKeyword(kw)}
-                            className={`px-3.5 sm:px-5 py-1.5 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-black transition-all border-2 ${formData.boostedKeywords.includes(kw) ? 'bg-slate-900 text-orange-500 border-slate-900 shadow-lg' : 'bg-slate-50 text-slate-500 border-transparent hover:border-slate-200'}`}
-                          >
-                            {kw.toUpperCase()}
-                          </button>
-                        ))}
+              <div className="space-y-10 sm:space-y-12">
+                {/* Skills input – glass island */}
+                <div className="rounded-2xl sm:rounded-3xl border border-white/[0.1] bg-white/[0.04] p-5 sm:p-7 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
+                  <div className="mb-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-orange-300/90">
+                    <span className="h-px w-6 bg-gradient-to-r from-orange-500 to-transparent" />
+                    Core Skills
+                  </div>
+                  <div className="[&_label]:mb-2 [&_label]:text-xs [&_label]:font-bold [&_label]:uppercase [&_label]:tracking-wider [&_label]:text-slate-300">
+                    <Input
+                      label="Fachliche Skills"
+                      placeholder="Eingeben & Enter — z. B. SAP, Rohrleitungsbau, BIM"
+                      value={newSkill}
+                      onChange={(e) => setNewSkill(e.target.value)}
+                      onKeyDown={handleAddSkill}
+                      className="h-11 rounded-xl border-slate-200/80 shadow-sm"
+                    />
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2 sm:gap-2.5">
+                    {formData.skills.map((skill) => (
+                      <span
+                        key={skill}
+                        className="group inline-flex items-center gap-2 rounded-xl border border-orange-500/25 bg-gradient-to-br from-orange-500/15 to-transparent px-3.5 py-1.5 text-xs font-bold text-orange-100 shadow-[0_0_24px_-8px_rgba(249,115,22,0.45)] backdrop-blur-sm transition-all hover:border-orange-400/50 sm:text-sm"
+                      >
+                        {skill}
+                        <button
+                          type="button"
+                          onClick={() => removeSkill(skill)}
+                          className="rounded-md px-1 text-lg leading-none text-orange-200/80 transition-colors hover:bg-white/10 hover:text-white"
+                          aria-label={`${skill} entfernen`}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Boosters – visibility matrix */}
+                <div className="relative pt-4">
+                  <div className="absolute left-0 right-0 top-0 flex items-center gap-4">
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
+                    <span className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.35em] text-cyan-400/80">
+                      Visibility Matrix
+                    </span>
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
+                  </div>
+                  <p className="pt-8 text-center text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500 sm:pt-10">
+                    Sichtbarkeits-Booster · <span className="text-slate-400">Tap to activate</span>
+                  </p>
+
+                  <div className="mt-8 space-y-8 sm:space-y-10 sm:mt-10">
+                    {BOOSTER_KEYWORD_CATEGORIES.map((cat) => (
+                      <div key={cat.title} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 sm:p-6 backdrop-blur-sm transition-colors hover:border-white/[0.1]">
+                        <h4 className="mb-4 flex flex-wrap items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300/95 sm:text-[11px]">
+                          <span className="h-1 w-1 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.7)]" />
+                          {cat.title}
+                          <span className="hidden h-px flex-1 bg-gradient-to-r from-cyan-500/30 to-transparent sm:block min-w-[2rem]" />
+                        </h4>
+                        <div className="flex flex-wrap gap-2 sm:gap-2.5">
+                          {cat.keywords.map((kw) => {
+                            const active = formData.boostedKeywords.includes(kw);
+                            return (
+                              <button
+                                key={`${cat.title}::${kw}`}
+                                type="button"
+                                onClick={() => toggleKeyword(kw)}
+                                className={`rounded-xl px-3.5 py-2 text-[9px] font-black uppercase tracking-wide transition-all duration-300 sm:px-4 sm:py-2.5 sm:text-[10px] ${
+                                  active
+                                    ? 'border border-orange-400/40 bg-gradient-to-br from-orange-600 via-amber-500 to-orange-600 text-white shadow-[0_0_28px_-6px_rgba(249,115,22,0.55),inset_0_1px_0_0_rgba(255,255,255,0.2)] scale-[1.02]'
+                                    : 'border border-white/[0.08] bg-white/[0.04] text-slate-400 hover:border-cyan-500/35 hover:bg-white/[0.07] hover:text-slate-200 hover:shadow-[0_0_24px_-8px_rgba(34,211,238,0.2)]'
+                                }`}
+                              >
+                                {kw.toUpperCase()}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
