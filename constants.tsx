@@ -5,6 +5,8 @@
 export type BoosterKeywordCategory = {
   title: string;
   keywords: string[];
+  /** Optional: abweichender Kartenhintergrund in der Profil-UI */
+  panelVariant?: 'orange';
 };
 
 function dedupeStrings(items: string[]): string[] {
@@ -132,6 +134,7 @@ export const BOOSTER_KEYWORD_CATEGORIES: BoosterKeywordCategory[] = [
   },
   {
     title: 'Software & Digitalisierung',
+    panelVariant: 'orange',
     keywords: [
       'AutoCAD',
       'Autodesk AutoCAD',
@@ -169,6 +172,7 @@ export const BOOSTER_KEYWORD_CATEGORIES: BoosterKeywordCategory[] = [
 ].map((cat) => ({
   title: cat.title,
   keywords: dedupeStrings(cat.keywords),
+  ...(cat.panelVariant ? { panelVariant: cat.panelVariant } : {}),
 }));
 
 /** Flache Liste aller Booster-Keywords (eindeutig, Reihenfolge wie in den Kategorien) */

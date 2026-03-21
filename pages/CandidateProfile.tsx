@@ -693,10 +693,24 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                     {BOOSTER_KEYWORD_CATEGORIES.map((cat) => (
                       <div
                         key={cat.title}
-                        className="rounded-2xl border border-white/10 bg-blue-950/30 p-4 backdrop-blur-sm transition-all hover:border-orange-400/25 sm:p-5"
+                        className={`rounded-2xl border p-4 backdrop-blur-sm transition-all sm:p-5 ${
+                          cat.panelVariant === 'orange'
+                            ? 'border-orange-400/50 bg-gradient-to-br from-orange-600/45 via-orange-500/35 to-amber-600/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.15)] hover:border-orange-300/60'
+                            : 'border-white/10 bg-blue-950/30 hover:border-orange-400/25'
+                        }`}
                       >
-                        <h4 className="mb-3 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-200 sm:text-[11px]">
-                          <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 shadow-[0_0_12px_rgba(251,146,60,0.5)]" />
+                        <h4
+                          className={`mb-3 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] sm:text-[11px] ${
+                            cat.panelVariant === 'orange' ? 'text-slate-950' : 'text-slate-200'
+                          }`}
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full shadow-[0_0_12px_rgba(251,146,60,0.5)] ${
+                              cat.panelVariant === 'orange'
+                                ? 'bg-gradient-to-br from-slate-900 to-slate-800'
+                                : 'bg-gradient-to-br from-orange-400 to-amber-500'
+                            }`}
+                          />
                           {cat.title}
                         </h4>
                         <div className="flex flex-wrap gap-2">
