@@ -15,22 +15,19 @@ interface CandidateProfileProps {
 }
 
 // Required field marker component
-const RequiredBadge: React.FC<{ onDark?: boolean }> = ({ onDark }) => (
-  <span
-    className={`ml-1 font-black text-xs ${onDark ? 'text-amber-400' : 'text-blue-950'}`}
-    title="Pflichtfeld"
-  >
+const RequiredBadge = () => (
+  <span className="ml-1 text-xs font-black text-orange-600" title="Pflichtfeld">
     *
   </span>
 );
 
-/** Einheitlicher Karten-Stil (wie „BERUFLICHER FOKUS“) */
+/** Weiße Karten mit orangefarbenem Verlauf (auf Home-Dunkelblau #101B31) */
 const PROFILE_CARD =
-  'relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-blue-950 via-blue-950 to-slate-950 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.06)_inset,inset_0_1px_0_0_rgba(255,255,255,0.08)] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-orange-400/45 before:to-transparent';
+  'relative overflow-hidden rounded-[1.75rem] border border-orange-200/70 bg-gradient-to-br from-white via-orange-50/95 to-amber-100/80 text-slate-900 shadow-[0_24px_60px_-28px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.9)_inset] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-gradient-to-r before:from-orange-500 before:via-amber-400 before:to-orange-600';
 
 const ProfileCardGlow = () => (
   <div
-    className="pointer-events-none absolute -right-20 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full bg-orange-500/10 blur-3xl"
+    className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-orange-400/25 blur-3xl"
     aria-hidden
   />
 );
@@ -212,18 +209,17 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-50 pb-24">
-      {/* Mesh: Navy / Dunkelblau + Orange / Amber + Cyan – weniger „nur weiß“ */}
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-slate-50" aria-hidden>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_55%_at_50%_-25%,rgba(255,237,213,0.75),transparent_62%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_42%_at_0%_15%,rgba(23,37,84,0.11),transparent_55%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_45%_40%_at_100%_85%,rgba(30,58,138,0.1),transparent_58%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_42%_38%_at_100%_8%,rgba(224,231,255,0.4),transparent_58%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_38%_32%_at_0%_92%,rgba(254,243,199,0.45),transparent_55%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_55%_35%_at_50%_105%,rgba(207,250,254,0.3),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(108deg,rgba(23,37,84,0.06)_0%,transparent_32%,transparent_68%,rgba(251,146,60,0.04)_100%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(30,58,138,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.05)_1px,transparent_1px)] bg-[size:32px_32px] opacity-[0.6]" />
-      </div>
+    <div className="relative min-h-screen bg-[#101B31] pb-24 text-white antialiased">
+      {/* Wie LandingPage: dunkelblau + dezentes Orange-Glow */}
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[#101B31]" aria-hidden />
+      <div
+        className="pointer-events-none fixed top-1/4 -right-1/4 z-0 h-[600px] w-[600px] rounded-full bg-orange-500/10 blur-3xl"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none fixed bottom-0 left-0 z-0 h-px w-full bg-gradient-to-r from-transparent via-white/15 to-transparent"
+        aria-hidden
+      />
       {/* Publish Warning Modal */}
       {showPublishWarning && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -339,7 +335,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
         </div>
       )}
 
-      <header className="sticky top-0 z-30 border-b border-blue-950/10 bg-slate-50/75 backdrop-blur-2xl shadow-[0_8px_40px_-20px_rgba(15,23,42,0.12),inset_0_-1px_0_0_rgba(23,37,84,0.18),inset_0_-2px_0_0_rgba(251,146,60,0.1)]">
+      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-0 sm:h-[4.25rem] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
           <div className="flex items-center gap-3 min-w-0">
             <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-12 w-auto object-contain shrink-0" />
@@ -387,18 +383,18 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
         </div>
       </header>
 
-      <main className="mx-auto mt-6 max-w-5xl px-4 sm:mt-10 sm:px-6">
-        <div className="mb-6 sm:mb-8">
-          <p className="bg-gradient-to-r from-blue-950 via-slate-800 to-orange-600 bg-clip-text font-mono text-[10px] font-bold uppercase tracking-[0.32em] text-transparent sm:text-[11px]">
+      <main className="relative z-10 mx-auto mt-6 max-w-5xl px-4 sm:mt-10 sm:px-6">
+        <div className="relative z-10 mb-6 sm:mb-8">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.32em] text-orange-300/90 sm:text-[11px]">
             Kandidatenbereich
           </p>
-          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-4xl">
+          <h1 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-4xl">
             Mein{' '}
-            <span className="bg-gradient-to-r from-blue-950 via-blue-800 to-orange-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 bg-clip-text text-transparent">
               Profil
             </span>
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">
             Pflege deine Daten, Dokumente und Matching-Signale – präzise, sicher, recruiter-ready.
           </p>
         </div>
@@ -406,15 +402,15 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
         {/* Required fields notice */}
         <div className={`${PROFILE_CARD} relative mb-6 flex items-start gap-4 p-4 sm:mb-10 sm:p-6`}>
           <ProfileCardGlow />
-          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 via-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30 sm:h-12 sm:w-12">
+          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 via-amber-500 to-orange-600 text-white shadow-lg shadow-orange-500/35 sm:h-12 sm:w-12">
             <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
           <div className="relative">
-            <h4 className="font-black tracking-tight text-white">Pflichtfelder</h4>
-            <p className="mt-1 text-xs leading-relaxed text-slate-300 sm:text-sm">
-              Felder mit <span className="font-black text-amber-400">*</span> sind erforderlich, um dein Profil an den Recruiter zu senden.
+            <h4 className="font-black tracking-tight text-slate-900">Pflichtfelder</h4>
+            <p className="mt-1 text-xs leading-relaxed text-slate-600 sm:text-sm">
+              Felder mit <span className="font-black text-orange-600">*</span> sind erforderlich, um dein Profil an den Recruiter zu senden.
             </p>
           </div>
         </div>
@@ -428,10 +424,10 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                 <Avatar
                   seed={formData.firstName + formData.lastName || 'user'}
                   size="md"
-                  className="w-16 h-16 text-lg shadow-[0_0_0_1px_rgba(255,255,255,0.2)] ring-[5px] ring-white/20 ring-offset-2 ring-offset-blue-950 sm:w-32 sm:h-32 sm:text-3xl sm:ring-[10px]"
+                  className="w-16 h-16 text-lg shadow-md ring-[5px] ring-orange-100 ring-offset-2 ring-offset-white sm:w-32 sm:h-32 sm:text-3xl sm:ring-[10px]"
                   imageUrl={formData.profileImageUrl}
                 />
-                <label className="absolute -bottom-2 -right-2 cursor-pointer rounded-2xl bg-gradient-to-br from-blue-950 to-slate-900 p-2 text-amber-400 shadow-lg shadow-blue-950/35 transition-transform hover:scale-105 hover:text-amber-300">
+                <label className="absolute -bottom-2 -right-2 cursor-pointer rounded-2xl bg-gradient-to-br from-[#101B31] to-slate-900 p-2 text-orange-400 shadow-lg transition-transform hover:scale-105 hover:text-orange-300">
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
                   <input
                     type="file"
@@ -444,9 +440,9 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
               <div className="relative w-full flex-1 space-y-3 sm:space-y-6">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-6">
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold text-slate-200 sm:mb-1.5 sm:text-sm">
+                    <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:mb-1.5 sm:text-sm">
                       Vorname
-                      <RequiredBadge onDark />
+                      <RequiredBadge />
                     </label>
                     <Input
                       name="firstName"
@@ -454,14 +450,13 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                       onChange={handleChange}
                       placeholder="Max"
                       error={errors.firstName}
-                      errorClassName="text-red-300"
                       className="h-9 rounded-xl text-sm sm:h-10"
                     />
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold text-slate-200 sm:mb-1.5 sm:text-sm">
+                    <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:mb-1.5 sm:text-sm">
                       Nachname
-                      <RequiredBadge onDark />
+                      <RequiredBadge />
                     </label>
                     <Input
                       name="lastName"
@@ -469,16 +464,15 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                       onChange={handleChange}
                       placeholder="Mustermann"
                       error={errors.lastName}
-                      errorClassName="text-red-300"
                       className="h-9 rounded-xl text-sm sm:h-10"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-6">
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold text-slate-200 sm:mb-1.5 sm:text-sm">
+                    <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:mb-1.5 sm:text-sm">
                       Stadt
-                      <RequiredBadge onDark />
+                      <RequiredBadge />
                     </label>
                     <Input
                       name="city"
@@ -486,14 +480,13 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                       onChange={handleChange}
                       placeholder="Berlin"
                       error={errors.city}
-                      errorClassName="text-red-300"
                       className="h-9 rounded-xl text-sm sm:h-10"
                     />
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-xs font-bold text-slate-200 sm:mb-1.5 sm:text-sm">
+                    <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:mb-1.5 sm:text-sm">
                       Land
-                      <RequiredBadge onDark />
+                      <RequiredBadge />
                     </label>
                     <Input
                       name="country"
@@ -501,26 +494,25 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                       onChange={handleChange}
                       placeholder="Deutschland"
                       error={errors.country}
-                      errorClassName="text-red-300"
                       className="h-9 rounded-xl text-sm sm:h-10"
                     />
                   </div>
                 </div>
 
                 {/* PRIVATE CONTACT INFO */}
-                <div className="mt-3 border-t border-white/10 pt-3 sm:mt-6 sm:pt-6">
+                <div className="mt-3 border-t border-orange-200/60 pt-3 sm:mt-6 sm:pt-6">
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2 sm:gap-6">
                     <div>
-                      <label className="mb-1.5 block text-xs font-bold text-slate-200 sm:mb-1.5 sm:text-sm">Straße & Hausnummer</label>
+                      <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:mb-1.5 sm:text-sm">Straße & Hausnummer</label>
                       <Input name="address" value={formData.address || ''} onChange={handleChange} placeholder="Musterstraße 1" className="h-9 rounded-xl text-sm sm:h-10" />
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                       <div>
-                        <label className="mb-1.5 block text-xs font-bold text-slate-200 sm:mb-1.5 sm:text-sm">PLZ</label>
+                        <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:mb-1.5 sm:text-sm">PLZ</label>
                         <Input name="zipCode" value={formData.zipCode || ''} onChange={handleChange} placeholder="12345" className="h-9 rounded-xl text-sm sm:h-10" />
                       </div>
                       <div>
-                        <label className="mb-1.5 block text-xs font-bold text-slate-200 sm:mb-1.5 sm:text-sm">Telefon</label>
+                        <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:mb-1.5 sm:text-sm">Telefon</label>
                         <Input name="phoneNumber" value={formData.phoneNumber || ''} onChange={handleChange} placeholder="+49 123..." className="h-9 rounded-xl text-sm sm:h-10" />
                       </div>
                     </div>
@@ -537,7 +529,6 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                     placeholder="1990"
                     min="1940"
                     max={new Date().getFullYear() - 16}
-                    labelClassName="text-slate-200 font-bold"
                     className="h-9 rounded-xl text-sm sm:h-10"
                   />
                 </div>
@@ -548,32 +539,31 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           {/* Details Section – BERUFLICHER FOKUS */}
           <section className={`${PROFILE_CARD} p-5 sm:p-8 md:p-10`}>
             <ProfileCardGlow />
-            <h3 className="relative mb-6 flex items-center gap-3 text-base font-black tracking-tight text-white sm:mb-8 sm:text-xl">
-              <span className="h-8 w-1.5 rounded-full bg-gradient-to-b from-amber-400 via-orange-400 to-orange-600 shadow-[0_0_22px_rgba(251,146,60,0.55)]" />
+            <h3 className="relative mb-6 flex items-center gap-3 text-base font-black tracking-tight text-slate-900 sm:mb-8 sm:text-xl">
+              <span className="h-8 w-1.5 rounded-full bg-gradient-to-b from-orange-500 via-amber-500 to-orange-600 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />
               BERUFLICHER FOKUS
             </h3>
-            <div className="relative grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-8 mb-5 sm:mb-8">
+            <div className="relative mb-5 grid grid-cols-1 gap-4 sm:mb-8 sm:grid-cols-2 sm:gap-8">
               <div>
-                <label className="mb-1.5 block text-xs font-bold text-slate-200 sm:text-sm">
+                <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:text-sm">
                   Hauptbranche
-                  <RequiredBadge onDark />
+                  <RequiredBadge />
                 </label>
                 <Select
                   name="industry"
                   value={formData.industry}
                   onChange={handleChange}
                   error={errors.industry}
-                  errorClassName="text-red-300"
-                  className="h-9 sm:h-10 text-sm rounded-xl"
+                  className="h-9 rounded-xl text-sm sm:h-10"
                 >
                   <option value="">Branche wählen...</option>
                   {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
                 </Select>
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-bold text-slate-200 sm:text-sm">
+                <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:text-sm">
                   Erfahrung (Jahre)
-                  <RequiredBadge onDark />
+                  <RequiredBadge />
                 </label>
                 <Input
                   type="number"
@@ -582,21 +572,20 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                   onChange={handleNumberChange}
                   min="0"
                   max="50"
-                  className="h-9 sm:h-10 text-sm rounded-xl"
+                  className="h-9 rounded-xl text-sm sm:h-10"
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-bold text-slate-200 sm:text-sm">
+                <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:text-sm">
                   Verfügbarkeit
-                  <RequiredBadge onDark />
+                  <RequiredBadge />
                 </label>
                 <Select
                   name="availability"
                   value={formData.availability}
                   onChange={handleChange}
                   error={errors.availability}
-                  errorClassName="text-red-300"
-                  className="h-9 sm:h-10 text-sm rounded-xl"
+                  className="h-9 rounded-xl text-sm sm:h-10"
                 >
                   <option value="">Status wählen...</option>
                   {AVAILABILITY_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
@@ -610,8 +599,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                 placeholder="Beschreiben Sie kurz Ihren beruflichen Hintergrund…"
                 value={formData.about || ''}
                 onChange={handleChange}
-                labelClassName="text-slate-200 font-bold"
-                errorClassName="text-red-300"
+                labelClassName="text-slate-900 font-bold"
                 className="min-h-[120px] rounded-xl text-sm"
               />
             </div>
@@ -623,21 +611,22 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             <div className="relative z-10">
               <div className="mb-8 flex flex-col gap-5 lg:mb-10 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-2xl">
-                  <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.28em] text-orange-300/90 sm:text-[11px]">
+                  <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.28em] text-orange-600/90 sm:text-[11px]">
                     Matching · Sichtbarkeit
                   </p>
-                  <h3 className="text-2xl font-black leading-tight tracking-tight text-white sm:text-3xl md:text-4xl">
-                    Skills & <span className="text-orange-400">Matching-Boost</span>
+                  <h3 className="text-2xl font-black leading-tight tracking-tight text-slate-900 sm:text-3xl md:text-4xl">
+                    Skills &{' '}
+                    <span className="bg-gradient-to-r from-orange-600 to-amber-500 bg-clip-text text-transparent">Matching-Boost</span>
                   </h3>
-                  <p className="mt-3 text-sm font-medium leading-relaxed text-slate-300 sm:text-base">
+                  <p className="mt-3 text-sm font-medium leading-relaxed text-slate-600 sm:text-base">
                     Optional – ergänze Skills und Booster für besseres Recruiter-Matching.
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-200 shadow-sm">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white/80 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-orange-900 shadow-sm">
                     <span className="relative flex h-2 w-2">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-400/50 opacity-40" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-orange-400" />
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-400 opacity-50" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-orange-500" />
                     </span>
                     Profil aktiv
                   </span>
@@ -645,9 +634,9 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
               </div>
 
               <div className="space-y-8 sm:space-y-10">
-                <div className="rounded-2xl border border-white/10 bg-blue-950/35 p-5 backdrop-blur-sm sm:p-7">
-                  <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-200">
-                    <span className="h-px w-10 bg-gradient-to-r from-orange-400 via-amber-400 to-transparent" />
+                <div className="rounded-2xl border border-orange-200/80 bg-gradient-to-br from-white to-orange-50/90 p-5 shadow-sm sm:p-7">
+                  <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-orange-800">
+                    <span className="h-px w-10 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-300" />
                     Fachliche Skills
                   </div>
                   <Input
@@ -656,20 +645,20 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                     value={newSkill}
                     onChange={(e) => setNewSkill(e.target.value)}
                     onKeyDown={handleAddSkill}
-                    labelClassName="text-slate-200 font-bold"
+                    labelClassName="text-slate-900 font-bold"
                     className="h-11 rounded-xl border-slate-200"
                   />
                   <div className="mt-4 flex flex-wrap gap-2">
                     {formData.skills.map((skill) => (
                       <span
                         key={skill}
-                        className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold text-slate-100 shadow-sm transition-all hover:border-orange-400/40 sm:text-sm"
+                        className="inline-flex items-center gap-2 rounded-xl border border-orange-200/90 bg-white px-3 py-1.5 text-xs font-bold text-orange-950 shadow-sm transition-all hover:border-orange-400 sm:text-sm"
                       >
                         {skill}
                         <button
                           type="button"
                           onClick={() => removeSkill(skill)}
-                          className="rounded-md px-1 text-lg leading-none text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+                          className="rounded-md px-1 text-lg leading-none text-orange-600/70 transition-colors hover:bg-orange-50 hover:text-orange-900"
                           aria-label={`${skill} entfernen`}
                         >
                           ×
@@ -681,36 +670,26 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
 
                 <div>
                   <div className="mb-6 flex items-center gap-3">
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                    <span className="shrink-0 text-center text-[10px] font-black uppercase tracking-[0.28em] text-orange-300">
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-orange-300/80 to-transparent" />
+                    <span className="shrink-0 bg-gradient-to-r from-orange-700 to-amber-600 bg-clip-text text-center text-[10px] font-black uppercase tracking-[0.28em] text-transparent">
                       Sichtbarkeits-Booster
                     </span>
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-orange-300/80 to-transparent" />
                   </div>
-                  <p className="mb-6 text-center text-xs font-semibold text-slate-400">Zum Aktivieren antippen</p>
+                  <p className="mb-6 text-center text-xs font-semibold text-slate-500">Zum Aktivieren antippen</p>
 
                   <div className="space-y-5 sm:space-y-6">
                     {BOOSTER_KEYWORD_CATEGORIES.map((cat) => (
                       <div
                         key={cat.title}
-                        className={`rounded-2xl border p-4 backdrop-blur-sm transition-all sm:p-5 ${
+                        className={`rounded-2xl border p-4 shadow-sm backdrop-blur-sm transition-all sm:p-5 ${
                           cat.panelVariant === 'orange'
-                            ? 'border-orange-400/50 bg-gradient-to-br from-orange-600/45 via-orange-500/35 to-amber-600/40 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.15)] hover:border-orange-300/60'
-                            : 'border-white/10 bg-blue-950/30 hover:border-orange-400/25'
+                            ? 'border-orange-400/70 bg-gradient-to-br from-orange-100 via-amber-50 to-orange-50 hover:border-orange-500'
+                            : 'border-orange-200/70 bg-white/90 hover:border-orange-300'
                         }`}
                       >
-                        <h4
-                          className={`mb-3 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] sm:text-[11px] ${
-                            cat.panelVariant === 'orange' ? 'text-slate-950' : 'text-slate-200'
-                          }`}
-                        >
-                          <span
-                            className={`h-1.5 w-1.5 rounded-full shadow-[0_0_12px_rgba(251,146,60,0.5)] ${
-                              cat.panelVariant === 'orange'
-                                ? 'bg-gradient-to-br from-slate-900 to-slate-800'
-                                : 'bg-gradient-to-br from-orange-400 to-amber-500'
-                            }`}
-                          />
+                        <h4 className="mb-3 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-900 sm:text-[11px]">
+                          <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 shadow-[0_0_10px_rgba(249,115,22,0.45)]" />
                           {cat.title}
                         </h4>
                         <div className="flex flex-wrap gap-2">
@@ -723,8 +702,8 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                                 onClick={() => toggleKeyword(kw)}
                                 className={`rounded-xl px-3 py-2 text-[9px] font-black uppercase tracking-wide transition-all duration-200 sm:px-3.5 sm:py-2 sm:text-[10px] ${
                                   active
-                                    ? 'border border-orange-400/50 bg-gradient-to-br from-blue-950 via-blue-800 to-orange-600 text-white shadow-lg shadow-blue-950/35'
-                                    : 'border border-white/15 bg-slate-900/50 text-slate-300 hover:border-orange-400/35 hover:bg-white/10 hover:text-white'
+                                    ? 'border border-orange-500 bg-gradient-to-br from-[#101B31] via-slate-800 to-orange-600 text-white shadow-md shadow-orange-500/25'
+                                    : 'border border-slate-200 bg-slate-50 text-slate-700 hover:border-orange-300 hover:bg-orange-50/80 hover:text-slate-900'
                                 }`}
                               >
                                 {kw.toUpperCase()}
@@ -743,10 +722,10 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           {/* Social Links Section */}
           <section className={`${PROFILE_CARD} p-5 sm:p-8 md:p-10`}>
             <ProfileCardGlow />
-            <h3 className="relative mb-6 flex flex-wrap items-center gap-3 text-base font-black tracking-tight text-white sm:mb-8 sm:text-xl">
-              <span className="h-8 w-1.5 rounded-full bg-gradient-to-b from-amber-400 via-orange-400 to-orange-600 shadow-[0_0_22px_rgba(251,146,60,0.55)]" />
+            <h3 className="relative mb-6 flex flex-wrap items-center gap-3 text-base font-black tracking-tight text-slate-900 sm:mb-8 sm:text-xl">
+              <span className="h-8 w-1.5 rounded-full bg-gradient-to-b from-orange-500 via-amber-500 to-orange-600 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />
               SOCIAL LINKS{' '}
-              <span className="text-sm font-bold normal-case tracking-normal text-slate-400">(optional)</span>
+              <span className="text-sm font-bold normal-case tracking-normal text-slate-500">(optional)</span>
             </h3>
 
             {/* Existing links */}
@@ -755,18 +734,18 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                 {formData.socialLinks.map((link, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 sm:gap-4 sm:p-4"
+                    className="flex items-center gap-3 rounded-xl border border-orange-200/70 bg-white/90 p-3 sm:gap-4 sm:p-4"
                   >
-                    <span className="text-sm font-bold text-slate-200">{link.label}:</span>
+                    <span className="text-sm font-bold text-slate-800">{link.label}:</span>
                     <a
                       href={link.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 truncate text-sky-300 underline-offset-2 hover:text-orange-400 hover:underline"
+                      className="flex-1 truncate text-orange-700 underline-offset-2 hover:text-orange-900 hover:underline"
                     >
                       {link.url}
                     </a>
-                    <button type="button" onClick={() => removeLink(idx)} className="text-slate-500 hover:text-red-400">
+                    <button type="button" onClick={() => removeLink(idx)} className="text-slate-400 hover:text-red-600">
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
                       </svg>
@@ -798,7 +777,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                 variant="outline"
                 onClick={handleAddLink}
                 disabled={!newLink.label || !newLink.url}
-                className="h-9 rounded-xl border-white/20 bg-transparent text-sm text-slate-200 hover:border-orange-400/50 hover:bg-white/5 sm:h-10"
+                className="h-9 rounded-xl border-orange-200 text-sm text-slate-800 hover:border-orange-400 hover:bg-orange-50 sm:h-10"
               >
                 Link hinzufügen
               </Button>
@@ -808,17 +787,16 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           {/* Documents Section */}
           <section className={`${PROFILE_CARD} p-4 sm:p-8 md:p-10`}>
             <ProfileCardGlow />
-            <h3 className="relative mb-4 flex flex-wrap items-center gap-3 text-base font-black text-white sm:mb-8 sm:text-xl">
-              <span className="h-8 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-amber-400 via-orange-400 to-orange-600 shadow-[0_0_22px_rgba(251,146,60,0.55)]" />
+            <h3 className="relative mb-4 flex flex-wrap items-center gap-3 text-base font-black text-slate-900 sm:mb-8 sm:text-xl">
+              <span className="h-8 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-orange-500 via-amber-500 to-orange-600 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />
               <span>DOKUMENTE</span>
-              <span className="rounded-lg border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-slate-200 sm:text-xs">
+              <span className="rounded-lg border border-orange-200/80 bg-orange-50/90 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-orange-900 sm:text-xs">
                 Zertifikate optional
               </span>
             </h3>
 
             <div className="relative grid grid-cols-1 gap-4 md:grid-cols-3 sm:gap-6">
               <FileUpload
-                darkSurface
                 label="Lebenslauf (CV)"
                 required
                 accept="application/pdf"
@@ -832,7 +810,6 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
               />
 
               <FileUpload
-                darkSurface
                 label="Zertifikate"
                 accept="application/pdf"
                 multiple
@@ -887,8 +864,8 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
               <ProfileCardGlow />
               <div className="relative flex items-start justify-between gap-4">
                 <div>
-                  <h4 className="text-sm font-black text-white sm:text-base">Konto löschen</h4>
-                  <p className="mt-1 text-xs text-slate-300 sm:text-sm">
+                  <h4 className="text-sm font-black text-slate-900 sm:text-base">Konto löschen</h4>
+                  <p className="mt-1 text-xs text-slate-600 sm:text-sm">
                     Du kannst dein Konto jederzeit dauerhaft löschen (DSGVO).
                   </p>
                 </div>
