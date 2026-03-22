@@ -73,7 +73,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       } else if (editing) {
         if (
           !window.confirm(
-            `${editing.label} hat dieses Profil zur Bearbeitung gemeldet. Möchten Sie die Meldung übernehmen?`
+            `${editing.label} bearbeitet diesen Kandidaten gerade (Team-Sicht). Wirklich übernehmen? Nur nach Absprache.`
           )
         ) {
           return;
@@ -164,10 +164,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     setEditForm(JSON.parse(JSON.stringify(candidate)));
     setIsEditing(false);
     setModalTab('profile');
+    setClaimError(null);
+    setDocError(null);
     const docs = await candidateService.getDocuments(candidate.userId);
     setCandidateDocs(docs || null);
-    setDocError(null);
-    setClaimError(null);
   };
 
   const canShowPublishFor = (c: CandidateProfile | null) => {
@@ -488,7 +488,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Exp</th>
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Live</th>
-                            <th className="min-w-[140px] px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Bearbeitung</th>
+                            <th className="min-w-[150px] px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                              Team
+                              <span className="mt-0.5 block font-bold normal-case tracking-normal text-[9px] text-slate-400/90">Wer bearbeitet?</span>
+                            </th>
                             <th className="px-5 py-3 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Action</th>
                           </tr>
                         </thead>
@@ -538,9 +541,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                       <div className="flex flex-col items-start gap-1.5">
                                         <span
                                           className={`max-w-[11rem] text-[10px] font-black uppercase leading-tight tracking-wide ${mine ? 'text-emerald-700' : 'text-amber-800'}`}
-                                          title={mine ? 'Sie sind für andere als Bearbeiter sichtbar' : `Gemeldet von ${editing.label}`}
+                                          title={
+                                            mine
+                                              ? 'Andere Recruiter sehen: Sie sind für diesen Kandidaten eingetragen.'
+                                              : `${editing.label} hat geklickt: Kollegen sollen nicht parallel bearbeiten.`
+                                          }
                                         >
-                                          {mine ? 'Sie bearbeiten' : `${editing.label} bearbeitet`}
+                                          {mine ? 'Sie bearbeiten (sichtbar)' : `${editing.label} bearbeitet`}
                                         </span>
                                         <Button
                                           size="sm"
@@ -549,7 +556,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                           disabled={busy}
                                           onClick={() => void handleRecruiterEditingClaim(cand)}
                                         >
-                                          {mine ? 'Beenden' : 'Übernehmen'}
+                                          {mine ? 'Fertig – freigeben' : 'Ich übernehme'}
                                         </Button>
                                       </div>
                                     );
@@ -560,9 +567,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                       variant="outline"
                                       className="h-7 rounded-lg border-amber-200 px-2 text-[10px] font-black text-amber-900 hover:bg-amber-50"
                                       disabled={busy}
+                                      title="Klicken = für alle Recruiter sichtbar: Sie bearbeiten diesen Kandidaten. Bleibt aktiv, bis Sie „Fertig – freigeben“ wählen."
                                       onClick={() => void handleRecruiterEditingClaim(cand)}
                                     >
-                                      Bearbeitung melden
+                                      Ich bearbeite
                                     </Button>
                                   );
                                 })()}
@@ -626,17 +634,38 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               )}
               {(() => {
                 const e = getActiveRecruiterEditing(selectedCandidate);
-                if (!e) return null;
-                const mine = e.userId === user.id;
                 const busy = claimBusyUserId === selectedCandidate.userId;
+                if (!e) {
+                  return (
+                    <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="text-xs font-bold text-slate-700">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Kollision vermeiden</p>
+                        <p className="mt-1 leading-snug">
+                          Klicken Sie unten, wenn <strong>Sie</strong> diesen Kandidaten bearbeiten.{' '}
+                          <strong>Alle anderen Recruiter sehen das</strong> – so bearbeitet nicht jemand parallel und es gibt weniger Fehler.
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        className="h-9 shrink-0 text-[10px] font-black"
+                        disabled={busy}
+                        onClick={() => void handleRecruiterEditingClaim(selectedCandidate)}
+                      >
+                        Ich bearbeite diesen Kandidaten
+                      </Button>
+                    </div>
+                  );
+                }
+                const mine = e.userId === user.id;
                 return (
                   <div
                     className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-4 py-3 text-xs font-bold ${mine ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-950'}`}
                   >
                     <span>
                       {mine
-                        ? 'Für andere Recruiter sichtbar: Sie bearbeiten dieses Profil.'
-                        : `${e.label} hat die Bearbeitung dieses Profils gemeldet.`}
+                        ? 'Sie sind für andere als Bearbeiter eingetragen. Der Status bleibt, bis Sie „Fertig – freigeben“ wählen (auch nach Schließen dieses Fensters).'
+                        : `${e.label} bearbeitet diesen Kandidaten (Team-Sicht). Bitte nicht parallel am gleichen Profil arbeiten – oder „Ich übernehme“ nach Absprache.`}
                     </span>
                     <Button
                       size="sm"
@@ -645,7 +674,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       disabled={busy}
                       onClick={() => void handleRecruiterEditingClaim(selectedCandidate)}
                     >
-                      {mine ? 'Meldung beenden' : 'Übernehmen'}
+                      {mine ? 'Fertig – freigeben' : 'Ich übernehme'}
                     </Button>
                   </div>
                 );
