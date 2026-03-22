@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, AuditLog, getActiveRecruiterEditing } from '../types';
 import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea } from '../components/UI';
 import { candidateService } from '../services/CandidateService';
@@ -123,6 +123,41 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     c.industry.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.skills.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const industryGroups = useMemo(() => {
+    const sortInGroup = (arr: CandidateProfile[]) =>
+      [...arr].sort((a, b) => {
+        const aSub = !!a.isSubmitted;
+        const bSub = !!b.isSubmitted;
+        if (aSub && !bSub) return -1;
+        if (bSub && !aSub) return 1;
+        return `${a.firstName} ${a.lastName}`.localeCompare(
+          `${b.firstName} ${b.lastName}`,
+          'de',
+          { sensitivity: 'base' }
+        );
+      });
+
+    const map = new Map<string, CandidateProfile[]>();
+    for (const c of filtered) {
+      const key = (c.industry || '').trim() || 'Ohne Branche';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(c);
+    }
+
+    const groups = Array.from(map.entries()).map(([industry, list]) => ({
+      industry,
+      candidates: sortInGroup(list),
+    }));
+
+    groups.sort((a, b) => {
+      if (a.industry === 'Ohne Branche') return 1;
+      if (b.industry === 'Ohne Branche') return -1;
+      return a.industry.localeCompare(b.industry, 'de', { sensitivity: 'base' });
+    });
+
+    return groups;
+  }, [filtered]);
 
   const handleViewCandidate = async (candidate: CandidateProfile) => {
     setSelectedCandidate(candidate);
@@ -413,102 +448,155 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           )}
           {activeTab === 'candidates' ? (
             filtered.length === 0 ? <EmptyState title="Keine Kandidaten" description="Nichts gefunden." /> : (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <table className="w-full text-left">
-                  <thead className="bg-slate-50 border-b border-slate-100">
-                    <tr>
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Name</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Branche</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Exp</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Live</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest min-w-[140px]">Bearbeitung</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {filtered.map(cand => (
-                      <tr key={cand.userId} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-6 py-3 flex items-center gap-3">
-                          <Avatar seed={cand.firstName + cand.lastName} size="sm" imageUrl={cand.profileImageUrl} />
-                          <div><div className="text-sm font-bold text-slate-900">{cand.firstName} {cand.lastName}</div><div className="text-[10px] text-slate-400 font-bold uppercase">{cand.city}</div></div>
-                        </td>
-                        <td className="px-6 py-3 text-xs font-semibold text-slate-600">{cand.industry || '-'}</td>
-                        <td className="px-6 py-3 text-xs font-semibold text-slate-600">{cand.experienceYears}J</td>
-                        <td className="px-6 py-3">
-                          <Badge variant={cand.status === CandidateStatus.ACTIVE ? 'green' : cand.status === CandidateStatus.BLOCKED ? 'red' : 'yellow'}>
-                            {cand.status === CandidateStatus.ACTIVE
-                              ? cand.status
-                              : cand.status === CandidateStatus.BLOCKED
-                                ? cand.status
-                                : (cand.isSubmitted ? 'Eingereicht' : 'Entwurf')}
-                          </Badge>
-                          {cand.isSubmitted && (
-                            <div className={`mt-1 text-[10px] font-black uppercase tracking-widest ${cand.cvReviewedAt ? 'text-emerald-600' : 'text-orange-600'}`}>
-                              {cand.cvReviewedAt ? 'CV geprüft' : 'CV offen'}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-3"><Badge variant={cand.isPublished ? 'green' : 'slate'}>{cand.isPublished ? 'Ja' : 'Nein'}</Badge></td>
-                        <td className="px-6 py-3 align-top">
-                          {(() => {
-                            const editing = getActiveRecruiterEditing(cand);
-                            const busy = claimBusyUserId === cand.userId;
-                            if (editing) {
-                              const mine = editing.userId === user.id;
-                              return (
-                                <div className="flex flex-col gap-1.5 items-start">
-                                  <span
-                                    className={`text-[10px] font-black uppercase tracking-wide leading-tight max-w-[11rem] ${mine ? 'text-emerald-700' : 'text-amber-800'}`}
-                                    title={mine ? 'Sie sind für andere als Bearbeiter sichtbar' : `Gemeldet von ${editing.label}`}
+              <div className="space-y-8">
+                <p className="text-[11px] font-bold text-slate-500 -mt-2 mb-1">
+                  {industryGroups.length} {industryGroups.length === 1 ? 'Branche' : 'Branchen'} · {filtered.length}{' '}
+                  {filtered.length === 1 ? 'Kandidat' : 'Kandidaten'}
+                </p>
+                {industryGroups.map(({ industry, candidates }) => (
+                  <section
+                    key={industry}
+                    className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)]"
+                  >
+                    <div className="relative flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-5 py-4 text-white">
+                      <div
+                        className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-orange-400 to-orange-600"
+                        aria-hidden
+                      />
+                      <div className="flex min-w-0 flex-1 items-center gap-3 pl-2">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
+                          <svg className="h-5 w-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                        </div>
+                        <div className="min-w-0">
+                          <h2 className="truncate text-sm font-black tracking-tight text-white md:text-base">{industry}</h2>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Branche</p>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-slate-200 ring-1 ring-white/10">
+                          {candidates.length} {candidates.length === 1 ? 'Talent' : 'Talente'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[720px] text-left">
+                        <thead className="border-b border-slate-100 bg-slate-50/90">
+                          <tr>
+                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Name</th>
+                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Exp</th>
+                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
+                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Live</th>
+                            <th className="min-w-[140px] px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Bearbeitung</th>
+                            <th className="px-5 py-3 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {candidates.map((cand) => (
+                            <tr key={cand.userId} className="transition-colors hover:bg-slate-50/80">
+                              <td className="px-5 py-3">
+                                <div className="flex items-center gap-3">
+                                  <Avatar seed={cand.firstName + cand.lastName} size="sm" imageUrl={cand.profileImageUrl} />
+                                  <div>
+                                    <div className="text-sm font-bold text-slate-900">
+                                      {cand.firstName} {cand.lastName}
+                                    </div>
+                                    <div className="text-[10px] font-bold uppercase text-slate-400">{cand.city}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-5 py-3 text-xs font-semibold text-slate-600">{cand.experienceYears}J</td>
+                              <td className="px-5 py-3">
+                                <Badge variant={cand.status === CandidateStatus.ACTIVE ? 'green' : cand.status === CandidateStatus.BLOCKED ? 'red' : 'yellow'}>
+                                  {cand.status === CandidateStatus.ACTIVE
+                                    ? cand.status
+                                    : cand.status === CandidateStatus.BLOCKED
+                                      ? cand.status
+                                      : cand.isSubmitted
+                                        ? 'Eingereicht'
+                                        : 'Entwurf'}
+                                </Badge>
+                                {cand.isSubmitted && (
+                                  <div
+                                    className={`mt-1 text-[10px] font-black uppercase tracking-widest ${cand.cvReviewedAt ? 'text-emerald-600' : 'text-orange-600'}`}
                                   >
-                                    {mine ? 'Sie bearbeiten' : `${editing.label} bearbeitet`}
-                                  </span>
+                                    {cand.cvReviewedAt ? 'CV geprüft' : 'CV offen'}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-5 py-3">
+                                <Badge variant={cand.isPublished ? 'green' : 'slate'}>{cand.isPublished ? 'Ja' : 'Nein'}</Badge>
+                              </td>
+                              <td className="align-top px-5 py-3">
+                                {(() => {
+                                  const editing = getActiveRecruiterEditing(cand);
+                                  const busy = claimBusyUserId === cand.userId;
+                                  if (editing) {
+                                    const mine = editing.userId === user.id;
+                                    return (
+                                      <div className="flex flex-col items-start gap-1.5">
+                                        <span
+                                          className={`max-w-[11rem] text-[10px] font-black uppercase leading-tight tracking-wide ${mine ? 'text-emerald-700' : 'text-amber-800'}`}
+                                          title={mine ? 'Sie sind für andere als Bearbeiter sichtbar' : `Gemeldet von ${editing.label}`}
+                                        >
+                                          {mine ? 'Sie bearbeiten' : `${editing.label} bearbeitet`}
+                                        </span>
+                                        <Button
+                                          size="sm"
+                                          variant={mine ? 'outline' : 'secondary'}
+                                          className="h-7 rounded-lg px-2 text-[10px] font-black"
+                                          disabled={busy}
+                                          onClick={() => void handleRecruiterEditingClaim(cand)}
+                                        >
+                                          {mine ? 'Beenden' : 'Übernehmen'}
+                                        </Button>
+                                      </div>
+                                    );
+                                  }
+                                  return (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-7 rounded-lg border-amber-200 px-2 text-[10px] font-black text-amber-900 hover:bg-amber-50"
+                                      disabled={busy}
+                                      onClick={() => void handleRecruiterEditingClaim(cand)}
+                                    >
+                                      Bearbeitung melden
+                                    </Button>
+                                  );
+                                })()}
+                              </td>
+                              <td className="px-5 py-3 text-right">
+                                <div className="inline-flex items-center gap-2">
+                                  {!cand.isPublished && (!!cand.isSubmitted || cand.status === CandidateStatus.ACTIVE) && (
+                                    <Button
+                                      size="sm"
+                                      variant="primary"
+                                      className="h-8 rounded-xl px-3 text-[11px] font-black"
+                                      onClick={() => onAdminAction(cand.userId, 'publish', undefined, user.id)}
+                                      disabled={!cand.cvReviewedAt}
+                                    >
+                                      FREIGEBEN
+                                    </Button>
+                                  )}
                                   <Button
                                     size="sm"
-                                    variant={mine ? 'outline' : 'secondary'}
-                                    className="h-7 px-2 text-[10px] font-black rounded-lg"
-                                    disabled={busy}
-                                    onClick={() => void handleRecruiterEditingClaim(cand)}
+                                    variant="ghost"
+                                    className="h-8 px-3 text-xs font-black text-orange-600"
+                                    onClick={() => handleViewCandidate(cand)}
                                   >
-                                    {mine ? 'Beenden' : 'Übernehmen'}
+                                    MANAGE
                                   </Button>
                                 </div>
-                              );
-                            }
-                            return (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 px-2 text-[10px] font-black rounded-lg border-amber-200 text-amber-900 hover:bg-amber-50"
-                                disabled={busy}
-                                onClick={() => void handleRecruiterEditingClaim(cand)}
-                              >
-                                Bearbeitung melden
-                              </Button>
-                            );
-                          })()}
-                        </td>
-                        <td className="px-6 py-3 text-right">
-                          <div className="inline-flex items-center gap-2">
-                            {!cand.isPublished && (!!cand.isSubmitted || cand.status === CandidateStatus.ACTIVE) && (
-                              <Button
-                                size="sm"
-                                variant="primary"
-                                className="h-8 px-3 text-[11px] font-black rounded-xl"
-                                onClick={() => onAdminAction(cand.userId, 'publish', undefined, user.id)}
-                                disabled={!cand.cvReviewedAt}
-                              >
-                                FREIGEBEN
-                              </Button>
-                            )}
-                            <Button size="sm" variant="ghost" className="text-xs text-orange-600 font-black h-8 px-3" onClick={() => handleViewCandidate(cand)}>MANAGE</Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                ))}
               </div>
             )
           ) : (
