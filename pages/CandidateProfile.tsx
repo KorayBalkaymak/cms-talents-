@@ -373,7 +373,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             <Button
               size="sm"
               variant="primary"
-              className="rounded-xl border border-orange-300/90 bg-gradient-to-r from-white via-orange-100 to-orange-400 px-4 py-2 text-xs font-bold text-[#101B31] shadow-md shadow-orange-500/25 transition-all hover:bg-transparent hover:from-orange-50 hover:via-orange-200 hover:to-orange-500 hover:text-[#101B31] active:bg-transparent"
+              className="rounded-xl border border-orange-300/90 bg-gradient-to-r from-white via-orange-100 to-orange-400 px-4 py-2 text-xs font-bold text-black shadow-md shadow-orange-500/25 transition-all hover:bg-transparent hover:from-orange-50 hover:via-orange-200 hover:to-orange-500 hover:text-black active:bg-transparent"
               onClick={() => handleSubmit(formData.isPublished)}
               isLoading={isSaving}
             >
@@ -849,7 +849,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             <Button
               size="lg"
               variant="primary"
-              className="flex-1 rounded-2xl border border-orange-300/90 bg-gradient-to-r from-white via-orange-100 to-orange-400 py-4 text-base font-black uppercase tracking-widest text-[#101B31] shadow-lg shadow-orange-500/30 transition-all hover:bg-transparent hover:from-orange-50 hover:via-orange-200 hover:to-orange-500 hover:text-[#101B31] active:bg-transparent sm:py-5 sm:text-lg"
+              className="flex-1 rounded-2xl border border-orange-300/90 bg-gradient-to-r from-white via-orange-100 to-orange-400 py-4 text-base font-black uppercase tracking-widest text-black shadow-lg shadow-orange-500/30 transition-all hover:bg-transparent hover:from-orange-50 hover:via-orange-200 hover:to-orange-500 hover:text-black active:bg-transparent sm:py-5 sm:text-lg"
               onClick={() => handleSubmit(true)}
               isLoading={isSaving}
             >
