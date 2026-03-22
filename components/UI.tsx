@@ -233,10 +233,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         ? 'border-amber-400/50 bg-amber-950/20 hover:border-amber-400/70 hover:bg-amber-950/30'
         : 'border-white/20 bg-white/5 hover:border-orange-400/60 hover:bg-white/10'
     : error
-      ? 'border-rose-400 bg-rose-50/40 hover:border-rose-500'
+      ? 'border-rose-400 bg-gradient-to-br from-rose-50 to-orange-50/50 hover:border-rose-500'
       : required && !hasFile
-        ? 'border-orange-300 bg-orange-50/30 hover:border-orange-500 hover:bg-orange-50/50'
-        : 'border-slate-200 hover:border-orange-500 hover:bg-orange-50/50';
+        ? 'border-orange-400/80 bg-gradient-to-br from-white via-orange-50 to-amber-100/90 hover:border-orange-500 hover:via-orange-100'
+        : 'border-orange-200/80 bg-white/80 hover:border-orange-400 hover:bg-gradient-to-br hover:from-white hover:to-orange-50/80';
 
   return (
     <div className="w-full">
@@ -244,7 +244,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         <span className={`text-xs font-bold sm:text-sm ${darkSurface ? 'text-slate-200' : 'text-slate-900'}`}>
           {label}
           {required && (
-            <span className={`ml-0.5 ${darkSurface ? 'text-amber-400' : 'text-rose-600'}`} aria-hidden="true">
+            <span className={`ml-0.5 ${darkSurface ? 'text-amber-400' : 'text-orange-600'}`} aria-hidden="true">
               *
             </span>
           )}
@@ -254,7 +254,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             className={`rounded-md px-2 py-0.5 text-[9px] font-black uppercase tracking-widest sm:text-[10px] ${
               darkSurface
                 ? 'border border-white/15 bg-white/10 text-amber-200'
-                : 'border border-rose-200 bg-rose-100 text-rose-800'
+                : 'border border-orange-300/90 bg-gradient-to-r from-orange-50 to-amber-50 text-orange-900 shadow-sm'
             }`}
             title="Erforderlich beim Absenden an den Recruiter"
           >

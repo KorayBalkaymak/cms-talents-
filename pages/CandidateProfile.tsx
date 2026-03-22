@@ -335,7 +335,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
         </div>
       )}
 
-      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white shadow-sm">
+      <header className="relative border-b border-slate-200/80 bg-white shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-0 sm:h-[4.25rem] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
           <div className="flex items-center gap-3 min-w-0">
             <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-12 w-auto object-contain shrink-0" />
@@ -373,7 +373,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             <Button
               size="sm"
               variant="primary"
-              className="rounded-xl border-0 bg-gradient-to-r from-blue-950 via-blue-900 to-orange-600 px-4 py-2 text-xs shadow-md shadow-blue-950/25 transition-all hover:bg-transparent hover:from-blue-900 hover:via-blue-800 hover:to-orange-500 active:bg-transparent"
+              className="rounded-xl border border-orange-300/90 bg-gradient-to-r from-white via-orange-100 to-orange-400 px-4 py-2 text-xs font-bold text-[#101B31] shadow-md shadow-orange-500/25 transition-all hover:bg-transparent hover:from-orange-50 hover:via-orange-200 hover:to-orange-500 hover:text-[#101B31] active:bg-transparent"
               onClick={() => handleSubmit(formData.isPublished)}
               isLoading={isSaving}
             >
@@ -820,7 +820,6 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
               />
 
               <FileUpload
-                darkSurface
                 label="Qualifikationen"
                 required
                 accept="application/pdf"
@@ -850,7 +849,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             <Button
               size="lg"
               variant="primary"
-              className="flex-1 rounded-2xl border-0 bg-gradient-to-r from-blue-950 via-blue-800 to-orange-600 py-4 text-base font-black uppercase tracking-widest shadow-lg shadow-blue-950/30 transition-all hover:bg-transparent hover:from-blue-900 hover:via-blue-700 hover:to-orange-500 active:bg-transparent sm:py-5 sm:text-lg"
+              className="flex-1 rounded-2xl border border-orange-300/90 bg-gradient-to-r from-white via-orange-100 to-orange-400 py-4 text-base font-black uppercase tracking-widest text-[#101B31] shadow-lg shadow-orange-500/30 transition-all hover:bg-transparent hover:from-orange-50 hover:via-orange-200 hover:to-orange-500 hover:text-[#101B31] active:bg-transparent sm:py-5 sm:text-lg"
               onClick={() => handleSubmit(true)}
               isLoading={isSaving}
             >
