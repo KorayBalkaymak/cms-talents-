@@ -440,10 +440,15 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         aria-hidden
                       />
                       <div className="flex min-w-0 flex-1 items-center gap-3 pl-2">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
-                          <svg className="h-5 w-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                          </svg>
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/10 p-1 ring-1 ring-white/15">
+                          <img
+                            src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
+                            alt=""
+                            className="h-7 w-auto max-h-full max-w-full object-contain object-center"
+                            width={28}
+                            height={28}
+                            aria-hidden
+                          />
                         </div>
                         <div className="min-w-0">
                           <h2 className="truncate text-sm font-black tracking-tight text-white md:text-base">{industry}</h2>
