@@ -72,6 +72,11 @@ class CandidateService {
     await api.adminAction(userId, action, newStatus, performerId);
   }
 
+  /** Recruiter meldet Bearbeitung am Profil (oder beendet die Meldung). */
+  async setRecruiterEditingClaim(candidateUserId: string, active: boolean): Promise<void> {
+    await api.setRecruiterEditingClaim(candidateUserId, active);
+  }
+
   async getDocuments(userId: string): Promise<CandidateDocuments | undefined> {
     try {
       return await api.getDocuments(userId);

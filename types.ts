@@ -72,11 +72,36 @@ export interface CandidateProfile {
   boostedKeywords: string[]; // OPTIONAL - Sichtbarkeits-Booster
   isSubmitted?: boolean;     // OPTIONAL - zur Recruiter-Prüfung eingereicht
   cvReviewedAt?: string | null; // OPTIONAL - Recruiter hat CV geprüft
+  /** Recruiter hat „Bearbeitung melden“ geklickt (für Team sichtbar) */
+  recruiterEditingUserId?: string | null;
+  recruiterEditingLabel?: string | null;
+  recruiterEditingAt?: string | null;
 
   // --- OPTIONAL MEDIA ---
   profileImageUrl?: string; // OPTIONAL - Base64 oder URL
   socialLinks: SocialLink[]; // OPTIONAL - Array, can be empty
   documents?: { type: string; name: string }[]; // vom Backend: Dokumenten-Infos
+}
+
+/** Nach dieser Dauer gilt die Meldung im UI als abgelaufen (ohne DB-Schreiben). */
+export const RECRUITER_EDITING_STALE_MS = 2 * 60 * 60 * 1000;
+
+export function isRecruiterEditingClaimStale(at?: string | null): boolean {
+  if (!at) return true;
+  return Date.now() - new Date(at).getTime() > RECRUITER_EDITING_STALE_MS;
+}
+
+/** Aktive Team-Meldung oder null (fehlt oder veraltet). */
+export function getActiveRecruiterEditing(
+  c: CandidateProfile
+): { userId: string; label: string; at: string } | null {
+  if (!c.recruiterEditingUserId || !c.recruiterEditingLabel || !c.recruiterEditingAt) return null;
+  if (isRecruiterEditingClaimStale(c.recruiterEditingAt)) return null;
+  return {
+    userId: c.recruiterEditingUserId,
+    label: c.recruiterEditingLabel,
+    at: c.recruiterEditingAt,
+  };
 }
 
 // =====================================================

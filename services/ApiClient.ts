@@ -4,6 +4,7 @@ import {
   CandidateDocuments,
   CandidateProfile,
   CandidateStatus,
+  isRecruiterEditingClaimStale,
   SocialLink,
   User,
   UserRole,
@@ -52,6 +53,9 @@ type ProfileRow = {
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
+  recruiter_editing_user_id?: string | null;
+  recruiter_editing_label?: string | null;
+  recruiter_editing_at?: string | null;
 };
 
 type DocumentRow = {
@@ -83,6 +87,13 @@ function isRecruiterRole(role?: string | null): boolean {
 function recruiterRoleFromEmail(email?: string | null): UserRole {
   if (!email) return UserRole.CANDIDATE;
   return RECRUITER_ROLE_BY_EMAIL[normalizeEmail(email)] || UserRole.CANDIDATE;
+}
+
+function recruiterClaimLabelFromUser(u: User): string {
+  const fn = u.firstName?.trim();
+  if (fn) return fn;
+  const local = (u.email || '').split('@')[0] || 'Recruiter';
+  return local.charAt(0).toUpperCase() + local.slice(1).toLowerCase();
 }
 
 class ApiClient {
@@ -171,6 +182,15 @@ class ApiClient {
       socialLinks: row.social_links || [],
       profileImageUrl: row.profile_image_url || undefined,
       cvReviewedAt: row.cv_reviewed_at || null,
+      recruiterEditingUserId: isRecruiterEditingClaimStale(row.recruiter_editing_at)
+        ? null
+        : row.recruiter_editing_user_id ?? null,
+      recruiterEditingLabel: isRecruiterEditingClaimStale(row.recruiter_editing_at)
+        ? null
+        : row.recruiter_editing_label ?? null,
+      recruiterEditingAt: isRecruiterEditingClaimStale(row.recruiter_editing_at)
+        ? null
+        : row.recruiter_editing_at ?? null,
       documents: this.documentsToList(docs),
     };
   }
@@ -227,6 +247,9 @@ class ApiClient {
       deleted_at: null,
       created_at: now,
       updated_at: now,
+      recruiter_editing_user_id: null,
+      recruiter_editing_label: null,
+      recruiter_editing_at: null,
     };
 
     const { error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
@@ -556,6 +579,16 @@ class ApiClient {
       }
     }
 
+    // Kandidat bearbeitet eigenes Profil → Team-Meldung zurücksetzen
+    let nextEditingUserId = current?.recruiter_editing_user_id ?? null;
+    let nextEditingLabel = current?.recruiter_editing_label ?? null;
+    let nextEditingAt = current?.recruiter_editing_at ?? null;
+    if (isOwnerCandidate) {
+      nextEditingUserId = null;
+      nextEditingLabel = null;
+      nextEditingAt = null;
+    }
+
     const now = new Date().toISOString();
     const payload = {
       id: userId,
@@ -586,6 +619,9 @@ class ApiClient {
       deleted_at: current?.deleted_at ?? null,
       created_at: current?.created_at || now,
       updated_at: now,
+      recruiter_editing_user_id: nextEditingUserId,
+      recruiter_editing_label: nextEditingLabel,
+      recruiter_editing_at: nextEditingAt,
     };
 
     const { error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
@@ -600,6 +636,61 @@ class ApiClient {
 
     const docs = await this.fetchDocumentRow(userId);
     return this.profileRowToCandidate(updated, docs);
+  }
+
+  /**
+   * Recruiter meldet, dass er ein Kandidatenprofil bearbeitet (oder beendet die Meldung).
+   */
+  async setRecruiterEditingClaim(candidateUserId: string, active: boolean): Promise<void> {
+    const sessionUser = await this.getSessionUser();
+    if (!sessionUser || !isRecruiterRole(sessionUser.role)) {
+      throw new Error('Keine Berechtigung für diese Aktion.');
+    }
+
+    const now = new Date().toISOString();
+
+    if (!active) {
+      const row = await this.fetchProfileRow(candidateUserId);
+      if (!row || row.deleted_at) {
+        throw new Error('Kandidat nicht gefunden.');
+      }
+      const isClaimOwner = row.recruiter_editing_user_id === sessionUser.id;
+      const isAdmin = sessionUser.role === UserRole.ADMIN;
+      if (!isClaimOwner && !isAdmin) {
+        throw new Error('Nur der gemeldete Recruiter kann die Bearbeitung beenden.');
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          recruiter_editing_user_id: null,
+          recruiter_editing_label: null,
+          recruiter_editing_at: null,
+          updated_at: now,
+        })
+        .eq('id', candidateUserId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+      return;
+    }
+
+    const label = recruiterClaimLabelFromUser(sessionUser);
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        recruiter_editing_user_id: sessionUser.id,
+        recruiter_editing_label: label,
+        recruiter_editing_at: now,
+        updated_at: now,
+      })
+      .eq('id', candidateUserId)
+      .is('deleted_at', null);
+
+    if (error) {
+      throw new Error(error.message);
+    }
   }
 
   async adminAction(
@@ -625,6 +716,9 @@ class ApiClient {
           is_published: false,
           is_submitted: false,
           status: CandidateStatus.BLOCKED,
+          recruiter_editing_user_id: null,
+          recruiter_editing_label: null,
+          recruiter_editing_at: null,
           updated_at: now,
         })
         .eq('id', userId);

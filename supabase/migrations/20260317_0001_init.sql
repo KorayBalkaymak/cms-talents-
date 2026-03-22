@@ -322,3 +322,9 @@ create policy "Recruiters can insert audit log"
 on public.audit_log
 for insert
 with check (public.is_recruiter_or_admin());
+
+-- Recruiter „Bearbeitung melden“ (Team-Sichtbarkeit); siehe auch 20260320000000_recruiter_editing_claim.sql
+alter table public.profiles
+  add column if not exists recruiter_editing_user_id uuid references auth.users (id) on delete set null,
+  add column if not exists recruiter_editing_label text,
+  add column if not exists recruiter_editing_at timestamptz;

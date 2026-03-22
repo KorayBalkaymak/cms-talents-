@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, AuditLog } from '../types';
+import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, AuditLog, getActiveRecruiterEditing } from '../types';
 import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea } from '../components/UI';
 import { candidateService } from '../services/CandidateService';
 import { auditService } from '../services/AuditService';
@@ -27,6 +27,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [isSavingDocs, setIsSavingDocs] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [docError, setDocError] = useState<string | null>(null);
+  const [claimBusyUserId, setClaimBusyUserId] = useState<string | null>(null);
+  const [claimError, setClaimError] = useState<string | null>(null);
 
   // Document Preview State
   const [previewDoc, setPreviewDoc] = useState<{ name: string; data: string } | null>(null);
@@ -51,6 +53,42 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     const fresh = candidates.find((c) => c.userId === selectedCandidate.userId);
     if (fresh) setSelectedCandidate(fresh);
   }, [candidates, selectedCandidate]);
+
+  // Andere Recruiter sehen Meldungen nach kurzer Zeit automatisch aktualisiert
+  useEffect(() => {
+    if (activeTab !== 'candidates' || !onRefreshCandidates) return;
+    const id = window.setInterval(() => {
+      void onRefreshCandidates();
+    }, 35000);
+    return () => window.clearInterval(id);
+  }, [activeTab, onRefreshCandidates]);
+
+  const handleRecruiterEditingClaim = async (cand: CandidateProfile) => {
+    const editing = getActiveRecruiterEditing(cand);
+    setClaimError(null);
+    try {
+      setClaimBusyUserId(cand.userId);
+      if (editing?.userId === user.id) {
+        await candidateService.setRecruiterEditingClaim(cand.userId, false);
+      } else if (editing) {
+        if (
+          !window.confirm(
+            `${editing.label} hat dieses Profil zur Bearbeitung gemeldet. Möchten Sie die Meldung übernehmen?`
+          )
+        ) {
+          return;
+        }
+        await candidateService.setRecruiterEditingClaim(cand.userId, true);
+      } else {
+        await candidateService.setRecruiterEditingClaim(cand.userId, true);
+      }
+      if (onRefreshCandidates) await onRefreshCandidates();
+    } catch (e: any) {
+      setClaimError(e?.message || 'Bearbeitungs-Meldung fehlgeschlagen.');
+    } finally {
+      setClaimBusyUserId(null);
+    }
+  };
 
   const loadAuditLogs = async () => {
     setIsLoadingAudit(true);
@@ -94,6 +132,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     const docs = await candidateService.getDocuments(candidate.userId);
     setCandidateDocs(docs || null);
     setDocError(null);
+    setClaimError(null);
   };
 
   const canShowPublishFor = (c: CandidateProfile | null) => {
@@ -364,6 +403,14 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         </header>
 
         <div className="flex-1 overflow-auto p-6 bg-slate-50/50">
+          {activeTab === 'candidates' && claimError && (
+            <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[11px] font-bold text-red-800">
+              <span>{claimError}</span>
+              <button type="button" className="shrink-0 text-[10px] font-black uppercase tracking-wide text-red-600 underline" onClick={() => setClaimError(null)}>
+                Schließen
+              </button>
+            </div>
+          )}
           {activeTab === 'candidates' ? (
             filtered.length === 0 ? <EmptyState title="Keine Kandidaten" description="Nichts gefunden." /> : (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -375,6 +422,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Exp</th>
                       <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
                       <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Live</th>
+                      <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest min-w-[140px]">Bearbeitung</th>
                       <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
                     </tr>
                   </thead>
@@ -402,6 +450,45 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           )}
                         </td>
                         <td className="px-6 py-3"><Badge variant={cand.isPublished ? 'green' : 'slate'}>{cand.isPublished ? 'Ja' : 'Nein'}</Badge></td>
+                        <td className="px-6 py-3 align-top">
+                          {(() => {
+                            const editing = getActiveRecruiterEditing(cand);
+                            const busy = claimBusyUserId === cand.userId;
+                            if (editing) {
+                              const mine = editing.userId === user.id;
+                              return (
+                                <div className="flex flex-col gap-1.5 items-start">
+                                  <span
+                                    className={`text-[10px] font-black uppercase tracking-wide leading-tight max-w-[11rem] ${mine ? 'text-emerald-700' : 'text-amber-800'}`}
+                                    title={mine ? 'Sie sind für andere als Bearbeiter sichtbar' : `Gemeldet von ${editing.label}`}
+                                  >
+                                    {mine ? 'Sie bearbeiten' : `${editing.label} bearbeitet`}
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant={mine ? 'outline' : 'secondary'}
+                                    className="h-7 px-2 text-[10px] font-black rounded-lg"
+                                    disabled={busy}
+                                    onClick={() => void handleRecruiterEditingClaim(cand)}
+                                  >
+                                    {mine ? 'Beenden' : 'Übernehmen'}
+                                  </Button>
+                                </div>
+                              );
+                            }
+                            return (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2 text-[10px] font-black rounded-lg border-amber-200 text-amber-900 hover:bg-amber-50"
+                                disabled={busy}
+                                onClick={() => void handleRecruiterEditingClaim(cand)}
+                              >
+                                Bearbeitung melden
+                              </Button>
+                            );
+                          })()}
+                        </td>
                         <td className="px-6 py-3 text-right">
                           <div className="inline-flex items-center gap-2">
                             {!cand.isPublished && (!!cand.isSubmitted || cand.status === CandidateStatus.ACTIVE) && (
@@ -444,6 +531,37 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         {selectedCandidate && (
           <Modal isOpen={!!selectedCandidate} onClose={() => { setSelectedCandidate(null); setIsEditing(false); }} title={isEditing ? "Bearbeiten" : "Details"}>
             <div className="space-y-4">
+              {claimError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[11px] font-bold text-red-800">
+                  {claimError}
+                </div>
+              )}
+              {(() => {
+                const e = getActiveRecruiterEditing(selectedCandidate);
+                if (!e) return null;
+                const mine = e.userId === user.id;
+                const busy = claimBusyUserId === selectedCandidate.userId;
+                return (
+                  <div
+                    className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-4 py-3 text-xs font-bold ${mine ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-950'}`}
+                  >
+                    <span>
+                      {mine
+                        ? 'Für andere Recruiter sichtbar: Sie bearbeiten dieses Profil.'
+                        : `${e.label} hat die Bearbeitung dieses Profils gemeldet.`}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant={mine ? 'outline' : 'secondary'}
+                      className="h-8 text-[10px] font-black shrink-0"
+                      disabled={busy}
+                      onClick={() => void handleRecruiterEditingClaim(selectedCandidate)}
+                    >
+                      {mine ? 'Meldung beenden' : 'Übernehmen'}
+                    </Button>
+                  </div>
+                );
+              })()}
               {/* Header */}
               <div className="flex items-center gap-4 p-4 bg-slate-900 rounded-2xl text-white">
                 <Avatar seed={selectedCandidate.firstName} size="md" imageUrl={selectedCandidate.profileImageUrl} />
