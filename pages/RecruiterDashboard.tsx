@@ -361,8 +361,97 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     }
   };
 
+  const renderTeamControls = (cand: CandidateProfile, fullWidth = false) => {
+    const editing = getActiveRecruiterEditing(cand);
+    const busy = claimBusyUserId === cand.userId;
+    const wrap = fullWidth ? 'flex w-full flex-col gap-2' : 'flex flex-col items-start gap-1.5';
+    if (editing) {
+      const mine = editing.userId === user.id;
+      return (
+        <div className={wrap}>
+          <span
+            className={`max-w-full text-[10px] font-black uppercase leading-tight tracking-wide ${mine ? 'text-emerald-700' : 'text-amber-800'}`}
+            title={
+              mine
+                ? 'Andere Recruiter sehen: Sie sind für diesen Kandidaten eingetragen.'
+                : `${editing.label} hat geklickt: Kollegen sollen nicht parallel bearbeiten.`
+            }
+          >
+            {mine ? 'Sie bearbeiten (sichtbar)' : `${editing.label} bearbeitet`}
+          </span>
+          <Button
+            size="sm"
+            variant={mine ? 'outline' : 'secondary'}
+            className={`h-9 rounded-lg px-3 text-[10px] font-black ${fullWidth ? 'w-full justify-center' : ''}`}
+            disabled={busy}
+            onClick={() => void handleRecruiterEditingClaim(cand)}
+          >
+            {mine ? 'Fertig – freigeben' : 'Ich übernehme'}
+          </Button>
+        </div>
+      );
+    }
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        className={`h-9 rounded-lg border-amber-200 px-3 text-[10px] font-black text-amber-900 hover:bg-amber-50 ${fullWidth ? 'w-full justify-center' : ''}`}
+        disabled={busy}
+        title="Klicken = für alle Recruiter sichtbar: Sie bearbeiten diesen Kandidaten. Bleibt aktiv, bis Sie „Fertig – freigeben“ wählen."
+        onClick={() => void handleRecruiterEditingClaim(cand)}
+      >
+        Ich bearbeite
+      </Button>
+    );
+  };
+
+  const renderPublishAndManage = (cand: CandidateProfile, fullWidth = false) => (
+    <div className={fullWidth ? 'flex w-full flex-col gap-2' : 'inline-flex items-center gap-2'}>
+      {!cand.isPublished && (!!cand.isSubmitted || cand.status === CandidateStatus.ACTIVE) && (
+        <Button
+          size="sm"
+          variant="primary"
+          className={`h-10 rounded-xl px-3 text-[11px] font-black ${fullWidth ? 'w-full justify-center' : ''}`}
+          onClick={() => onAdminAction(cand.userId, 'publish', undefined, user.id)}
+          disabled={!cand.cvReviewedAt}
+        >
+          FREIGEBEN
+        </Button>
+      )}
+      <Button
+        size="sm"
+        variant="ghost"
+        className={`h-10 px-3 text-xs font-black text-orange-600 ${fullWidth ? 'w-full justify-center border border-orange-200 bg-orange-50/50' : ''}`}
+        onClick={() => handleViewCandidate(cand)}
+      >
+        MANAGE
+      </Button>
+    </div>
+  );
+
+  const statusBadgeBlock = (cand: CandidateProfile) => (
+    <>
+      <Badge variant={cand.status === CandidateStatus.ACTIVE ? 'green' : cand.status === CandidateStatus.BLOCKED ? 'red' : 'yellow'}>
+        {cand.status === CandidateStatus.ACTIVE
+          ? cand.status
+          : cand.status === CandidateStatus.BLOCKED
+            ? cand.status
+            : cand.isSubmitted
+              ? 'Eingereicht'
+              : 'Entwurf'}
+      </Badge>
+      {cand.isSubmitted && (
+        <div
+          className={`text-[10px] font-black uppercase tracking-widest ${cand.cvReviewedAt ? 'text-emerald-600' : 'text-orange-600'}`}
+        >
+          {cand.cvReviewedAt ? 'CV geprüft' : 'CV offen'}
+        </div>
+      )}
+    </>
+  );
+
   return (
-    <div className="min-h-screen bg-slate-50 flex font-inter">
+    <div className="flex min-h-screen min-h-[100dvh] bg-slate-50 font-inter">
       {/* Sidebar - SCALED DOWN */}
       <aside className="w-64 bg-slate-900 text-slate-300 hidden md:flex flex-col">
         <div className="p-6">
@@ -391,32 +480,56 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       </aside>
 
       {/* Main Content - SCALED DOWN */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="relative z-10 flex h-16 items-center justify-between border-b border-slate-100 bg-white px-6 shadow-sm">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-black uppercase tracking-tight text-slate-900">Candidates</h1>
-          </div>
-          <div className="flex items-center gap-6">
-            <div className="group relative">
-              <input
-                type="text"
-                placeholder="Suchen..."
-                className="w-64 rounded-xl border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-4 text-xs font-bold outline-none transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <svg className="absolute left-3 top-2 h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                <path strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
+      <main className="flex h-screen min-h-0 flex-1 flex-col overflow-hidden">
+        {/* Mobil: Logo + Titel + Logout (Sidebar fehlt) */}
+        <div
+          className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-800 bg-slate-900 px-3 py-2.5 md:hidden"
+          style={{ paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))' }}
+        >
+          <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-8 w-auto shrink-0 object-contain" />
+          <h1 className="min-w-0 flex-1 truncate text-center text-xs font-black uppercase tracking-tight text-white">
+            Dashboard-Ansicht
+          </h1>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="shrink-0 rounded-lg px-2 py-2 text-[10px] font-black uppercase tracking-wide text-slate-300 transition-colors hover:bg-white/10 hover:text-orange-400"
+          >
+            Logout
+          </button>
+        </div>
+
+        <header className="relative z-10 flex flex-col gap-3 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 md:h-16 md:flex-row md:items-center md:justify-between md:gap-4 md:py-0">
+          <h1 className="hidden text-xl font-black uppercase tracking-tight text-slate-900 md:block">Dashboard-Ansicht</h1>
+          <div className="relative w-full min-w-0 md:max-w-sm md:flex-1 lg:max-w-md">
+            <input
+              type="search"
+              enterKeyHint="search"
+              placeholder="Suchen nach Name, Branche, Skills…"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-10 pr-4 text-xs font-bold text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 md:h-10 md:py-1.5"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              autoComplete="off"
+            />
+            <svg
+              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden
+            >
+              <path strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto p-6 bg-slate-50/50">
+        <div
+          className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-slate-50/50 p-3 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:p-6 sm:pb-8"
+        >
           {claimError && (
-            <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[11px] font-bold text-red-800">
-              <span>{claimError}</span>
-              <button type="button" className="shrink-0 text-[10px] font-black uppercase tracking-wide text-red-600 underline" onClick={() => setClaimError(null)}>
+            <div className="mb-4 flex flex-col gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[11px] font-bold text-red-800 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+              <span className="min-w-0">{claimError}</span>
+              <button type="button" className="shrink-0 self-end text-[10px] font-black uppercase tracking-wide text-red-600 underline sm:self-auto" onClick={() => setClaimError(null)}>
                 Schließen
               </button>
             </div>
@@ -425,7 +538,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             <EmptyState title="Keine Kandidaten" description="Nichts gefunden." />
           ) : (
               <div className="space-y-8">
-                <p className="text-[11px] font-bold text-slate-500 -mt-2 mb-1">
+                <p className="-mt-2 mb-1 text-center text-[11px] font-bold text-slate-500 sm:text-left">
                   {industryGroups.length} {industryGroups.length === 1 ? 'Branche' : 'Branchen'} · {filtered.length}{' '}
                   {filtered.length === 1 ? 'Kandidat' : 'Kandidaten'}
                 </p>
@@ -434,7 +547,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     key={industry}
                     className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)]"
                   >
-                    <div className="relative flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-5 py-4 text-white">
+                    <div className="relative flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-4 py-3 text-white sm:px-5 sm:py-4">
                       <div
                         className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-orange-400 to-orange-600"
                         aria-hidden
@@ -456,7 +569,41 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         </span>
                       </div>
                     </div>
-                    <div className="overflow-x-auto">
+
+                    {/* Mobil: Karten statt Tabelle (kein horizontales Scroll-Chaos) */}
+                    <div className="divide-y divide-slate-100 lg:hidden">
+                      {candidates.map((cand) => (
+                        <div key={cand.userId} className="space-y-3 px-4 py-4">
+                          <div className="flex gap-3">
+                            <Avatar seed={cand.firstName + cand.lastName} size="sm" imageUrl={cand.profileImageUrl} />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-bold text-slate-900">
+                                {cand.firstName} {cand.lastName}
+                              </p>
+                              <p className="text-xs font-semibold text-slate-500">
+                                {[cand.city?.trim(), `${cand.experienceYears} J. Erfahrung`].filter(Boolean).join(' · ')}
+                              </p>
+                              <div className="mt-2 flex flex-wrap items-center gap-2">
+                                {statusBadgeBlock(cand)}
+                                <Badge variant={cand.isPublished ? 'green' : 'slate'}>
+                                  Live: {cand.isPublished ? 'Ja' : 'Nein'}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="space-y-2 border-t border-slate-100 pt-3">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Team / Bearbeitung</p>
+                            {renderTeamControls(cand, true)}
+                          </div>
+                          <div className="space-y-2">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Aktionen</p>
+                            {renderPublishAndManage(cand, true)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="hidden overflow-x-auto lg:block">
                       <table className="w-full min-w-[720px] text-left">
                         <thead className="border-b border-slate-100 bg-slate-50/90">
                           <tr>
@@ -487,93 +634,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               </td>
                               <td className="px-5 py-3 text-xs font-semibold text-slate-600">{cand.experienceYears}J</td>
                               <td className="px-5 py-3">
-                                <Badge variant={cand.status === CandidateStatus.ACTIVE ? 'green' : cand.status === CandidateStatus.BLOCKED ? 'red' : 'yellow'}>
-                                  {cand.status === CandidateStatus.ACTIVE
-                                    ? cand.status
-                                    : cand.status === CandidateStatus.BLOCKED
-                                      ? cand.status
-                                      : cand.isSubmitted
-                                        ? 'Eingereicht'
-                                        : 'Entwurf'}
-                                </Badge>
-                                {cand.isSubmitted && (
-                                  <div
-                                    className={`mt-1 text-[10px] font-black uppercase tracking-widest ${cand.cvReviewedAt ? 'text-emerald-600' : 'text-orange-600'}`}
-                                  >
-                                    {cand.cvReviewedAt ? 'CV geprüft' : 'CV offen'}
-                                  </div>
-                                )}
+                                <div className="flex flex-col gap-1">{statusBadgeBlock(cand)}</div>
                               </td>
                               <td className="px-5 py-3">
                                 <Badge variant={cand.isPublished ? 'green' : 'slate'}>{cand.isPublished ? 'Ja' : 'Nein'}</Badge>
                               </td>
-                              <td className="align-top px-5 py-3">
-                                {(() => {
-                                  const editing = getActiveRecruiterEditing(cand);
-                                  const busy = claimBusyUserId === cand.userId;
-                                  if (editing) {
-                                    const mine = editing.userId === user.id;
-                                    return (
-                                      <div className="flex flex-col items-start gap-1.5">
-                                        <span
-                                          className={`max-w-[11rem] text-[10px] font-black uppercase leading-tight tracking-wide ${mine ? 'text-emerald-700' : 'text-amber-800'}`}
-                                          title={
-                                            mine
-                                              ? 'Andere Recruiter sehen: Sie sind für diesen Kandidaten eingetragen.'
-                                              : `${editing.label} hat geklickt: Kollegen sollen nicht parallel bearbeiten.`
-                                          }
-                                        >
-                                          {mine ? 'Sie bearbeiten (sichtbar)' : `${editing.label} bearbeitet`}
-                                        </span>
-                                        <Button
-                                          size="sm"
-                                          variant={mine ? 'outline' : 'secondary'}
-                                          className="h-7 rounded-lg px-2 text-[10px] font-black"
-                                          disabled={busy}
-                                          onClick={() => void handleRecruiterEditingClaim(cand)}
-                                        >
-                                          {mine ? 'Fertig – freigeben' : 'Ich übernehme'}
-                                        </Button>
-                                      </div>
-                                    );
-                                  }
-                                  return (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="h-7 rounded-lg border-amber-200 px-2 text-[10px] font-black text-amber-900 hover:bg-amber-50"
-                                      disabled={busy}
-                                      title="Klicken = für alle Recruiter sichtbar: Sie bearbeiten diesen Kandidaten. Bleibt aktiv, bis Sie „Fertig – freigeben“ wählen."
-                                      onClick={() => void handleRecruiterEditingClaim(cand)}
-                                    >
-                                      Ich bearbeite
-                                    </Button>
-                                  );
-                                })()}
-                              </td>
-                              <td className="px-5 py-3 text-right">
-                                <div className="inline-flex items-center gap-2">
-                                  {!cand.isPublished && (!!cand.isSubmitted || cand.status === CandidateStatus.ACTIVE) && (
-                                    <Button
-                                      size="sm"
-                                      variant="primary"
-                                      className="h-8 rounded-xl px-3 text-[11px] font-black"
-                                      onClick={() => onAdminAction(cand.userId, 'publish', undefined, user.id)}
-                                      disabled={!cand.cvReviewedAt}
-                                    >
-                                      FREIGEBEN
-                                    </Button>
-                                  )}
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-8 px-3 text-xs font-black text-orange-600"
-                                    onClick={() => handleViewCandidate(cand)}
-                                  >
-                                    MANAGE
-                                  </Button>
-                                </div>
-                              </td>
+                              <td className="align-top px-5 py-3">{renderTeamControls(cand, false)}</td>
+                              <td className="px-5 py-3 text-right">{renderPublishAndManage(cand, false)}</td>
                             </tr>
                           ))}
                         </tbody>
