@@ -1,9 +1,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, AuditLog, getActiveRecruiterEditing } from '../types';
+import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, getActiveRecruiterEditing } from '../types';
 import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea } from '../components/UI';
 import { candidateService } from '../services/CandidateService';
-import { auditService } from '../services/AuditService';
 import { INDUSTRIES, AVAILABILITY_OPTIONS } from '../constants';
 import { documentService } from '../services/DocumentService';
 
@@ -20,10 +19,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
   const [candidateDocs, setCandidateDocs] = useState<CandidateDocuments | null>(null);
-  const [activeTab, setActiveTab] = useState('candidates');
   const [modalTab, setModalTab] = useState('profile');
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [isLoadingAudit, setIsLoadingAudit] = useState(false);
   const [isSavingDocs, setIsSavingDocs] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [docError, setDocError] = useState<string | null>(null);
@@ -43,12 +39,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [newLink, setNewLink] = useState({ label: '', url: '' });
 
   useEffect(() => {
-    if (activeTab === 'audit') {
-      loadAuditLogs();
-    }
-  }, [activeTab, candidates]);
-
-  useEffect(() => {
     if (!selectedCandidate) return;
     const fresh = candidates.find((c) => c.userId === selectedCandidate.userId);
     if (fresh) setSelectedCandidate(fresh);
@@ -56,12 +46,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
   // Andere Recruiter sehen Meldungen nach kurzer Zeit automatisch aktualisiert
   useEffect(() => {
-    if (activeTab !== 'candidates' || !onRefreshCandidates) return;
+    if (!onRefreshCandidates) return;
     const id = window.setInterval(() => {
       void onRefreshCandidates();
     }, 35000);
     return () => window.clearInterval(id);
-  }, [activeTab, onRefreshCandidates]);
+  }, [onRefreshCandidates]);
 
   const handleRecruiterEditingClaim = async (cand: CandidateProfile) => {
     const editing = getActiveRecruiterEditing(cand);
@@ -88,14 +78,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     } finally {
       setClaimBusyUserId(null);
     }
-  };
-
-  const loadAuditLogs = async () => {
-    setIsLoadingAudit(true);
-    try {
-      const logs = await auditService.getAll();
-      setAuditLogs(logs);
-    } catch (e) { console.error(e); } finally { setIsLoadingAudit(false); }
   };
 
   const isAdmin = user.role === UserRole.ADMIN;
@@ -379,12 +361,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    try {
-      return new Date(dateStr).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    } catch { return dateStr; }
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 flex font-inter">
       {/* Sidebar - SCALED DOWN */}
@@ -394,14 +370,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-12 w-auto object-contain" />
           </div>
           <nav className="space-y-2">
-            <button onClick={() => setActiveTab('candidates')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs transition-all border ${activeTab === 'candidates' ? 'bg-slate-800 text-orange-500 border-slate-700' : 'text-slate-500 border-transparent hover:bg-slate-800 hover:text-white'}`}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            <div className="flex w-full items-center gap-3 rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-xs font-bold text-orange-500">
+              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path strokeWidth="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
               TALENTS
-            </button>
-            <button onClick={() => setActiveTab('audit')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-xs transition-all border ${activeTab === 'audit' ? 'bg-slate-800 text-orange-500 border-slate-700' : 'text-slate-500 border-transparent hover:bg-slate-800 hover:text-white'}`}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-              AUDIT LOG
-            </button>
+            </div>
           </nav>
         </div>
         <div className="mt-auto p-6 border-t border-slate-800 bg-slate-900/50">
@@ -418,27 +392,28 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
       {/* Main Content - SCALED DOWN */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="h-16 bg-white border-b border-slate-100 px-6 flex items-center justify-between shadow-sm relative z-10">
+        <header className="relative z-10 flex h-16 items-center justify-between border-b border-slate-100 bg-white px-6 shadow-sm">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase">{activeTab === 'candidates' ? 'Candidates' : 'Audit Log'}</h1>
-            {activeTab === 'audit' && (
-              <button onClick={loadAuditLogs} className="p-1.5 text-slate-400 hover:text-orange-500 transition-colors" title="Refresh Log">
-                <svg className={`w-4 h-4 ${isLoadingAudit ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-              </button>
-            )}
+            <h1 className="text-xl font-black uppercase tracking-tight text-slate-900">Candidates</h1>
           </div>
-          {activeTab === 'candidates' && (
-            <div className="flex items-center gap-6">
-              <div className="relative group">
-                <input type="text" placeholder="Suchen..." className="pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 w-64 transition-all" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                <svg className="absolute left-3 top-2 w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-              </div>
+          <div className="flex items-center gap-6">
+            <div className="group relative">
+              <input
+                type="text"
+                placeholder="Suchen..."
+                className="w-64 rounded-xl border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-4 text-xs font-bold outline-none transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <svg className="absolute left-3 top-2 h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
-          )}
+          </div>
         </header>
 
         <div className="flex-1 overflow-auto p-6 bg-slate-50/50">
-          {activeTab === 'candidates' && claimError && (
+          {claimError && (
             <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[11px] font-bold text-red-800">
               <span>{claimError}</span>
               <button type="button" className="shrink-0 text-[10px] font-black uppercase tracking-wide text-red-600 underline" onClick={() => setClaimError(null)}>
@@ -446,8 +421,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               </button>
             </div>
           )}
-          {activeTab === 'candidates' ? (
-            filtered.length === 0 ? <EmptyState title="Keine Kandidaten" description="Nichts gefunden." /> : (
+          {filtered.length === 0 ? (
+            <EmptyState title="Keine Kandidaten" description="Nichts gefunden." />
+          ) : (
               <div className="space-y-8">
                 <p className="text-[11px] font-bold text-slate-500 -mt-2 mb-1">
                   {industryGroups.length} {industryGroups.length === 1 ? 'Branche' : 'Branchen'} · {filtered.length}{' '}
@@ -606,20 +582,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   </section>
                 ))}
               </div>
-            )
-          ) : (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-              {auditLogs.length === 0 ? <div className="p-8 text-center text-xs font-bold text-slate-400">Leer.</div> : (
-                <div className="divide-y divide-slate-50">
-                  {auditLogs.map(log => (
-                    <div key={log.id} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50">
-                      <div><p className="text-sm font-bold text-slate-900">{log.action}</p><p className="text-[10px] text-slate-400 mt-0.5">{log.performerId} &rarr; {log.targetId}</p></div>
-                      <div className="text-[10px] font-bold text-slate-400">{formatDate(log.timestamp)}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           )}
         </div>
 
