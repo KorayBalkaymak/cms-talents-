@@ -414,25 +414,23 @@ class ApiClient {
     return { success: true, user };
   }
 
-  async deleteAccount(email: string, password: string) {
-    const normalizedEmail = normalizeEmail(email);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: normalizedEmail,
-      password,
-    });
-
-    if (error) {
-      return { success: false, error: formatAuthError(error.message) };
+  /** Konto löschen: nutzt die bestehende Sitzung (Kandidat muss eingeloggt sein). */
+  async deleteAccount() {
+    const authUser = await this.currentAuthUser();
+    if (!authUser) {
+      return { success: false, error: 'Nicht eingeloggt.' };
     }
 
     const user = await this.getSessionUser();
     if (!user) {
-      await supabase.auth.signOut();
       return { success: false, error: 'Nicht eingeloggt.' };
     }
 
+    if (user.id !== authUser.id) {
+      return { success: false, error: 'Sitzung ungültig.' };
+    }
+
     if (user.role !== UserRole.CANDIDATE) {
-      await supabase.auth.signOut();
       return { success: false, error: 'Nur Kandidaten können ihr Konto hier löschen.' };
     }
 

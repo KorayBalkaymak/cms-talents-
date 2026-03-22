@@ -126,12 +126,12 @@ class AuthService {
     void supabase.auth.signOut();
   }
 
-  async deleteMyAccount(password: string): Promise<{ success: boolean; error?: string }> {
+  async deleteMyAccount(): Promise<{ success: boolean; error?: string }> {
     const me = this.getCurrentUser();
-    if (!me?.email) return { success: false, error: 'Nicht eingeloggt.' };
+    if (!me?.id) return { success: false, error: 'Nicht eingeloggt.' };
 
     try {
-      const res = await api.deleteAccount(me.email, password);
+      const res = await api.deleteAccount();
       if (res?.success) {
         this.logout();
         return { success: true };

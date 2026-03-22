@@ -46,7 +46,6 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
   const [showPublishWarning, setShowPublishWarning] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deletePassword, setDeletePassword] = useState('');
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
@@ -284,29 +283,19 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             )}
 
             <Input
-              label="Passwort bestätigen"
-              type="password"
-              placeholder="••••••••"
-              value={deletePassword}
-              onChange={(e) => setDeletePassword(e.target.value)}
+              label="Zur Bestätigung tippe: LÖSCHEN"
+              type="text"
+              placeholder="LÖSCHEN"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
               className="h-10 text-sm rounded-xl"
             />
-            <div className="mt-4">
-              <Input
-                label="Zur Bestätigung tippe: LÖSCHEN"
-                type="text"
-                placeholder="LÖSCHEN"
-                value={deleteConfirmText}
-                onChange={(e) => setDeleteConfirmText(e.target.value)}
-                className="h-10 text-sm rounded-xl"
-              />
-            </div>
 
             <div className="flex gap-3 mt-6">
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={() => { setShowDeleteModal(false); setDeletePassword(''); setDeleteConfirmText(''); setDeleteError(''); }}
+                onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); setDeleteError(''); }}
                 disabled={isDeleting}
               >
                 Abbrechen
@@ -315,12 +304,12 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                 variant="danger"
                 className="flex-1"
                 isLoading={isDeleting}
-                disabled={!deletePassword || deleteConfirmText.trim().toUpperCase() !== 'LÖSCHEN'}
+                disabled={deleteConfirmText.trim().toUpperCase() !== 'LÖSCHEN'}
                 onClick={async () => {
                   setIsDeleting(true);
                   setDeleteError('');
                   try {
-                    const res = await authService.deleteMyAccount(deletePassword);
+                    const res = await authService.deleteMyAccount();
                     if (!res.success) {
                       setDeleteError(res.error || 'Konto konnte nicht gelöscht werden.');
                       return;
