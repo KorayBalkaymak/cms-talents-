@@ -159,15 +159,28 @@ const App: React.FC = () => {
 
   const handleUpdateCandidate = async (updated: CandidateProfile) => {
     try {
+      const prev = allCandidates.find((c) => c.userId === updated.userId);
+      const wasMarketplaceLive =
+        !!prev?.isPublished && prev?.status === CandidateStatus.ACTIVE;
       const res = await candidateService.update(updated);
-      setAllCandidates(prev => {
-        const exists = prev.find(c => c.userId === res.userId);
+      setAllCandidates((prevList) => {
+        const exists = prevList.find((c) => c.userId === res.userId);
         if (exists) {
-          return prev.map(c => c.userId === res.userId ? res : c);
+          return prevList.map((c) => (c.userId === res.userId ? res : c));
         }
-        return [...prev, res];
+        return [...prevList, res];
       });
-      showToast('Profil erfolgreich gespeichert!');
+      if (
+        user?.role === UserRole.CANDIDATE &&
+        wasMarketplaceLive &&
+        !res.isPublished
+      ) {
+        showToast(
+          'Profil ist nicht mehr auf dem Marktplatz. Bitte erneut „Zum Recruiter senden“, damit es wieder geprüft werden kann.'
+        );
+      } else {
+        showToast('Profil erfolgreich gespeichert!');
+      }
     } catch (e: any) {
       showToast(e.message || 'Fehler beim Speichern', 'error');
     }

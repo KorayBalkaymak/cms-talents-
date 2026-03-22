@@ -495,17 +495,47 @@ class ApiClient {
     const currentRole = current?.role || recruiterRoleFromEmail(authUser?.email ?? null);
     const isAdmin = currentRole === UserRole.ADMIN;
     const isOwnerCandidate = !!authUser && authUser.id === userId && currentRole === UserRole.CANDIDATE;
-    const nextSubmitted = isAdmin ? !!data.isSubmitted : !!current?.is_submitted || !!data.isSubmitted;
-    const nextStatus = isAdmin
-      ? (data.status || CandidateStatus.REVIEW)
-      : nextSubmitted
+
+    /** War auf dem Marktplatz sichtbar (freigegeben) */
+    const wasMarketplaceLive =
+      !!current?.is_published && current?.status === CandidateStatus.ACTIVE;
+
+    let nextSubmitted: boolean;
+    let nextStatus: CandidateStatus;
+    let nextPublished: boolean;
+    let nextCvReviewedAt: string | null = current?.cv_reviewed_at ?? null;
+    let nextCvReviewedBy: string | null = current?.cv_reviewed_by ?? null;
+
+    if (isAdmin) {
+      nextSubmitted = !!data.isSubmitted;
+      nextStatus = (data.status as CandidateStatus) || CandidateStatus.REVIEW;
+      nextPublished = !!data.isPublished;
+    } else if (isOwnerCandidate && wasMarketplaceLive) {
+      // Nach Freigabe geändert: vom Marktplatz nehmen, CV-Prüfung zurücksetzen,
+      // Einreichung löschen bis erneut „Zum Recruiter senden“.
+      nextPublished = false;
+      nextCvReviewedAt = null;
+      nextCvReviewedBy = null;
+      if (data.isSubmitted) {
+        nextSubmitted = true;
+        nextStatus = CandidateStatus.REVIEW;
+      } else {
+        nextSubmitted = false;
+        nextStatus = CandidateStatus.REVIEW;
+      }
+    } else if (isOwnerCandidate) {
+      nextSubmitted = !!current?.is_submitted || !!data.isSubmitted;
+      nextPublished = nextSubmitted ? false : !!current?.is_published;
+      nextStatus = nextSubmitted
         ? CandidateStatus.REVIEW
         : (current?.status || data.status || CandidateStatus.REVIEW);
-    const nextPublished = isAdmin
-      ? !!data.isPublished
-      : nextSubmitted
-        ? false
-        : !!current?.is_published;
+    } else {
+      nextSubmitted = !!current?.is_submitted || !!data.isSubmitted;
+      nextPublished = nextSubmitted ? false : !!current?.is_published;
+      nextStatus = nextSubmitted
+        ? CandidateStatus.REVIEW
+        : (current?.status || data.status || CandidateStatus.REVIEW);
+    }
 
     // Kandidat: bei eingereichtem Profil müssen Lebenslauf + mind. eine Qualifikation in der DB liegen
     if (isOwnerCandidate && nextSubmitted) {
@@ -548,8 +578,8 @@ class ApiClient {
       status: nextStatus,
       is_published: nextPublished,
       is_submitted: nextSubmitted,
-      cv_reviewed_at: current?.cv_reviewed_at ?? null,
-      cv_reviewed_by: current?.cv_reviewed_by ?? null,
+      cv_reviewed_at: nextCvReviewedAt,
+      cv_reviewed_by: nextCvReviewedBy,
       skills: Array.isArray(data.skills) ? data.skills : current?.skills || [],
       boosted_keywords: Array.isArray(data.boostedKeywords) ? data.boostedKeywords : current?.boosted_keywords || [],
       social_links: Array.isArray(data.socialLinks) ? data.socialLinks : current?.social_links || [],
@@ -718,6 +748,16 @@ class ApiClient {
 
   async updateDocuments(userId: string, data: CandidateDocuments) {
     const now = new Date().toISOString();
+    const authUser = await this.currentAuthUser();
+    const profile = await this.fetchProfileRow(userId);
+    const isOwnerCandidate =
+      !!authUser &&
+      authUser.id === userId &&
+      !!profile &&
+      !isRecruiterRole(profile.role);
+    const wasMarketplaceLive =
+      !!profile?.is_published && profile?.status === CandidateStatus.ACTIVE;
+
     const payload = {
       user_id: userId,
       cv_pdf: data.cvPdf || null,
@@ -731,14 +771,35 @@ class ApiClient {
       throw new Error(error.message);
     }
 
-    await supabase
-      .from('profiles')
-      .update({
-        cv_reviewed_at: null,
-        cv_reviewed_by: null,
-        updated_at: now,
-      })
-      .eq('id', userId);
+    // Dokumente geändert während Profil live war → Marktplatz + Freigabe zurücksetzen
+    if (isOwnerCandidate && wasMarketplaceLive) {
+      const { error: pErr } = await supabase
+        .from('profiles')
+        .update({
+          is_published: false,
+          status: CandidateStatus.REVIEW,
+          is_submitted: false,
+          cv_reviewed_at: null,
+          cv_reviewed_by: null,
+          updated_at: now,
+        })
+        .eq('id', userId);
+      if (pErr) {
+        throw new Error(pErr.message);
+      }
+    } else {
+      const { error: pErr } = await supabase
+        .from('profiles')
+        .update({
+          cv_reviewed_at: null,
+          cv_reviewed_by: null,
+          updated_at: now,
+        })
+        .eq('id', userId);
+      if (pErr) {
+        throw new Error(pErr.message);
+      }
+    }
   }
 
   async getAuditLog(): Promise<AuditLog[]> {

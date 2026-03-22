@@ -53,6 +53,11 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
   /** Pflichtfeld-Hinweise für Lebenslauf / Qualifikationen beim Absenden an Recruiter */
   const [documentFieldErrors, setDocumentFieldErrors] = useState<{ cv?: string; qualifications?: string }>({});
 
+  // Nach Speichern liefert der Parent die Server-Antwort (z. B. isPublished false) — Formular angleichen
+  useEffect(() => {
+    setFormData(profile);
+  }, [profile.userId, profile.updatedAt]);
+
   // Load documents on mount
   useEffect(() => {
     const loadDocs = async () => {
