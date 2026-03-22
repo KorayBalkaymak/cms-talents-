@@ -180,17 +180,11 @@ export const SUGGESTED_KEYWORDS = dedupeStrings(
   BOOSTER_KEYWORD_CATEGORIES.flatMap((c) => c.keywords)
 );
 
-export const INDUSTRIES = [
-  'Software',
-  'Finanzen',
-  'Design',
-  'Marketing',
-  'Vertrieb',
-  'HR',
-  'Recht',
-  'Logistik',
-  'Medizin',
-];
+/**
+ * Hauptbranche / „Beruflicher Fokus“ (Profil, Marktplatz-Filter, Recruiter) –
+ * identisch mit den Booster-Kategorie-Titeln.
+ */
+export const INDUSTRIES: string[] = BOOSTER_KEYWORD_CATEGORIES.map((c) => c.title);
 
 export const AVAILABILITY_OPTIONS = [
   'Sofort',
