@@ -247,16 +247,20 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
             <div className="px-6 py-5 bg-[#101B31] text-white flex items-center justify-between">
               <div>
                 <div className="text-xs font-black tracking-[0.25em] text-white/70 uppercase">Filter</div>
-                <div className="text-lg font-black tracking-tight">Feinjustierung</div>
+                <div className="text-lg font-black tracking-tight">Suchkriterien</div>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-white/20 text-white hover:bg-white/10 h-9 px-3 rounded-xl"
-                onClick={() => { setSearch(''); setFilterIndustry(''); setFilterExp(0); setFilterAvailability(''); }}
+              <button
+                type="button"
+                className="h-9 shrink-0 rounded-xl bg-white px-4 text-xs font-black uppercase tracking-wide text-[#101B31] shadow-md transition-colors hover:bg-orange-50 hover:text-[#101B31] focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#101B31]"
+                onClick={() => {
+                  setSearch('');
+                  setFilterIndustry('');
+                  setFilterExp(0);
+                  setFilterAvailability('');
+                }}
               >
-                Reset
-              </Button>
+                Zurücksetzen
+              </button>
             </div>
 
             <div className="p-6 space-y-6">
