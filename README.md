@@ -46,6 +46,22 @@ Run this SQL file in the Supabase SQL editor before the first deploy:
 
 - `supabase/migrations/20260317_0001_init.sql`
 
+### Fehler: `recruiter_editing_at` / Schema-Cache
+
+Wenn beim Klick auf **„Bearbeitung melden“** im Recruiter-Dashboard eine Meldung wie
+`Could not find the 'recruiter_editing_at' column of 'profiles'` erscheint, fehlen die
+Spalten in deiner Datenbank noch.
+
+**Lösung:** Im Supabase-Dashboard **SQL Editor** öffnen und die Datei ausführen:
+
+- **`supabase/run_in_sql_editor_recruiter_editing.sql`**
+
+(Alternativ: `supabase/migrations/20260320000000_recruiter_editing_claim.sql` – gleicher Inhalt.)
+
+Danach die App neu laden. Falls der Fehler kurz bleibt: unter **Project Settings → API**
+gibt es ggf. eine Schema-Neuladung; normalerweise erkennt Supabase die neuen Spalten
+innerhalb weniger Sekunden.
+
 It creates:
 
 - `profiles`
