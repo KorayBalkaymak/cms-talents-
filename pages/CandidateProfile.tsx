@@ -32,6 +32,12 @@ const ProfileCardGlow = () => (
   />
 );
 
+// Improves scroll performance on large profile forms without visual changes.
+const SECTION_RENDER_HINT: React.CSSProperties = {
+  contentVisibility: 'auto',
+  containIntrinsicSize: '760px',
+};
+
 const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavigate, onSave, onLogout }) => {
   const [formData, setFormData] = useState<CandidateProfile>(profile);
   const [documents, setDocuments] = useState<CandidateDocuments>({
@@ -414,7 +420,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
 
         <div className="space-y-5 sm:space-y-8">
           {/* Identity Section */}
-          <section className={`${PROFILE_CARD} p-5 sm:p-8 md:p-10`}>
+          <section className={`${PROFILE_CARD} p-5 sm:p-8 md:p-10`} style={SECTION_RENDER_HINT}>
             <ProfileCardGlow />
             <div className="relative flex flex-col items-center gap-3.5 md:flex-row md:gap-10 sm:gap-8">
               <div className="relative">
@@ -525,7 +531,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Details Section – BERUFLICHER FOKUS */}
-          <section className={`${PROFILE_CARD} p-5 sm:p-8 md:p-10`}>
+          <section className={`${PROFILE_CARD} p-5 sm:p-8 md:p-10`} style={SECTION_RENDER_HINT}>
             <ProfileCardGlow />
             <h3 className="relative mb-6 flex items-center gap-3 text-base font-black tracking-tight text-slate-900 sm:mb-8 sm:text-xl">
               <span className="h-8 w-1.5 rounded-full bg-gradient-to-b from-orange-500 via-amber-500 to-orange-600 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />
@@ -594,7 +600,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Skills & Matching-Boost */}
-          <section className={`${PROFILE_CARD} p-5 sm:p-8 md:p-10`}>
+          <section className={`${PROFILE_CARD} p-5 sm:p-8 md:p-10`} style={SECTION_RENDER_HINT}>
             <ProfileCardGlow />
             <div className="relative z-10">
               <div className="mb-8 flex flex-col gap-5 lg:mb-10 lg:flex-row lg:items-end lg:justify-between">
@@ -708,7 +714,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Social Links Section */}
-          <section className={`${PROFILE_CARD} p-5 sm:p-8 md:p-10`}>
+          <section className={`${PROFILE_CARD} p-5 sm:p-8 md:p-10`} style={SECTION_RENDER_HINT}>
             <ProfileCardGlow />
             <h3 className="relative mb-6 flex flex-wrap items-center gap-3 text-base font-black tracking-tight text-slate-900 sm:mb-8 sm:text-xl">
               <span className="h-8 w-1.5 rounded-full bg-gradient-to-b from-orange-500 via-amber-500 to-orange-600 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />
@@ -773,7 +779,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
           </section>
 
           {/* Documents Section */}
-          <section className={`${PROFILE_CARD} p-4 sm:p-8 md:p-10`}>
+          <section className={`${PROFILE_CARD} p-4 sm:p-8 md:p-10`} style={SECTION_RENDER_HINT}>
             <ProfileCardGlow />
             <h3 className="relative mb-4 flex flex-wrap items-center gap-3 text-base font-black text-slate-900 sm:mb-8 sm:text-xl">
               <span className="h-8 w-1.5 shrink-0 rounded-full bg-gradient-to-b from-orange-500 via-amber-500 to-orange-600 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />

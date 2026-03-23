@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useDeferredValue, useCallback } from 'react';
 import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, getActiveRecruiterEditing } from '../types';
 import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea } from '../components/UI';
 import { candidateService } from '../services/CandidateService';
@@ -90,21 +90,26 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     ? candidates
     : candidates.filter((c) => !!c.isSubmitted || !!c.isPublished || c.status === CandidateStatus.ACTIVE);
 
-  const filtered = visibleCandidates
-    .slice()
-    .sort((a, b) => {
-      // Show submitted first
-      const aSub = !!a.isSubmitted;
-      const bSub = !!b.isSubmitted;
-      if (aSub && !bSub) return -1;
-      if (bSub && !aSub) return 1;
-      return 0;
-    })
-    .filter(c =>
-    `${c.firstName} ${c.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.industry.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.skills.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const deferredSearchTerm = useDeferredValue(searchTerm);
+  const filtered = useMemo(() => {
+    const term = deferredSearchTerm.trim().toLowerCase();
+    return visibleCandidates
+      .slice()
+      .sort((a, b) => {
+        // Show submitted first
+        const aSub = !!a.isSubmitted;
+        const bSub = !!b.isSubmitted;
+        if (aSub && !bSub) return -1;
+        if (bSub && !aSub) return 1;
+        return 0;
+      })
+      .filter((c) =>
+        !term ||
+        `${c.firstName} ${c.lastName}`.toLowerCase().includes(term) ||
+        c.industry.toLowerCase().includes(term) ||
+        c.skills.some((s) => s.toLowerCase().includes(term))
+      );
+  }, [visibleCandidates, deferredSearchTerm]);
 
   const industryGroups = useMemo(() => {
     const sortInGroup = (arr: CandidateProfile[]) =>
@@ -361,7 +366,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     }
   };
 
-  const renderTeamControls = (cand: CandidateProfile, fullWidth = false) => {
+  const renderTeamControls = useCallback((cand: CandidateProfile, fullWidth = false) => {
     const editing = getActiveRecruiterEditing(cand);
     const busy = claimBusyUserId === cand.userId;
     const wrap = fullWidth ? 'flex w-full flex-col gap-2' : 'flex flex-col items-start gap-1.5';
@@ -403,9 +408,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         Ich bearbeite
       </Button>
     );
-  };
+  }, [claimBusyUserId, user.id, handleRecruiterEditingClaim]);
 
-  const renderPublishAndManage = (cand: CandidateProfile, fullWidth = false) => (
+  const renderPublishAndManage = useCallback((cand: CandidateProfile, fullWidth = false) => (
     <div className={fullWidth ? 'flex w-full flex-col gap-2' : 'inline-flex items-center gap-2'}>
       {!cand.isPublished && (!!cand.isSubmitted || cand.status === CandidateStatus.ACTIVE) && (
         <Button
@@ -427,9 +432,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         MANAGE
       </Button>
     </div>
-  );
+  ), [onAdminAction, user.id, handleViewCandidate]);
 
-  const statusBadgeBlock = (cand: CandidateProfile) => (
+  const statusBadgeBlock = useCallback((cand: CandidateProfile) => (
     <>
       <Badge variant={cand.status === CandidateStatus.ACTIVE ? 'green' : cand.status === CandidateStatus.BLOCKED ? 'red' : 'yellow'}>
         {cand.status === CandidateStatus.ACTIVE
@@ -448,7 +453,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         </div>
       )}
     </>
-  );
+  ), []);
 
   return (
     <div className="flex min-h-screen min-h-[100dvh] bg-slate-50 font-inter">
