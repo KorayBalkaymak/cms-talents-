@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Button, Input } from '../components/UI';
 import { User, UserRole } from '../types';
 import { authService } from '../services/AuthService';
-import { RECRUITER_EMAILS } from '../services/ApiClient';
 
 interface RecruiterAuthProps {
   onAuthSuccess: (user: User) => void;
@@ -48,7 +47,18 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
 
         <div className="relative z-10 max-w-md text-center">
           <div className="mb-6 inline-flex items-center justify-center">
-            <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-12 w-auto object-contain" />
+            <div className="relative inline-flex">
+              <div className="pointer-events-none absolute -inset-4 rounded-full bg-orange-500/25 blur-xl" aria-hidden />
+              <div className="relative flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-white/10 shadow-[0_14px_36px_-24px_rgba(0,0,0,0.9)]">
+                <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-[0_8px_20px_-14px_rgba(0,0,0,0.5)]">
+                  <img
+                    src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
+                    alt="CMS Talents"
+                    className="h-[85%] w-[85%] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.2)]"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
           <h1 className="text-3xl font-black text-white tracking-tight mb-4 leading-tight">
             Willkommen im <br />
@@ -58,13 +68,6 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
             Verwalten Sie Ihre Kandidaten, sichten Sie Talente und steuern Sie den Recruiting-Prozess zentral.
           </p>
 
-          <div className="mt-8 flex items-center justify-center gap-3 text-[10px] font-bold text-slate-600 uppercase tracking-widest">
-            <span>Security First</span>
-            <span className="w-1 h-1 bg-slate-600 rounded-full"></span>
-            <span>Supabase Auth</span>
-            <span className="w-1 h-1 bg-slate-600 rounded-full"></span>
-            <span>Premium Talent</span>
-          </div>
         </div>
       </div>
 
@@ -80,9 +83,6 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
             </h2>
             <p className="text-slate-500 text-sm">
               Bitte melden Sie sich mit Ihrem Supabase-Auth-Account an.
-            </p>
-            <p className="mt-3 text-[11px] text-slate-500 font-semibold">
-              Freigeschaltete E-Mails: <span className="text-slate-700">{RECRUITER_EMAILS.join(', ')}</span>
             </p>
           </div>
 
@@ -134,11 +134,6 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
             </Button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-            <p className="text-slate-400 text-[10px]">
-              Support: <a href="#" className="font-bold text-slate-600 hover:text-orange-600 underline">help@cms-talents.de</a>
-            </p>
-          </div>
         </div>
       </div>
     </div>
