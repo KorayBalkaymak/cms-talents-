@@ -401,7 +401,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
       <footer className="bg-[#101B31] border-t border-white/10 py-12">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-12 w-auto object-contain" />
             <span className="text-sm font-medium text-white/70">CMS Talents © 2026</span>
           </div>
           <div className="flex gap-10 text-sm">
