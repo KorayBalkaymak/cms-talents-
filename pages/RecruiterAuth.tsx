@@ -93,16 +93,17 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-slate-900 uppercase tracking-wide ml-1">E-Mail</label>
               <Input
                 type="email"
-                placeholder="haagen@industries-cms.com"
+                placeholder="E-Mail eingeben"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
+                autoComplete="off"
+                name="recruiter_login_email"
                 className="bg-slate-50 border-slate-200 focus:bg-white h-11 text-sm rounded-xl"
               />
             </div>
@@ -113,11 +114,12 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
               </div>
               <Input
                 type="password"
-                placeholder="••••••••"
+                placeholder="Passwort eingeben"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
+                autoComplete="new-password"
+                name="recruiter_login_password"
                 className="bg-slate-50 border-slate-200 focus:bg-white h-11 text-sm rounded-xl"
               />
             </div>
