@@ -24,6 +24,7 @@ const App: React.FC = () => {
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
   const [allCandidates, setAllCandidates] = useState<CandidateProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRecruiterCandidatesLoading, setIsRecruiterCandidatesLoading] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -60,6 +61,7 @@ const App: React.FC = () => {
       const loadInitialCandidates = async () => {
         try {
           if (initialUser && (initialUser.role === UserRole.RECRUITER || initialUser.role === UserRole.ADMIN)) {
+            setIsRecruiterCandidatesLoading(true);
             const list = await candidateService.getAllAdmin();
             setAllCandidates(list);
           } else {
@@ -68,6 +70,8 @@ const App: React.FC = () => {
           }
         } catch {
           setAllCandidates([]);
+        } finally {
+          setIsRecruiterCandidatesLoading(false);
         }
       };
       loadInitialCandidates();
@@ -152,8 +156,13 @@ const App: React.FC = () => {
         return profile ? [...withoutMe, profile] : withoutMe;
       });
     } else if (loggedInUser.role === UserRole.RECRUITER || loggedInUser.role === UserRole.ADMIN) {
-      const list = await candidateService.getAllAdmin();
-      setAllCandidates(list);
+      setIsRecruiterCandidatesLoading(true);
+      try {
+        const list = await candidateService.getAllAdmin();
+        setAllCandidates(list);
+      } finally {
+        setIsRecruiterCandidatesLoading(false);
+      }
     }
   };
 
@@ -297,6 +306,7 @@ const App: React.FC = () => {
         <RecruiterDashboard
           user={user}
           candidates={allCandidates}
+          isInitialLoading={isRecruiterCandidatesLoading}
           onAdminAction={handleAdminAction}
           onUpdateCandidate={handleUpdateCandidate}
           onRefreshCandidates={refreshCandidatesForRecruiter}

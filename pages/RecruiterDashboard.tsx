@@ -9,13 +9,14 @@ import { documentService } from '../services/DocumentService';
 interface RecruiterDashboardProps {
   user: User;
   candidates: CandidateProfile[];
+  isInitialLoading?: boolean;
   onAdminAction: (userUuid: string, action: 'delete' | 'status' | 'publish' | 'cv_reviewed', newStatus?: CandidateStatus, performerId?: string) => Promise<void> | void;
   onUpdateCandidate?: (candidate: CandidateProfile) => void;
   onRefreshCandidates?: () => Promise<void> | void;
   onLogout: () => void;
 }
 
-const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidates, onAdminAction, onUpdateCandidate, onRefreshCandidates, onLogout }) => {
+const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidates, isInitialLoading = false, onAdminAction, onUpdateCandidate, onRefreshCandidates, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
   const [candidateDocs, setCandidateDocs] = useState<CandidateDocuments | null>(null);
@@ -561,7 +562,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               </button>
             </div>
           )}
-          {filtered.length === 0 ? (
+          {isInitialLoading && filtered.length === 0 ? (
+            <div className="flex h-40 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-orange-600" />
+            </div>
+          ) : filtered.length === 0 ? (
             <EmptyState title="Keine Kandidaten" description="Nichts gefunden." />
           ) : (
               <div className="space-y-8">
