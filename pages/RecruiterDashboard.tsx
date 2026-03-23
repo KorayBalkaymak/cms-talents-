@@ -497,7 +497,18 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-800 bg-slate-900 px-3 py-2.5 md:hidden"
           style={{ paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))' }}
         >
-          <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-8 w-auto shrink-0 object-contain" />
+          <div className="relative inline-flex shrink-0">
+            <div className="pointer-events-none absolute -inset-2 rounded-full bg-orange-500/25 blur-md" aria-hidden />
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 shadow-[0_10px_24px_-18px_rgba(0,0,0,0.9)]">
+              <div className="relative flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-[0_6px_14px_-10px_rgba(0,0,0,0.5)]">
+                <img
+                  src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
+                  alt="CMS Talents"
+                  className="h-[85%] w-[85%] object-contain drop-shadow-[0_3px_6px_rgba(0,0,0,0.2)]"
+                />
+              </div>
+            </div>
+          </div>
           <h1 className="min-w-0 flex-1 truncate text-center text-xs font-black uppercase tracking-tight text-white">
             Dashboard Sicht
           </h1>
