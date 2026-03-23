@@ -96,6 +96,15 @@ function recruiterClaimLabelFromUser(u: User): string {
   return local.charAt(0).toUpperCase() + local.slice(1).toLowerCase();
 }
 
+function isRecruiterEditingSchemaMissing(message?: string): boolean {
+  const text = (message || '').toLowerCase();
+  return (
+    text.includes("could not find the 'recruiter_editing_at' column") ||
+    text.includes("could not find the 'recruiter_editing_user_id' column") ||
+    text.includes("could not find the 'recruiter_editing_label' column")
+  );
+}
+
 class ApiClient {
   private async currentAuthUser() {
     const { data, error } = await supabase.auth.getUser();
@@ -624,7 +633,21 @@ class ApiClient {
 
     const { error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
     if (error) {
-      throw new Error(error.message);
+      // Backward-compat: ältere DBs ohne recruiter_editing_* Spalten sollen trotzdem speichern können.
+      if (isRecruiterEditingSchemaMissing(error.message)) {
+        const {
+          recruiter_editing_user_id: _dropUser,
+          recruiter_editing_label: _dropLabel,
+          recruiter_editing_at: _dropAt,
+          ...legacyPayload
+        } = payload as any;
+        const { error: retryError } = await supabase.from('profiles').upsert(legacyPayload, { onConflict: 'id' });
+        if (retryError) {
+          throw new Error(retryError.message);
+        }
+      } else {
+        throw new Error(error.message);
+      }
     }
 
     const updated = await this.fetchProfileRow(userId);
