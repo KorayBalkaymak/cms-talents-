@@ -175,7 +175,18 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 cursor-pointer shrink-0" onClick={() => onNavigate('/')}>
-              <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-12 w-auto object-contain" />
+              <div className="relative inline-flex shrink-0">
+                <div className="pointer-events-none absolute -inset-3 rounded-full bg-orange-500/20 blur-lg" aria-hidden />
+                <div className="relative flex h-11 w-11 items-center justify-center rounded-full border border-slate-200/90 bg-white/90 shadow-[0_14px_34px_-24px_rgba(0,0,0,0.7)]">
+                  <div className="relative flex h-7 w-7 items-center justify-center rounded-full bg-white shadow-[0_8px_18px_-14px_rgba(0,0,0,0.55)]">
+                    <img
+                      src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
+                      alt="CMS Talents"
+                      className="h-[85%] w-[85%] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.18)]"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="hidden lg:block flex-1 max-w-xl">
