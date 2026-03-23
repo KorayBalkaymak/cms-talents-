@@ -455,8 +455,19 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       {/* Sidebar - SCALED DOWN */}
       <aside className="w-64 bg-slate-900 text-slate-300 hidden md:flex flex-col">
         <div className="p-6">
-          <div className="flex items-center gap-3 text-white mb-8">
-            <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-12 w-auto object-contain" />
+          <div className="mb-8 flex items-center">
+            <div className="relative inline-flex">
+              <div className="pointer-events-none absolute -inset-4 rounded-full bg-orange-500/25 blur-xl" aria-hidden />
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 shadow-[0_14px_36px_-24px_rgba(0,0,0,0.9)]">
+                <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-[0_8px_20px_-14px_rgba(0,0,0,0.5)]">
+                  <img
+                    src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
+                    alt="CMS Talents"
+                    className="h-[85%] w-[85%] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.2)]"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
           <nav className="space-y-2">
             <div className="flex w-full items-center gap-3 rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-xs font-bold text-orange-500">
@@ -488,7 +499,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         >
           <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-8 w-auto shrink-0 object-contain" />
           <h1 className="min-w-0 flex-1 truncate text-center text-xs font-black uppercase tracking-tight text-white">
-            Dashboard-Ansicht
+            Dashboard Sicht
           </h1>
           <button
             type="button"
@@ -500,7 +511,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         </div>
 
         <header className="relative z-10 flex flex-col gap-3 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 md:h-16 md:flex-row md:items-center md:justify-between md:gap-4 md:py-0">
-          <h1 className="hidden text-xl font-black uppercase tracking-tight text-slate-900 md:block">Dashboard-Ansicht</h1>
+          <h1 className="hidden text-xl font-black uppercase tracking-tight text-slate-900 md:block">Dashboard Sicht</h1>
           <div className="relative w-full min-w-0 md:max-w-sm md:flex-1 lg:max-w-md">
             <input
               type="search"
