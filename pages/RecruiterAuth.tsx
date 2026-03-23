@@ -81,9 +81,6 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
             <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-1">
               Login Recruiter
             </h2>
-            <p className="text-slate-500 text-sm">
-              Bitte melden Sie sich mit Ihrem Supabase-Auth-Account an.
-            </p>
           </div>
 
           {error && (
