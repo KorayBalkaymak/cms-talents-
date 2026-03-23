@@ -121,14 +121,6 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
     }));
   };
 
-  const handleProfileImageUpload = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const result = await documentService.uploadProfileImage(files[0]);
-    if (result.success && result.data) {
-      setFormData(prev => ({ ...prev, profileImageUrl: result.data }));
-    }
-  };
-
   const handleCvUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const result = await documentService.uploadPdf(files[0]);
@@ -331,8 +323,19 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
 
       <header className="relative border-b border-slate-200/80 bg-white shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-0 sm:h-[4.25rem] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <img src="/1adef99a-1986-43bc-acb8-278472ee426c.png" alt="CMS Talents" className="h-12 w-auto object-contain shrink-0" />
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="relative inline-flex shrink-0">
+              <div className="pointer-events-none absolute -inset-3 rounded-full bg-orange-500/20 blur-lg" aria-hidden />
+              <div className="relative flex h-11 w-11 items-center justify-center rounded-full border border-slate-200/90 bg-white/90 shadow-[0_14px_34px_-24px_rgba(0,0,0,0.7)]">
+                <div className="relative flex h-7 w-7 items-center justify-center rounded-full bg-white shadow-[0_8px_18px_-14px_rgba(0,0,0,0.55)]">
+                  <img
+                    src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
+                    alt="CMS Talents"
+                    className="h-[85%] w-[85%] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.18)]"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4">
@@ -421,15 +424,6 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                   className="w-16 h-16 text-lg shadow-md ring-[5px] ring-orange-100 ring-offset-2 ring-offset-white sm:w-32 sm:h-32 sm:text-3xl sm:ring-[10px]"
                   imageUrl={formData.profileImageUrl}
                 />
-                <label className="absolute -bottom-2 -right-2 cursor-pointer rounded-2xl bg-gradient-to-br from-[#101B31] to-slate-900 p-2 text-orange-400 shadow-lg transition-transform hover:scale-105 hover:text-orange-300">
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={(e) => handleProfileImageUpload(e.target.files)}
-                    className="hidden"
-                  />
-                </label>
               </div>
               <div className="relative w-full flex-1 space-y-3 sm:space-y-6">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-6">
