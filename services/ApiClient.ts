@@ -13,6 +13,8 @@ import {
 
 const SESSION_KEY = 'cms_talents_session';
 const LOCAL_INQUIRIES_KEY = 'cms_talents_local_inquiries';
+const EDITING_CLAIM_SET_PREFIX = 'editing_claim:set:';
+const EDITING_CLAIM_CLEAR = 'editing_claim:clear';
 
 const RECRUITER_ROLE_BY_EMAIL: Record<string, UserRole> = {
   'haagen@industries-cms.com': UserRole.ADMIN,
@@ -133,6 +135,54 @@ function isCandidateInquiriesSchemaMissing(message?: string): boolean {
 }
 
 class ApiClient {
+  private async readEditingClaimsFromAudit(candidateUserIds: string[]): Promise<Map<string, { userId: string; label: string; at: string } | null>> {
+    const ids = Array.from(new Set(candidateUserIds.filter(Boolean)));
+    if (!ids.length) return new Map();
+    const { data, error } = await supabase
+      .from('audit_log')
+      .select('action,target_id,timestamp')
+      .in('target_id', ids)
+      .order('timestamp', { ascending: false })
+      .limit(2000);
+    if (error || !data) return new Map();
+
+    const claims = new Map<string, { userId: string; label: string; at: string } | null>();
+    for (const row of data as Array<{ action: string; target_id: string; timestamp: string }>) {
+      if (claims.has(row.target_id)) continue;
+      const action = row.action || '';
+      if (action.startsWith(EDITING_CLAIM_SET_PREFIX)) {
+        const rest = action.slice(EDITING_CLAIM_SET_PREFIX.length);
+        const [userId, encodedLabel] = rest.split(':');
+        claims.set(row.target_id, {
+          userId: userId || '',
+          label: decodeURIComponent(encodedLabel || 'Recruiter'),
+          at: row.timestamp,
+        });
+      } else if (action === EDITING_CLAIM_CLEAR) {
+        claims.set(row.target_id, null);
+      }
+    }
+    return claims;
+  }
+
+  private mergeAuditEditingClaim(
+    c: CandidateProfile,
+    claim: { userId: string; label: string; at: string } | null | undefined
+  ): CandidateProfile {
+    const hasDbClaim =
+      !!c.recruiterEditingUserId &&
+      !!c.recruiterEditingLabel &&
+      !!c.recruiterEditingAt &&
+      !isRecruiterEditingClaimStale(c.recruiterEditingAt);
+    if (hasDbClaim || !claim) return c;
+    return {
+      ...c,
+      recruiterEditingUserId: claim.userId,
+      recruiterEditingLabel: claim.label,
+      recruiterEditingAt: claim.at,
+    };
+  }
+
   private pushLocalInquiry(input: {
     candidateUserId: string;
     contactName: string;
@@ -578,7 +628,9 @@ class ApiClient {
 
     const rows = data as ProfileRow[];
     const docs = await this.loadDocumentIndex(rows.map((row) => row.id));
-    return rows.map((row) => this.profileRowToCandidate(row, docs.get(row.id)));
+    const base = rows.map((row) => this.profileRowToCandidate(row, docs.get(row.id)));
+    const fallbackClaims = await this.readEditingClaimsFromAudit(base.map((c) => c.userId));
+    return base.map((c) => this.mergeAuditEditingClaim(c, fallbackClaims.get(c.userId)));
   }
 
   async getAllCandidates() {
@@ -594,7 +646,9 @@ class ApiClient {
 
     const rows = data as ProfileRow[];
     const docs = await this.loadDocumentIndex(rows.map((row) => row.id));
-    return rows.map((row) => this.profileRowToCandidate(row, docs.get(row.id)));
+    const base = rows.map((row) => this.profileRowToCandidate(row, docs.get(row.id)));
+    const fallbackClaims = await this.readEditingClaimsFromAudit(base.map((c) => c.userId));
+    return base.map((c) => this.mergeAuditEditingClaim(c, fallbackClaims.get(c.userId)));
   }
 
   async getCandidate(userId: string) {
@@ -605,7 +659,9 @@ class ApiClient {
         return null;
       }
       const docs = await this.fetchDocumentRow(userId);
-      return this.profileRowToCandidate(created, docs);
+      const base = this.profileRowToCandidate(created, docs);
+      const fallbackClaims = await this.readEditingClaimsFromAudit([userId]);
+      return this.mergeAuditEditingClaim(base, fallbackClaims.get(userId));
     }
 
     if (row.deleted_at) {
@@ -613,7 +669,9 @@ class ApiClient {
     }
 
     const docs = await this.fetchDocumentRow(userId);
-    return this.profileRowToCandidate(row, docs);
+    const base = this.profileRowToCandidate(row, docs);
+    const fallbackClaims = await this.readEditingClaimsFromAudit([userId]);
+    return this.mergeAuditEditingClaim(base, fallbackClaims.get(userId));
   }
 
   async updateCandidate(userId: string, data: any) {
@@ -770,13 +828,19 @@ class ApiClient {
     }
 
     const now = new Date().toISOString();
+    const label = recruiterClaimLabelFromUser(sessionUser);
 
     if (!active) {
       const row = await this.fetchProfileRow(candidateUserId);
       if (!row || row.deleted_at) {
         throw new Error('Kandidat nicht gefunden.');
       }
-      const isClaimOwner = row.recruiter_editing_user_id === sessionUser.id;
+      let isClaimOwner = row.recruiter_editing_user_id === sessionUser.id;
+      if (!row.recruiter_editing_user_id) {
+        const fallbackClaims = await this.readEditingClaimsFromAudit([candidateUserId]);
+        const fallback = fallbackClaims.get(candidateUserId);
+        isClaimOwner = !!fallback && fallback.userId === sessionUser.id;
+      }
       const isAdmin = sessionUser.role === UserRole.ADMIN;
       if (!isClaimOwner && !isAdmin) {
         throw new Error('Nur der gemeldete Recruiter kann die Bearbeitung beenden.');
@@ -793,12 +857,25 @@ class ApiClient {
         .eq('id', candidateUserId);
 
       if (error) {
-        throw new Error(error.message);
+        if (!isRecruiterEditingSchemaMissing(error.message)) {
+          throw new Error(error.message);
+        }
+      }
+
+      // Fallback (wenn recruiter_editing_* Spalten fehlen): Team-Signal in audit_log speichern.
+      const { error: auditErr } = await supabase.from('audit_log').insert({
+        id: crypto.randomUUID(),
+        action: EDITING_CLAIM_CLEAR,
+        performer_id: sessionUser.id,
+        target_id: candidateUserId,
+        timestamp: now,
+      });
+      if (auditErr) {
+        throw new Error(auditErr.message);
       }
       return;
     }
 
-    const label = recruiterClaimLabelFromUser(sessionUser);
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -811,7 +888,21 @@ class ApiClient {
       .is('deleted_at', null);
 
     if (error) {
-      throw new Error(error.message);
+      if (!isRecruiterEditingSchemaMissing(error.message)) {
+        throw new Error(error.message);
+      }
+    }
+
+    // Fallback (wenn recruiter_editing_* Spalten fehlen): Team-Signal in audit_log speichern.
+    const { error: auditErr } = await supabase.from('audit_log').insert({
+      id: crypto.randomUUID(),
+      action: `${EDITING_CLAIM_SET_PREFIX}${sessionUser.id}:${encodeURIComponent(label)}`,
+      performer_id: sessionUser.id,
+      target_id: candidateUserId,
+      timestamp: now,
+    });
+    if (auditErr) {
+      throw new Error(auditErr.message);
     }
   }
 
