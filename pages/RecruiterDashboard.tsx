@@ -179,14 +179,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     return m;
   }, [candidates]);
 
-  const staleCandidates = useMemo(
-    () =>
-      filtered.filter((c) => {
-        const updatedAtMs = new Date(c.updatedAt).getTime();
-        return Number.isFinite(updatedAtMs) && Date.now() - updatedAtMs >= STALE_CANDIDATE_MS;
-      }),
-    [filtered]
-  );
+  const isCandidateStale = useCallback((cand: CandidateProfile) => {
+    const updatedAtMs = new Date(cand.updatedAt).getTime();
+    return Number.isFinite(updatedAtMs) && Date.now() - updatedAtMs >= STALE_CANDIDATE_MS;
+  }, []);
 
   const handleViewCandidate = async (candidate: CandidateProfile) => {
     setSelectedCandidate(candidate);
@@ -714,26 +710,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </div>
           ) : (
             <>
-              <div className="mb-4 overflow-hidden rounded-2xl border border-amber-200 bg-amber-50 shadow-sm">
-                <div className="flex items-center justify-between border-b border-amber-100 px-4 py-3">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-amber-900">Bearbeitungs-Hinweis</h3>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-700">
-                    {staleCandidates.length} überfällig
-                  </span>
-                </div>
-                {staleCandidates.length === 0 ? (
-                  <div className="px-4 py-3 text-xs font-semibold text-amber-800">Alle Kandidaten wurden in den letzten 7 Tagen bearbeitet.</div>
-                ) : (
-                  <div className="px-4 py-3 text-xs text-amber-900">
-                    {staleCandidates.slice(0, 5).map((cand) => (
-                      <div key={cand.userId} className="py-1 font-semibold">
-                        {(cand.candidateNumber || `${cand.firstName} ${cand.lastName}`)} · zuletzt: {new Date(cand.updatedAt).toLocaleDateString('de-DE')}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
             </>
           )}
 
@@ -800,11 +776,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               <p className="text-xs font-semibold text-slate-500">
                                 {[cand.city?.trim(), `${cand.experienceYears} J. Erfahrung`].filter(Boolean).join(' · ')}
                               </p>
-                              {Date.now() - new Date(cand.updatedAt).getTime() >= STALE_CANDIDATE_MS && (
-                                <p className="mt-1 text-[10px] font-black uppercase tracking-wider text-amber-700">
-                                  Seit 7+ Tagen nicht bearbeitet
-                                </p>
-                              )}
+                              <p className={`mt-1 text-[10px] font-black uppercase tracking-wider ${isCandidateStale(cand) ? 'text-red-700' : 'text-emerald-700'}`}>
+                                {isCandidateStale(cand) ? 'Bearbeiten noetig: seit 7+ Tagen offen' : 'Aktuell bearbeitet'}
+                              </p>
                               <div className="mt-2 flex flex-wrap items-center gap-2">
                                 {statusBadgeBlock(cand)}
                                 <Badge variant={cand.isPublished ? 'green' : 'slate'}>
@@ -833,6 +807,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Exp</th>
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Live</th>
+                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Hinweis</th>
                             <th className="min-w-[150px] px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
                               Team
                               <span className="mt-0.5 block font-bold normal-case tracking-normal text-[9px] text-slate-400/90">Wer bearbeitet?</span>
@@ -851,9 +826,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                       {cand.candidateNumber || `${cand.firstName} ${cand.lastName}`}
                                     </div>
                                     <div className="text-[10px] font-bold uppercase text-slate-400">{cand.city}</div>
-                                    {Date.now() - new Date(cand.updatedAt).getTime() >= STALE_CANDIDATE_MS && (
-                                      <div className="text-[10px] font-black uppercase text-amber-700">7+ Tage ohne Bearbeitung</div>
-                                    )}
                                   </div>
                                 </div>
                               </td>
@@ -863,6 +835,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               </td>
                               <td className="px-5 py-3">
                                 <Badge variant={cand.isPublished ? 'green' : 'slate'}>{cand.isPublished ? 'Ja' : 'Nein'}</Badge>
+                              </td>
+                              <td className="px-5 py-3">
+                                <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${isCandidateStale(cand) ? 'bg-red-50 text-red-700 ring-1 ring-red-200' : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'}`}>
+                                  {isCandidateStale(cand) ? 'Bearbeiten noetig' : 'OK'}
+                                </span>
                               </td>
                               <td className="align-top px-5 py-3">{renderTeamControls(cand, false)}</td>
                               <td className="px-5 py-3 text-right">{renderPublishAndManage(cand, false)}</td>
