@@ -20,6 +20,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
   const [candidateDocs, setCandidateDocs] = useState<CandidateDocuments | null>(null);
+  const [isLoadingDocs, setIsLoadingDocs] = useState(false);
   const [modalTab, setModalTab] = useState('profile');
   const [isSavingDocs, setIsSavingDocs] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -182,9 +183,27 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     setModalTab('profile');
     setClaimError(null);
     setDocError(null);
-    const docs = await candidateService.getDocuments(candidate.userId);
-    setCandidateDocs(docs || null);
+    // Performance: große Dokumentdaten (Base64) erst bei Bedarf im Dokumente-Tab laden.
+    setCandidateDocs(null);
   };
+
+  useEffect(() => {
+    if (!selectedCandidate || modalTab !== 'documents' || candidateDocs) return;
+    let cancelled = false;
+    const loadDocs = async () => {
+      setIsLoadingDocs(true);
+      try {
+        const docs = await candidateService.getDocuments(selectedCandidate.userId);
+        if (!cancelled) setCandidateDocs(docs || null);
+      } finally {
+        if (!cancelled) setIsLoadingDocs(false);
+      }
+    };
+    void loadDocs();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCandidate, modalTab, candidateDocs]);
 
   const canShowPublishFor = (c: CandidateProfile | null) => {
     if (!c) return false;
@@ -1031,6 +1050,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   {/* --- DOCUMENTS TAB (With Preview Modal) --- */}
                   {modalTab === 'documents' && (
                     <div className="space-y-4">
+                      {isLoadingDocs && (
+                        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600">
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-orange-500" />
+                          Dokumente werden geladen...
+                        </div>
+                      )}
                       {/* CV */}
                       <div>
                         <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Lebenslauf</h4>
