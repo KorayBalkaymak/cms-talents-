@@ -12,6 +12,7 @@ import {
 } from '../types';
 
 const SESSION_KEY = 'cms_talents_session';
+const LOCAL_INQUIRIES_KEY = 'cms_talents_local_inquiries';
 
 const RECRUITER_ROLE_BY_EMAIL: Record<string, UserRole> = {
   'haagen@industries-cms.com': UserRole.ADMIN,
@@ -132,6 +133,42 @@ function isCandidateInquiriesSchemaMissing(message?: string): boolean {
 }
 
 class ApiClient {
+  private pushLocalInquiry(input: {
+    candidateUserId: string;
+    contactName: string;
+    contactEmail: string;
+    contactPhone: string;
+    message?: string;
+  }): void {
+    if (typeof window === 'undefined') return;
+    const next: CandidateInquiry = {
+      id: `local-${crypto.randomUUID()}`,
+      candidateUserId: input.candidateUserId,
+      contactName: input.contactName.trim(),
+      contactEmail: input.contactEmail.trim(),
+      contactPhone: input.contactPhone.trim(),
+      message: input.message?.trim() || undefined,
+      createdAt: new Date().toISOString(),
+    };
+    try {
+      const raw = window.localStorage.getItem(LOCAL_INQUIRIES_KEY);
+      const parsed = raw ? (JSON.parse(raw) as CandidateInquiry[]) : [];
+      window.localStorage.setItem(LOCAL_INQUIRIES_KEY, JSON.stringify([next, ...parsed].slice(0, 300)));
+    } catch {
+      // ignore local fallback errors
+    }
+  }
+
+  private readLocalInquiries(): CandidateInquiry[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.localStorage.getItem(LOCAL_INQUIRIES_KEY);
+      return raw ? ((JSON.parse(raw) as CandidateInquiry[]) || []) : [];
+    } catch {
+      return [];
+    }
+  }
+
   private fallbackCandidateNumber(userId: string): string {
     return `KT-${userId.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
   }
@@ -1023,9 +1060,9 @@ class ApiClient {
     const { error } = await supabase.from('candidate_inquiries').insert(payload);
     if (error) {
       if (isCandidateInquiriesSchemaMissing(error.message)) {
-        throw new Error(
-          'Interessenformular ist noch nicht in der Datenbank aktiviert. Bitte Migration "20260324000000_candidate_inquiries.sql" in Supabase ausführen.'
-        );
+        // Fallback: Anfrage lokal speichern, damit sie in der Dashboard-Sicht sichtbar bleibt.
+        this.pushLocalInquiry(input);
+        return;
       }
       throw new Error(error.message);
     }
@@ -1036,6 +1073,7 @@ class ApiClient {
     if (!current || !isRecruiterRole(current.role)) {
       return [];
     }
+    const local = this.readLocalInquiries();
     const { data, error } = await supabase
       .from('candidate_inquiries')
       .select('*')
@@ -1043,9 +1081,16 @@ class ApiClient {
       .limit(300);
 
     if (error || !data) {
-      return [];
+      if (isCandidateInquiriesSchemaMissing(error?.message)) {
+        return local;
+      }
+      return local;
     }
-    return (data as InquiryRow[]).map((row) => this.inquiryRowToInquiry(row));
+    const remote = (data as InquiryRow[]).map((row) => this.inquiryRowToInquiry(row));
+    const merged = [...local, ...remote].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    return merged.slice(0, 300);
   }
 }
 
