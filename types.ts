@@ -45,6 +45,7 @@ export interface CandidateProfile {
   isPublished: boolean;     // REQUIRED - Default: false
   createdAt: string;        // REQUIRED - ISO timestamp
   updatedAt: string;        // REQUIRED - ISO timestamp
+  candidateNumber?: string; // OPTIONAL - feste Kandidaten-ID (z. B. KT-1A2B3C4D)
 
   // --- REQUIRED PERSONAL INFO ---
   firstName: string;        // REQUIRED - Pflichtfeld
@@ -150,8 +151,6 @@ export interface MatchResult {
 // VALIDATION HELPER - Required fields for publishing
 // =====================================================
 export const REQUIRED_PROFILE_FIELDS = [
-  'firstName',
-  'lastName',
   'city',
   'country',
   'industry',
@@ -162,8 +161,6 @@ export const REQUIRED_PROFILE_FIELDS = [
 export function validateProfileForPublishing(profile: CandidateProfile): string[] {
   const missing: string[] = [];
 
-  if (!profile.firstName?.trim()) missing.push('Vorname');
-  if (!profile.lastName?.trim()) missing.push('Nachname');
   if (!profile.city?.trim()) missing.push('Stadt');
   if (!profile.country?.trim()) missing.push('Land');
   if (!profile.industry?.trim()) missing.push('Branche');

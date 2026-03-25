@@ -54,6 +54,7 @@ type ProfileRow = {
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
+  candidate_number?: string | null;
   recruiter_editing_user_id?: string | null;
   recruiter_editing_label?: string | null;
   recruiter_editing_at?: string | null;
@@ -116,7 +117,31 @@ function isRecruiterEditingSchemaMissing(message?: string): boolean {
   );
 }
 
+function isCandidateNumberSchemaMissing(message?: string): boolean {
+  const text = (message || '').toLowerCase();
+  return text.includes("could not find the 'candidate_number' column");
+}
+
 class ApiClient {
+  private fallbackCandidateNumber(userId: string): string {
+    return `KT-${userId.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+  }
+
+  private async generateCandidateNumber(): Promise<string> {
+    for (let i = 0; i < 8; i++) {
+      const candidateNumber = `KT-${crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('candidate_number', candidateNumber)
+        .limit(1);
+      if (!error && (!data || data.length === 0)) {
+        return candidateNumber;
+      }
+    }
+    return `KT-${Date.now().toString(36).toUpperCase()}`;
+  }
+
   private async currentAuthUser() {
     const { data, error } = await supabase.auth.getUser();
     if (error) {
@@ -197,6 +222,7 @@ class ApiClient {
       isSubmitted: !!row.is_submitted,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
+      candidateNumber: row.candidate_number || this.fallbackCandidateNumber(row.id),
       firstName: row.first_name || '',
       lastName: row.last_name || '',
       city: row.city || '',
@@ -250,12 +276,13 @@ class ApiClient {
 
     const role = recruiterRoleFromEmail(authUser.email);
     const now = new Date().toISOString();
+    const candidateNumber = await this.generateCandidateNumber();
     const payload = {
       id: userId,
       email: authUser.email || '',
       role,
-      first_name: '',
-      last_name: '',
+      first_name: 'Kandidat',
+      last_name: candidateNumber,
       city: '',
       country: '',
       address: null,
@@ -279,6 +306,7 @@ class ApiClient {
       deleted_at: null,
       created_at: now,
       updated_at: now,
+      candidate_number: candidateNumber,
       recruiter_editing_user_id: null,
       recruiter_editing_label: null,
       recruiter_editing_at: null,
@@ -620,12 +648,14 @@ class ApiClient {
     }
 
     const now = new Date().toISOString();
+    const existingCandidateNumber = current?.candidate_number || this.fallbackCandidateNumber(userId);
     const payload = {
       id: userId,
       email: current?.email || authUser?.email || '',
       role: current?.role || recruiterRoleFromEmail(authUser?.email ?? null),
-      first_name: data.firstName || current?.first_name || '',
-      last_name: data.lastName || current?.last_name || '',
+      // Kandidat kann Name nicht frei setzen; wir halten einen neutralen Namen + feste Kandidatennummer.
+      first_name: isOwnerCandidate ? (current?.first_name || 'Kandidat') : (data.firstName || current?.first_name || ''),
+      last_name: isOwnerCandidate ? (current?.last_name || existingCandidateNumber) : (data.lastName || current?.last_name || ''),
       city: data.city || current?.city || '',
       country: data.country || current?.country || '',
       address: data.address ?? current?.address ?? null,
@@ -649,6 +679,7 @@ class ApiClient {
       deleted_at: current?.deleted_at ?? null,
       created_at: current?.created_at || now,
       updated_at: now,
+      candidate_number: existingCandidateNumber,
       recruiter_editing_user_id: nextEditingUserId,
       recruiter_editing_label: nextEditingLabel,
       recruiter_editing_at: nextEditingAt,
@@ -657,8 +688,9 @@ class ApiClient {
     const { error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
     if (error) {
       // Backward-compat: ältere DBs ohne recruiter_editing_* Spalten sollen trotzdem speichern können.
-      if (isRecruiterEditingSchemaMissing(error.message)) {
+      if (isRecruiterEditingSchemaMissing(error.message) || isCandidateNumberSchemaMissing(error.message)) {
         const {
+          candidate_number: _dropCandidateNumber,
           recruiter_editing_user_id: _dropUser,
           recruiter_editing_label: _dropLabel,
           recruiter_editing_at: _dropAt,

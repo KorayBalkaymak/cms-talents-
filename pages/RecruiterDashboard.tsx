@@ -16,8 +16,11 @@ interface RecruiterDashboardProps {
   onLogout: () => void;
 }
 
+const STALE_CANDIDATE_MS = 7 * 24 * 60 * 60 * 1000;
+
 const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidates, isInitialLoading = false, onAdminAction, onUpdateCandidate, onRefreshCandidates, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeView, setActiveView] = useState<'talents' | 'inquiries'>('talents');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
   const [candidateDocs, setCandidateDocs] = useState<CandidateDocuments | null>(null);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
@@ -127,7 +130,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       })
       .filter((c) =>
         !term ||
-        `${c.firstName} ${c.lastName}`.toLowerCase().includes(term) ||
+        `${c.firstName} ${c.lastName} ${c.candidateNumber || ''}`.toLowerCase().includes(term) ||
         c.industry.toLowerCase().includes(term) ||
         c.skills.some((s) => s.toLowerCase().includes(term))
       );
@@ -140,8 +143,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         const bSub = !!b.isSubmitted;
         if (aSub && !bSub) return -1;
         if (bSub && !aSub) return 1;
-        return `${a.firstName} ${a.lastName}`.localeCompare(
-          `${b.firstName} ${b.lastName}`,
+        return `${a.candidateNumber || ''} ${a.firstName} ${a.lastName}`.localeCompare(
+          `${b.candidateNumber || ''} ${b.firstName} ${b.lastName}`,
           'de',
           { sensitivity: 'base' }
         );
@@ -171,10 +174,19 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const candidateNameById = useMemo(() => {
     const m = new Map<string, string>();
     for (const c of candidates) {
-      m.set(c.userId, `${c.firstName} ${c.lastName}`.trim() || c.userId);
+      m.set(c.userId, c.candidateNumber || `${c.firstName} ${c.lastName}`.trim() || c.userId);
     }
     return m;
   }, [candidates]);
+
+  const staleCandidates = useMemo(
+    () =>
+      filtered.filter((c) => {
+        const updatedAtMs = new Date(c.updatedAt).getTime();
+        return Number.isFinite(updatedAtMs) && Date.now() - updatedAtMs >= STALE_CANDIDATE_MS;
+      }),
+    [filtered]
+  );
 
   const handleViewCandidate = async (candidate: CandidateProfile) => {
     setSelectedCandidate(candidate);
@@ -523,12 +535,34 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </div>
           </div>
           <nav className="space-y-2">
-            <div className="flex w-full items-center gap-3 rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-xs font-bold text-orange-500">
+            <button
+              type="button"
+              onClick={() => setActiveView('talents')}
+              className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-xs font-bold transition-colors ${
+                activeView === 'talents'
+                  ? 'border-slate-700 bg-slate-800 text-orange-500'
+                  : 'border-transparent text-slate-300 hover:bg-slate-800/60'
+              }`}
+            >
               <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
                 <path strokeWidth="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
               TALENTS
-            </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('inquiries')}
+              className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-xs font-bold transition-colors ${
+                activeView === 'inquiries'
+                  ? 'border-slate-700 bg-slate-800 text-orange-500'
+                  : 'border-transparent text-slate-300 hover:bg-slate-800/60'
+              }`}
+            >
+              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path strokeWidth="2.2" d="M8 10h8M8 14h5m-7 7h12a2 2 0 002-2V7l-4-4H6a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              EXTERNE INTERESSEN
+            </button>
           </nav>
         </div>
         <div className="mt-auto p-6 border-t border-slate-800 bg-slate-900/50">
@@ -601,36 +635,110 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         <div
           className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-slate-50/50 p-3 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:p-6 sm:pb-8"
         >
-          <div className="mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">Externe Interessen</h3>
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                {isLoadingInquiries ? 'Lädt…' : `${inquiries.length} Anfrage${inquiries.length === 1 ? '' : 'n'}`}
-              </span>
-            </div>
-            {inquiries.length === 0 ? (
-              <div className="px-4 py-3 text-xs font-medium text-slate-500">
-                Noch keine Interessenanfragen vorhanden.
-              </div>
-            ) : (
-              <div className="max-h-64 overflow-auto divide-y divide-slate-100">
-                {inquiries.slice(0, 50).map((inq) => (
-                  <div key={inq.id} className="px-4 py-3 text-xs text-slate-700">
-                    <p className="font-black text-slate-900">
-                      {candidateNameById.get(inq.candidateUserId) || inq.candidateUserId}
-                    </p>
-                    <p className="mt-1 font-semibold">
-                      {inq.contactName} · {inq.contactEmail} · {inq.contactPhone}
-                    </p>
-                    {inq.message && <p className="mt-1 text-slate-600">{inq.message}</p>}
-                    <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                      {new Date(inq.createdAt).toLocaleString('de-DE')}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
+          <div className="mb-4 grid grid-cols-2 gap-2 md:hidden">
+            <Button
+              type="button"
+              variant={activeView === 'talents' ? 'primary' : 'outline'}
+              className="h-10 text-[11px] font-black"
+              onClick={() => setActiveView('talents')}
+            >
+              Talents
+            </Button>
+            <Button
+              type="button"
+              variant={activeView === 'inquiries' ? 'primary' : 'outline'}
+              className="h-10 text-[11px] font-black"
+              onClick={() => setActiveView('inquiries')}
+            >
+              Externe Interessen
+            </Button>
           </div>
+
+          {activeView === 'inquiries' ? (
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">Externe Interessen</h3>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  {isLoadingInquiries ? 'Lädt…' : `${inquiries.length} Anfrage${inquiries.length === 1 ? '' : 'n'}`}
+                </span>
+              </div>
+              {inquiries.length === 0 ? (
+                <div className="px-4 py-3 text-xs font-medium text-slate-500">
+                  Noch keine Interessenanfragen vorhanden.
+                </div>
+              ) : (
+                <div className="max-h-[70vh] overflow-auto divide-y divide-slate-100">
+                  {inquiries.slice(0, 200).map((inq) => (
+                    <div key={inq.id} className="px-4 py-3 text-xs text-slate-700">
+                      <p className="font-black text-slate-900">
+                        {candidateNameById.get(inq.candidateUserId) || inq.candidateUserId}
+                      </p>
+                      <p className="mt-1 font-semibold">
+                        {inq.contactName} · {inq.contactEmail} · {inq.contactPhone}
+                      </p>
+                      {inq.message && <p className="mt-1 text-slate-600">{inq.message}</p>}
+                      <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                        {new Date(inq.createdAt).toLocaleString('de-DE')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="mb-4 overflow-hidden rounded-2xl border border-amber-200 bg-amber-50 shadow-sm">
+                <div className="flex items-center justify-between border-b border-amber-100 px-4 py-3">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-amber-900">Bearbeitungs-Hinweis</h3>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-700">
+                    {staleCandidates.length} überfällig
+                  </span>
+                </div>
+                {staleCandidates.length === 0 ? (
+                  <div className="px-4 py-3 text-xs font-semibold text-amber-800">Alle Kandidaten wurden in den letzten 7 Tagen bearbeitet.</div>
+                ) : (
+                  <div className="px-4 py-3 text-xs text-amber-900">
+                    {staleCandidates.slice(0, 5).map((cand) => (
+                      <div key={cand.userId} className="py-1 font-semibold">
+                        {(cand.candidateNumber || `${cand.firstName} ${cand.lastName}`)} · zuletzt: {new Date(cand.updatedAt).toLocaleDateString('de-DE')}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">Externe Interessen</h3>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    {isLoadingInquiries ? 'Lädt…' : `${inquiries.length} Anfrage${inquiries.length === 1 ? '' : 'n'}`}
+                  </span>
+                </div>
+                {inquiries.length === 0 ? (
+                  <div className="px-4 py-3 text-xs font-medium text-slate-500">
+                    Noch keine Interessenanfragen vorhanden.
+                  </div>
+                ) : (
+                  <div className="max-h-64 overflow-auto divide-y divide-slate-100">
+                    {inquiries.slice(0, 50).map((inq) => (
+                      <div key={inq.id} className="px-4 py-3 text-xs text-slate-700">
+                        <p className="font-black text-slate-900">
+                          {candidateNameById.get(inq.candidateUserId) || inq.candidateUserId}
+                        </p>
+                        <p className="mt-1 font-semibold">
+                          {inq.contactName} · {inq.contactEmail} · {inq.contactPhone}
+                        </p>
+                        {inq.message && <p className="mt-1 text-slate-600">{inq.message}</p>}
+                        <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                          {new Date(inq.createdAt).toLocaleString('de-DE')}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
           {claimError && (
             <div className="mb-4 flex flex-col gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[11px] font-bold text-red-800 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
@@ -688,11 +796,16 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             <Avatar seed={cand.firstName + cand.lastName} size="sm" imageUrl={cand.profileImageUrl} />
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-bold text-slate-900">
-                                {cand.firstName} {cand.lastName}
+                                {cand.candidateNumber || `${cand.firstName} ${cand.lastName}`}
                               </p>
                               <p className="text-xs font-semibold text-slate-500">
                                 {[cand.city?.trim(), `${cand.experienceYears} J. Erfahrung`].filter(Boolean).join(' · ')}
                               </p>
+                              {Date.now() - new Date(cand.updatedAt).getTime() >= STALE_CANDIDATE_MS && (
+                                <p className="mt-1 text-[10px] font-black uppercase tracking-wider text-amber-700">
+                                  Seit 7+ Tagen nicht bearbeitet
+                                </p>
+                              )}
                               <div className="mt-2 flex flex-wrap items-center gap-2">
                                 {statusBadgeBlock(cand)}
                                 <Badge variant={cand.isPublished ? 'green' : 'slate'}>
@@ -736,9 +849,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                   <Avatar seed={cand.firstName + cand.lastName} size="sm" imageUrl={cand.profileImageUrl} />
                                   <div>
                                     <div className="text-sm font-bold text-slate-900">
-                                      {cand.firstName} {cand.lastName}
+                                      {cand.candidateNumber || `${cand.firstName} ${cand.lastName}`}
                                     </div>
                                     <div className="text-[10px] font-bold uppercase text-slate-400">{cand.city}</div>
+                                    {Date.now() - new Date(cand.updatedAt).getTime() >= STALE_CANDIDATE_MS && (
+                                      <div className="text-[10px] font-black uppercase text-amber-700">7+ Tage ohne Bearbeitung</div>
+                                    )}
                                   </div>
                                 </div>
                               </td>
@@ -820,9 +936,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               })()}
               {/* Header */}
               <div className="flex items-center gap-4 p-4 bg-slate-900 rounded-2xl text-white">
-                <Avatar seed={selectedCandidate.firstName} size="md" imageUrl={selectedCandidate.profileImageUrl} />
+                <Avatar seed={selectedCandidate.candidateNumber || selectedCandidate.firstName} size="md" imageUrl={selectedCandidate.profileImageUrl} />
                 <div className="flex-1 leading-tight">
-                  <h3 className="text-lg font-black">{selectedCandidate.firstName} {selectedCandidate.lastName}</h3>
+                  <h3 className="text-lg font-black">{selectedCandidate.candidateNumber || `${selectedCandidate.firstName} ${selectedCandidate.lastName}`}</h3>
                   <p className="text-orange-500 font-bold uppercase text-[10px] tracking-wider">{selectedCandidate.industry}</p>
                 </div>
                 {!isEditing && canShowPublishFor(selectedCandidate) && (
