@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { CandidateProfile, CandidateStatus, CandidateDocuments, SocialLink, validateProfileForPublishing, validateDocumentsForRecruiterSubmit, canPublishProfile } from '../types';
+import { CandidateProfile, CandidateStatus, CandidateDocuments, validateProfileForPublishing, validateDocumentsForRecruiterSubmit, canPublishProfile } from '../types';
 import { Button, Input, Select, Avatar, Textarea, FileUpload } from '../components/UI';
 import { INDUSTRIES, AVAILABILITY_OPTIONS, BOOSTER_KEYWORD_CATEGORIES } from '../constants';
 import { documentService } from '../services/DocumentService';
@@ -46,7 +46,6 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
     qualifications: []
   });
   const [newSkill, setNewSkill] = useState('');
-  const [newLink, setNewLink] = useState({ label: '', url: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [showPublishWarning, setShowPublishWarning] = useState(false);
@@ -107,23 +106,6 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
       boostedKeywords: prev.boostedKeywords.includes(keyword)
         ? prev.boostedKeywords.filter(k => k !== keyword)
         : [...prev.boostedKeywords, keyword]
-    }));
-  };
-
-  const handleAddLink = () => {
-    if (newLink.label && newLink.url) {
-      setFormData(prev => ({
-        ...prev,
-        socialLinks: [...prev.socialLinks, { ...newLink }]
-      }));
-      setNewLink({ label: '', url: '' });
-    }
-  };
-
-  const removeLink = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      socialLinks: prev.socialLinks.filter((_, i) => i !== index)
     }));
   };
 
@@ -710,71 +692,6 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
-
-          {/* Social Links Section */}
-          <section className={`${PROFILE_CARD} p-5 sm:p-8 md:p-10`} style={SECTION_RENDER_HINT}>
-            <ProfileCardGlow />
-            <h3 className="relative mb-6 flex flex-wrap items-center gap-3 text-base font-black tracking-tight text-slate-900 sm:mb-8 sm:text-xl">
-              <span className="h-8 w-1.5 rounded-full bg-gradient-to-b from-orange-500 via-amber-500 to-orange-600 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />
-              SOCIAL LINKS{' '}
-              <span className="text-sm font-bold normal-case tracking-normal text-slate-500">(optional)</span>
-            </h3>
-
-            {/* Existing links */}
-            {formData.socialLinks.length > 0 && (
-              <div className="relative mb-4 space-y-2 sm:mb-6 sm:space-y-3">
-                {formData.socialLinks.map((link, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-3 rounded-xl border border-orange-200/70 bg-white/90 p-3 sm:gap-4 sm:p-4"
-                  >
-                    <span className="text-sm font-bold text-slate-800">{link.label}:</span>
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 truncate text-orange-700 underline-offset-2 hover:text-orange-900 hover:underline"
-                    >
-                      {link.url}
-                    </a>
-                    <button type="button" onClick={() => removeLink(idx)} className="text-slate-400 hover:text-red-600">
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Add new link */}
-            <div className="relative grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
-              <Select value={newLink.label} onChange={(e) => setNewLink(prev => ({ ...prev, label: e.target.value }))} className="h-9 rounded-xl text-sm sm:h-10">
-                <option value="">Typ wählen...</option>
-                <option value="LinkedIn">LinkedIn</option>
-                <option value="GitHub">GitHub</option>
-                <option value="Portfolio">Portfolio</option>
-                <option value="Website">Website</option>
-                <option value="Xing">Xing</option>
-                <option value="Andere">Andere</option>
-              </Select>
-              <Input
-                placeholder="https://..."
-                value={newLink.url}
-                onChange={(e) => setNewLink(prev => ({ ...prev, url: e.target.value }))}
-                className="h-9 rounded-xl text-sm sm:h-10"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleAddLink}
-                disabled={!newLink.label || !newLink.url}
-                className="h-9 rounded-xl border-orange-200 text-sm text-slate-800 hover:border-orange-400 hover:bg-orange-50 sm:h-10"
-              >
-                Link hinzufügen
-              </Button>
             </div>
           </section>
 
