@@ -121,6 +121,10 @@ class CandidateService {
     availability: string;
     about?: string;
     skills?: string[];
+    boostedKeywords?: string[];
+    cvPdf?: { name: string; data: string };
+    certificates?: { name: string; data: string }[];
+    qualifications?: { name: string; data: string }[];
     isPublished?: boolean;
   }): Promise<CandidateProfile> {
     return await api.createExternalCandidate(input);

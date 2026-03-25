@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useMemo, useDeferredValue, useCallback } from 'react';
 import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, CandidateInquiry, getActiveRecruiterEditing } from '../types';
-import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea } from '../components/UI';
+import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea, FileUpload } from '../components/UI';
 import { candidateService } from '../services/CandidateService';
-import { INDUSTRIES, AVAILABILITY_OPTIONS } from '../constants';
+import { INDUSTRIES, AVAILABILITY_OPTIONS, BOOSTER_KEYWORD_CATEGORIES } from '../constants';
 import { documentService } from '../services/DocumentService';
 
 interface RecruiterDashboardProps {
@@ -45,6 +45,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     about: '',
     skillsRaw: '',
     publishNow: true,
+  });
+  const [externalBoostedKeywords, setExternalBoostedKeywords] = useState<string[]>([]);
+  const [externalDocs, setExternalDocs] = useState<CandidateDocuments>({
+    userId: 'external:new',
+    certificates: [],
+    qualifications: [],
   });
 
   // Document Preview State
@@ -462,6 +468,14 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       setExternalError('Bitte Stadt, Land, Branche und Verfügbarkeit ausfüllen.');
       return;
     }
+    if (!externalDocs.cvPdf?.data || !externalDocs.cvPdf?.name) {
+      setExternalError('Lebenslauf (CV) ist Pflicht.');
+      return;
+    }
+    if (!externalDocs.qualifications.length) {
+      setExternalError('Mindestens eine Qualifikation ist Pflicht.');
+      return;
+    }
     try {
       setIsCreatingExternal(true);
       const skills = externalForm.skillsRaw
@@ -477,6 +491,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         availability: externalForm.availability,
         about: externalForm.about.trim() || undefined,
         skills,
+        boostedKeywords: externalBoostedKeywords,
+        cvPdf: externalDocs.cvPdf,
+        certificates: externalDocs.certificates,
+        qualifications: externalDocs.qualifications,
         isPublished: externalForm.publishNow,
       });
       if (onRefreshCandidates) await onRefreshCandidates();
@@ -491,11 +509,43 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         skillsRaw: '',
         experienceYears: 0,
       }));
+      setExternalBoostedKeywords([]);
+      setExternalDocs({
+        userId: 'external:new',
+        certificates: [],
+        qualifications: [],
+      });
     } catch (e: any) {
       setExternalError(e?.message || 'Externer Kandidat konnte nicht erstellt werden.');
     } finally {
       setIsCreatingExternal(false);
     }
+  };
+
+  const toggleExternalKeyword = (keyword: string) => {
+    setExternalBoostedKeywords((prev) =>
+      prev.includes(keyword) ? prev.filter((k) => k !== keyword) : [...prev, keyword]
+    );
+  };
+
+  const handleExternalCvUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const result = await documentService.uploadPdf(files[0]);
+    if (result.success && result.data && result.name) {
+      setExternalDocs((prev) => ({ ...prev, cvPdf: { name: result.name!, data: result.data! } }));
+    }
+  };
+
+  const handleExternalCertificatesUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const results = await documentService.uploadMultiplePdfs(files);
+    setExternalDocs((prev) => ({ ...prev, certificates: [...prev.certificates, ...results] }));
+  };
+
+  const handleExternalQualificationsUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const results = await documentService.uploadMultiplePdfs(files);
+    setExternalDocs((prev) => ({ ...prev, qualifications: [...prev.qualifications, ...results] }));
   };
 
   const renderTeamControls = useCallback((cand: CandidateProfile, fullWidth = false) => {
@@ -860,6 +910,61 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 </div>
                 <Input label="Skills (kommagetrennt)" value={externalForm.skillsRaw} onChange={(e) => setExternalForm((p) => ({ ...p, skillsRaw: e.target.value }))} placeholder="React, TypeScript, Sales" />
                 <Textarea label="Über den Kandidaten (optional)" value={externalForm.about} onChange={(e) => setExternalForm((p) => ({ ...p, about: e.target.value }))} />
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-500">Keywords auswählen</p>
+                  <div className="space-y-3">
+                    {BOOSTER_KEYWORD_CATEGORIES.map((cat) => (
+                      <div key={cat.title}>
+                        <p className="mb-1 text-xs font-black text-slate-700">{cat.title}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {cat.keywords.map((kw) => {
+                            const active = externalBoostedKeywords.includes(kw);
+                            return (
+                              <button
+                                key={`${cat.title}-${kw}`}
+                                type="button"
+                                onClick={() => toggleExternalKeyword(kw)}
+                                className={`rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${active ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100'}`}
+                              >
+                                {kw}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <FileUpload
+                    label="Lebenslauf (Pflicht)"
+                    required
+                    accept="application/pdf"
+                    onChange={handleExternalCvUpload}
+                    files={externalDocs.cvPdf ? [{ name: externalDocs.cvPdf.name }] : []}
+                    onRemove={() => setExternalDocs((prev) => ({ ...prev, cvPdf: undefined }))}
+                    helperText="PDF, max 10MB"
+                  />
+                  <FileUpload
+                    label="Qualifikationen (Pflicht)"
+                    required
+                    accept="application/pdf"
+                    multiple
+                    onChange={handleExternalQualificationsUpload}
+                    files={externalDocs.qualifications}
+                    onRemove={(idx) => setExternalDocs((prev) => ({ ...prev, qualifications: prev.qualifications.filter((_, i) => i !== idx) }))}
+                    helperText="Mind. 1 PDF"
+                  />
+                  <FileUpload
+                    label="Zertifikate (optional)"
+                    accept="application/pdf"
+                    multiple
+                    onChange={handleExternalCertificatesUpload}
+                    files={externalDocs.certificates}
+                    onRemove={(idx) => setExternalDocs((prev) => ({ ...prev, certificates: prev.certificates.filter((_, i) => i !== idx) }))}
+                    helperText="Optional"
+                  />
+                </div>
                 <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-700">
                   <input type="checkbox" checked={externalForm.publishNow} onChange={(e) => setExternalForm((p) => ({ ...p, publishNow: e.target.checked }))} />
                   Sofort für Marktplatz freigeben

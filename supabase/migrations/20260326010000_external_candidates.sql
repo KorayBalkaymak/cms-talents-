@@ -8,6 +8,10 @@ create table if not exists public.external_candidates (
   availability text not null default '',
   about text,
   skills jsonb not null default '[]'::jsonb,
+  boosted_keywords jsonb not null default '[]'::jsonb,
+  cv_pdf jsonb,
+  certificates jsonb not null default '[]'::jsonb,
+  qualifications jsonb not null default '[]'::jsonb,
   is_published boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

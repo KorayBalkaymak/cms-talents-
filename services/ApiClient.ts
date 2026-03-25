@@ -92,6 +92,10 @@ type ExternalCandidateRow = {
   availability: string;
   about: string | null;
   skills: string[] | null;
+  boosted_keywords: string[] | null;
+  cv_pdf: { name: string; data: string } | null;
+  certificates: { name: string; data: string }[] | null;
+  qualifications: { name: string; data: string }[] | null;
   is_published: boolean;
   created_at: string;
   updated_at: string;
@@ -171,8 +175,13 @@ class ApiClient {
       availability: row.availability || '',
       about: row.about || undefined,
       skills: row.skills || [],
-      boostedKeywords: [],
+      boostedKeywords: row.boosted_keywords || [],
       socialLinks: [],
+      documents: [
+        ...(row.cv_pdf?.name ? [{ type: 'cv', name: row.cv_pdf.name }] : []),
+        ...((row.certificates || []).filter((d) => !!d?.name).map((d) => ({ type: 'certificate', name: d.name }))),
+        ...((row.qualifications || []).filter((d) => !!d?.name).map((d) => ({ type: 'qualification', name: d.name }))),
+      ],
     };
   }
 
@@ -1129,6 +1138,27 @@ class ApiClient {
   }
 
   async getDocuments(userId: string): Promise<CandidateDocuments | undefined> {
+    if (userId.startsWith('external:')) {
+      const externalId = userId.slice('external:'.length);
+      const { data } = await supabase
+        .from('external_candidates')
+        .select('cv_pdf,certificates,qualifications')
+        .eq('id', externalId)
+        .maybeSingle();
+      if (data) {
+        const row = data as {
+          cv_pdf?: { name: string; data: string } | null;
+          certificates?: { name: string; data: string }[] | null;
+          qualifications?: { name: string; data: string }[] | null;
+        };
+        return {
+          userId,
+          cvPdf: row.cv_pdf || undefined,
+          certificates: row.certificates || [],
+          qualifications: row.qualifications || [],
+        };
+      }
+    }
     const row = await this.fetchDocumentRow(userId);
     return row ? this.documentRowToDocuments(row) : {
       userId,
@@ -1277,6 +1307,10 @@ class ApiClient {
     availability: string;
     about?: string;
     skills?: string[];
+    boostedKeywords?: string[];
+    cvPdf?: { name: string; data: string };
+    certificates?: { name: string; data: string }[];
+    qualifications?: { name: string; data: string }[];
     isPublished?: boolean;
   }): Promise<CandidateProfile> {
     const now = new Date().toISOString();
@@ -1291,6 +1325,10 @@ class ApiClient {
       availability: input.availability.trim(),
       about: input.about?.trim() || null,
       skills: (input.skills || []).filter(Boolean),
+      boosted_keywords: (input.boostedKeywords || []).filter(Boolean),
+      cv_pdf: input.cvPdf || null,
+      certificates: input.certificates || [],
+      qualifications: input.qualifications || [],
       is_published: !!input.isPublished,
       created_at: now,
       updated_at: now,
@@ -1306,6 +1344,10 @@ class ApiClient {
       availability: row.availability,
       about: row.about,
       skills: row.skills,
+      boosted_keywords: row.boosted_keywords,
+      cv_pdf: row.cv_pdf,
+      certificates: row.certificates,
+      qualifications: row.qualifications,
       is_published: row.is_published,
       created_at: row.created_at,
       updated_at: row.updated_at,
