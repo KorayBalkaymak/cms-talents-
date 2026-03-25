@@ -184,6 +184,28 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     return Number.isFinite(updatedAtMs) && Date.now() - updatedAtMs >= STALE_CANDIDATE_MS;
   }, []);
 
+  const candidateReviewHint = useCallback((cand: CandidateProfile) => {
+    if (cand.isPublished && cand.status === CandidateStatus.ACTIVE) {
+      return {
+        text: 'Schon bearbeitet und freigegeben',
+        mobileText: 'Schon bearbeitet und freigegeben',
+        className: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
+      };
+    }
+    if (isCandidateStale(cand)) {
+      return {
+        text: 'Bearbeiten noetig',
+        mobileText: 'Bearbeiten noetig: seit 7+ Tagen offen',
+        className: 'bg-red-50 text-red-700 ring-1 ring-red-200',
+      };
+    }
+    return {
+      text: 'In Bearbeitung',
+      mobileText: 'Aktuell bearbeitet',
+      className: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+    };
+  }, [isCandidateStale]);
+
   const handleViewCandidate = async (candidate: CandidateProfile) => {
     setSelectedCandidate(candidate);
     setEditForm(JSON.parse(JSON.stringify(candidate)));
@@ -776,8 +798,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               <p className="text-xs font-semibold text-slate-500">
                                 {[cand.city?.trim(), `${cand.experienceYears} J. Erfahrung`].filter(Boolean).join(' · ')}
                               </p>
-                              <p className={`mt-1 text-[10px] font-black uppercase tracking-wider ${isCandidateStale(cand) ? 'text-red-700' : 'text-emerald-700'}`}>
-                                {isCandidateStale(cand) ? 'Bearbeiten noetig: seit 7+ Tagen offen' : 'Aktuell bearbeitet'}
+                              <p className={`mt-1 text-[10px] font-black uppercase tracking-wider ${candidateReviewHint(cand).className.includes('red-700') ? 'text-red-700' : candidateReviewHint(cand).className.includes('emerald-700') ? 'text-emerald-700' : 'text-amber-700'}`}>
+                                {candidateReviewHint(cand).mobileText}
                               </p>
                               <div className="mt-2 flex flex-wrap items-center gap-2">
                                 {statusBadgeBlock(cand)}
@@ -837,8 +859,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                 <Badge variant={cand.isPublished ? 'green' : 'slate'}>{cand.isPublished ? 'Ja' : 'Nein'}</Badge>
                               </td>
                               <td className="px-5 py-3">
-                                <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${isCandidateStale(cand) ? 'bg-red-50 text-red-700 ring-1 ring-red-200' : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'}`}>
-                                  {isCandidateStale(cand) ? 'Bearbeiten noetig' : 'OK'}
+                                <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${candidateReviewHint(cand).className}`}>
+                                  {candidateReviewHint(cand).text}
                                 </span>
                               </td>
                               <td className="align-top px-5 py-3">{renderTeamControls(cand, false)}</td>
