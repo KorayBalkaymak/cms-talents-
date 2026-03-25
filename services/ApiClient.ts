@@ -13,6 +13,7 @@ import {
 
 const SESSION_KEY = 'cms_talents_session';
 const LOCAL_INQUIRIES_KEY = 'cms_talents_local_inquiries';
+const LOCAL_EXTERNAL_CANDIDATES_KEY = 'cms_talents_local_external_candidates';
 const EDITING_CLAIM_SET_PREFIX = 'editing_claim:set:';
 const EDITING_CLAIM_CLEAR = 'editing_claim:clear';
 
@@ -81,6 +82,21 @@ type InquiryRow = {
   created_at: string;
 };
 
+type ExternalCandidateRow = {
+  id: string;
+  candidate_number: string | null;
+  city: string;
+  country: string;
+  industry: string;
+  experience_years: number;
+  availability: string;
+  about: string | null;
+  skills: string[] | null;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
@@ -135,6 +151,66 @@ function isCandidateInquiriesSchemaMissing(message?: string): boolean {
 }
 
 class ApiClient {
+  private externalRowToCandidate(row: ExternalCandidateRow): CandidateProfile {
+    const number = row.candidate_number || `EXT-${row.id.slice(0, 8).toUpperCase()}`;
+    return {
+      userId: `external:${row.id}`,
+      avatarSeed: number,
+      status: CandidateStatus.ACTIVE,
+      isPublished: !!row.is_published,
+      isSubmitted: false,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      candidateNumber: number,
+      firstName: 'Extern',
+      lastName: number,
+      city: row.city || '',
+      country: row.country || '',
+      industry: row.industry || '',
+      experienceYears: row.experience_years || 0,
+      availability: row.availability || '',
+      about: row.about || undefined,
+      skills: row.skills || [],
+      boostedKeywords: [],
+      socialLinks: [],
+    };
+  }
+
+  private readLocalExternalCandidates(): CandidateProfile[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.localStorage.getItem(LOCAL_EXTERNAL_CANDIDATES_KEY);
+      return raw ? ((JSON.parse(raw) as CandidateProfile[]) || []) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private writeLocalExternalCandidates(list: CandidateProfile[]): void {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(LOCAL_EXTERNAL_CANDIDATES_KEY, JSON.stringify(list.slice(0, 300)));
+    } catch {
+      // ignore local storage errors
+    }
+  }
+
+  private async loadExternalCandidatesRemote(): Promise<CandidateProfile[] | null> {
+    const { data, error } = await supabase
+      .from('external_candidates')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(300);
+    if (error || !data) return null;
+    return (data as ExternalCandidateRow[]).map((r) => this.externalRowToCandidate(r));
+  }
+
+  private mergeUniqueCandidates(primary: CandidateProfile[], extra: CandidateProfile[]): CandidateProfile[] {
+    const map = new Map<string, CandidateProfile>();
+    for (const c of primary) map.set(c.userId, c);
+    for (const c of extra) map.set(c.userId, c);
+    return Array.from(map.values());
+  }
   private async readEditingClaimsFromAudit(candidateUserIds: string[]): Promise<Map<string, { userId: string; label: string; at: string } | null>> {
     const ids = Array.from(new Set(candidateUserIds.filter(Boolean)));
     if (!ids.length) return new Map();
@@ -630,7 +706,12 @@ class ApiClient {
     const docs = await this.loadDocumentIndex(rows.map((row) => row.id));
     const base = rows.map((row) => this.profileRowToCandidate(row, docs.get(row.id)));
     const fallbackClaims = await this.readEditingClaimsFromAudit(base.map((c) => c.userId));
-    return base.map((c) => this.mergeAuditEditingClaim(c, fallbackClaims.get(c.userId)));
+    const mergedBase = base.map((c) => this.mergeAuditEditingClaim(c, fallbackClaims.get(c.userId)));
+    const remoteExternal = await this.loadExternalCandidatesRemote();
+    const external = (remoteExternal || this.readLocalExternalCandidates()).filter(
+      (c) => c.isPublished && c.status === CandidateStatus.ACTIVE
+    );
+    return this.mergeUniqueCandidates(mergedBase, external);
   }
 
   async getAllCandidates() {
@@ -648,7 +729,10 @@ class ApiClient {
     const docs = await this.loadDocumentIndex(rows.map((row) => row.id));
     const base = rows.map((row) => this.profileRowToCandidate(row, docs.get(row.id)));
     const fallbackClaims = await this.readEditingClaimsFromAudit(base.map((c) => c.userId));
-    return base.map((c) => this.mergeAuditEditingClaim(c, fallbackClaims.get(c.userId)));
+    const mergedBase = base.map((c) => this.mergeAuditEditingClaim(c, fallbackClaims.get(c.userId)));
+    const remoteExternal = await this.loadExternalCandidatesRemote();
+    const external = remoteExternal || this.readLocalExternalCandidates();
+    return this.mergeUniqueCandidates(mergedBase, external);
   }
 
   async getCandidate(userId: string) {
@@ -1182,6 +1266,61 @@ class ApiClient {
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
     return merged.slice(0, 300);
+  }
+
+  async createExternalCandidate(input: {
+    candidateNumber?: string;
+    city: string;
+    country: string;
+    industry: string;
+    experienceYears: number;
+    availability: string;
+    about?: string;
+    skills?: string[];
+    isPublished?: boolean;
+  }): Promise<CandidateProfile> {
+    const now = new Date().toISOString();
+    const id = crypto.randomUUID();
+    const row: ExternalCandidateRow = {
+      id,
+      candidate_number: input.candidateNumber?.trim() || `EXT-${id.slice(0, 8).toUpperCase()}`,
+      city: input.city.trim(),
+      country: input.country.trim(),
+      industry: input.industry.trim(),
+      experience_years: Number(input.experienceYears || 0),
+      availability: input.availability.trim(),
+      about: input.about?.trim() || null,
+      skills: (input.skills || []).filter(Boolean),
+      is_published: !!input.isPublished,
+      created_at: now,
+      updated_at: now,
+    };
+
+    const payload = {
+      id: row.id,
+      candidate_number: row.candidate_number,
+      city: row.city,
+      country: row.country,
+      industry: row.industry,
+      experience_years: row.experience_years,
+      availability: row.availability,
+      about: row.about,
+      skills: row.skills,
+      is_published: row.is_published,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    };
+
+    const { error } = await supabase.from('external_candidates').insert(payload);
+    if (error) {
+      // Fallback: lokal speichern, falls Tabelle noch nicht in DB existiert.
+      const local = this.readLocalExternalCandidates();
+      const candidate = this.externalRowToCandidate(row);
+      this.writeLocalExternalCandidates([candidate, ...local]);
+      return candidate;
+    }
+
+    return this.externalRowToCandidate(row);
   }
 }
 

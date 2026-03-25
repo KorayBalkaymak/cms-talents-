@@ -20,7 +20,7 @@ const STALE_CANDIDATE_MS = 7 * 24 * 60 * 60 * 1000;
 
 const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidates, isInitialLoading = false, onAdminAction, onUpdateCandidate, onRefreshCandidates, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeView, setActiveView] = useState<'talents' | 'inquiries'>('talents');
+  const [activeView, setActiveView] = useState<'talents' | 'inquiries' | 'external'>('talents');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
   const [candidateDocs, setCandidateDocs] = useState<CandidateDocuments | null>(null);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
@@ -32,6 +32,20 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [claimError, setClaimError] = useState<string | null>(null);
   const [inquiries, setInquiries] = useState<CandidateInquiry[]>([]);
   const [isLoadingInquiries, setIsLoadingInquiries] = useState(false);
+  const [isCreatingExternal, setIsCreatingExternal] = useState(false);
+  const [externalError, setExternalError] = useState<string | null>(null);
+  const [externalSuccess, setExternalSuccess] = useState<string | null>(null);
+  const [externalForm, setExternalForm] = useState({
+    candidateNumber: '',
+    city: '',
+    country: 'Deutschland',
+    industry: INDUSTRIES[0] || '',
+    experienceYears: 0,
+    availability: AVAILABILITY_OPTIONS[0] || '',
+    about: '',
+    skillsRaw: '',
+    publishNow: true,
+  });
 
   // Document Preview State
   const [previewDoc, setPreviewDoc] = useState<{ name: string; data: string } | null>(null);
@@ -441,6 +455,49 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     }
   };
 
+  const handleCreateExternalCandidate = async () => {
+    setExternalError(null);
+    setExternalSuccess(null);
+    if (!externalForm.city.trim() || !externalForm.country.trim() || !externalForm.industry.trim() || !externalForm.availability.trim()) {
+      setExternalError('Bitte Stadt, Land, Branche und Verfügbarkeit ausfüllen.');
+      return;
+    }
+    try {
+      setIsCreatingExternal(true);
+      const skills = externalForm.skillsRaw
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      await candidateService.createExternalCandidate({
+        candidateNumber: externalForm.candidateNumber.trim() || undefined,
+        city: externalForm.city,
+        country: externalForm.country,
+        industry: externalForm.industry,
+        experienceYears: Number(externalForm.experienceYears || 0),
+        availability: externalForm.availability,
+        about: externalForm.about.trim() || undefined,
+        skills,
+        isPublished: externalForm.publishNow,
+      });
+      if (onRefreshCandidates) await onRefreshCandidates();
+      setExternalSuccess(externalForm.publishNow
+        ? 'Externer Kandidat erstellt und für den Marktplatz freigegeben.'
+        : 'Externer Kandidat als Entwurf erstellt.');
+      setExternalForm((prev) => ({
+        ...prev,
+        candidateNumber: '',
+        city: '',
+        about: '',
+        skillsRaw: '',
+        experienceYears: 0,
+      }));
+    } catch (e: any) {
+      setExternalError(e?.message || 'Externer Kandidat konnte nicht erstellt werden.');
+    } finally {
+      setIsCreatingExternal(false);
+    }
+  };
+
   const renderTeamControls = useCallback((cand: CandidateProfile, fullWidth = false) => {
     const alreadyReleased = cand.isPublished && cand.status === CandidateStatus.ACTIVE;
     const editing = getActiveRecruiterEditing(cand);
@@ -605,6 +662,20 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 {inquiries.length}
               </span>
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('external')}
+              className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-xs font-bold transition-colors ${
+                activeView === 'external'
+                  ? 'border-slate-700 bg-slate-800 text-orange-500'
+                  : 'border-transparent text-slate-300 hover:bg-slate-800/60'
+              }`}
+            >
+              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path strokeWidth="2.2" d="M12 4v16m8-8H4" />
+              </svg>
+              EXTERN
+            </button>
           </nav>
         </div>
         <div className="mt-auto p-6 border-t border-slate-800 bg-slate-900/50">
@@ -672,6 +743,15 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               >
                 Externe Interessen
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveView('external')}
+                className={`rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wide transition-colors ${
+                  activeView === 'external' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Extern
+              </button>
             </div>
           </div>
           <div className="relative w-full min-w-0 md:max-w-sm md:flex-1 lg:max-w-md">
@@ -716,6 +796,14 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             >
               Externe Interessen
             </Button>
+            <Button
+              type="button"
+              variant={activeView === 'external' ? 'primary' : 'outline'}
+              className="h-10 text-[11px] font-black"
+              onClick={() => setActiveView('external')}
+            >
+              Extern
+            </Button>
           </div>
 
           {activeView === 'inquiries' ? (
@@ -748,6 +836,38 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   ))}
                 </div>
               )}
+            </div>
+          ) : activeView === 'external' ? (
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="border-b border-slate-100 px-4 py-3">
+                <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">Externen Kandidaten anlegen</h3>
+                <p className="mt-1 text-xs font-medium text-slate-500">Manuell Daten erfassen und optional direkt im Marktplatz freigeben.</p>
+              </div>
+              <div className="space-y-4 px-4 py-4">
+                {externalError && <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">{externalError}</div>}
+                {externalSuccess && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">{externalSuccess}</div>}
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <Input label="Kandidatennummer (optional)" value={externalForm.candidateNumber} onChange={(e) => setExternalForm((p) => ({ ...p, candidateNumber: e.target.value }))} placeholder="EXT-12345678" />
+                  <Input label="Stadt" value={externalForm.city} onChange={(e) => setExternalForm((p) => ({ ...p, city: e.target.value }))} placeholder="Berlin" />
+                  <Input label="Land" value={externalForm.country} onChange={(e) => setExternalForm((p) => ({ ...p, country: e.target.value }))} placeholder="Deutschland" />
+                  <Select label="Branche" value={externalForm.industry} onChange={(e) => setExternalForm((p) => ({ ...p, industry: e.target.value }))}>
+                    {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
+                  </Select>
+                  <Input label="Erfahrung (Jahre)" type="number" value={externalForm.experienceYears} onChange={(e) => setExternalForm((p) => ({ ...p, experienceYears: parseInt(e.target.value) || 0 }))} />
+                  <Select label="Verfügbarkeit" value={externalForm.availability} onChange={(e) => setExternalForm((p) => ({ ...p, availability: e.target.value }))}>
+                    {AVAILABILITY_OPTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
+                  </Select>
+                </div>
+                <Input label="Skills (kommagetrennt)" value={externalForm.skillsRaw} onChange={(e) => setExternalForm((p) => ({ ...p, skillsRaw: e.target.value }))} placeholder="React, TypeScript, Sales" />
+                <Textarea label="Über den Kandidaten (optional)" value={externalForm.about} onChange={(e) => setExternalForm((p) => ({ ...p, about: e.target.value }))} />
+                <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-700">
+                  <input type="checkbox" checked={externalForm.publishNow} onChange={(e) => setExternalForm((p) => ({ ...p, publishNow: e.target.checked }))} />
+                  Sofort für Marktplatz freigeben
+                </label>
+                <Button variant="primary" className="h-10 text-xs font-black" isLoading={isCreatingExternal} onClick={handleCreateExternalCandidate}>
+                  Externen Kandidaten speichern
+                </Button>
+              </div>
             </div>
           ) : (
             <>
@@ -988,10 +1108,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 />
               ) : (
                 <Tabs
-                  tabs={isAdmin
-                    ? [{ id: 'profile', label: 'Profil' }, { id: 'documents', label: 'Dokumente' }, { id: 'admin', label: 'Admin' }]
-                    : [{ id: 'profile', label: 'Profil' }, { id: 'documents', label: 'Dokumente' }]
-                  }
+                  tabs={[{ id: 'profile', label: 'Profil' }, { id: 'documents', label: 'Dokumente' }]}
                   activeTab={modalTab}
                   onChange={setModalTab}
                 />
@@ -1351,18 +1468,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     </div>
                   )}
 
-                  {isAdmin && modalTab === 'admin' && (
-                    <div className="space-y-6">
-                      {/* SAFETY: Removed instant buttons. Only Link to Edit Mode */}
-                      <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                        <p className="text-xs font-bold text-blue-800 mb-2">Status & Daten ändern?</p>
-                        <Button variant="secondary" className="w-full text-xs" onClick={() => setIsEditing(true)}>In den Bearbeitungsmodus wechseln</Button>
-                      </div>
-
-                      {/* DANGER ZONE (Still here, but with confirmation in handler) */}
-                      {isAdmin && <div className="pt-4 border-t border-slate-100"><p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-3">Gefahrenzone</p><Button variant="danger" className="w-full" onClick={handleDelete}>Kandidat Löschen</Button></div>}
-                    </div>
-                  )}
                 </>
               )}
             </div>

@@ -112,6 +112,20 @@ class CandidateService {
     await api.createCandidateInquiry(input);
   }
 
+  async createExternalCandidate(input: {
+    candidateNumber?: string;
+    city: string;
+    country: string;
+    industry: string;
+    experienceYears: number;
+    availability: string;
+    about?: string;
+    skills?: string[];
+    isPublished?: boolean;
+  }): Promise<CandidateProfile> {
+    return await api.createExternalCandidate(input);
+  }
+
   async getInquiries(): Promise<CandidateInquiry[]> {
     try {
       return await api.getCandidateInquiries();
