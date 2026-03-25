@@ -552,16 +552,21 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             <button
               type="button"
               onClick={() => setActiveView('inquiries')}
-              className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-xs font-bold transition-colors ${
+              className={`flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-xs font-bold transition-colors ${
                 activeView === 'inquiries'
                   ? 'border-slate-700 bg-slate-800 text-orange-500'
                   : 'border-transparent text-slate-300 hover:bg-slate-800/60'
               }`}
             >
-              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                <path strokeWidth="2.2" d="M8 10h8M8 14h5m-7 7h12a2 2 0 002-2V7l-4-4H6a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-              EXTERNE INTERESSEN
+              <span className="flex items-center gap-3">
+                <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeWidth="2.2" d="M8 10h8M8 14h5m-7 7h12a2 2 0 002-2V7l-4-4H6a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                EXTERNE INTERESSEN
+              </span>
+              <span className="rounded-full border border-orange-400/40 bg-orange-500/15 px-2 py-0.5 text-[10px] font-black text-orange-300">
+                {inquiries.length}
+              </span>
             </button>
           </nav>
         </div>
@@ -707,36 +712,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 )}
               </div>
 
-              <div className="mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">Externe Interessen</h3>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                    {isLoadingInquiries ? 'Lädt…' : `${inquiries.length} Anfrage${inquiries.length === 1 ? '' : 'n'}`}
-                  </span>
-                </div>
-                {inquiries.length === 0 ? (
-                  <div className="px-4 py-3 text-xs font-medium text-slate-500">
-                    Noch keine Interessenanfragen vorhanden.
-                  </div>
-                ) : (
-                  <div className="max-h-64 overflow-auto divide-y divide-slate-100">
-                    {inquiries.slice(0, 50).map((inq) => (
-                      <div key={inq.id} className="px-4 py-3 text-xs text-slate-700">
-                        <p className="font-black text-slate-900">
-                          {candidateNameById.get(inq.candidateUserId) || inq.candidateUserId}
-                        </p>
-                        <p className="mt-1 font-semibold">
-                          {inq.contactName} · {inq.contactEmail} · {inq.contactPhone}
-                        </p>
-                        {inq.message && <p className="mt-1 text-slate-600">{inq.message}</p>}
-                        <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                          {new Date(inq.createdAt).toLocaleString('de-DE')}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
             </>
           )}
 
