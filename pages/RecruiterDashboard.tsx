@@ -152,7 +152,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
     const map = new Map<string, CandidateProfile[]>();
     for (const c of filtered) {
-      const key = (c.industry || '').trim() || 'Ohne Branche';
+      const key = (c.industry || '').trim();
+      if (!key) continue;
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(c);
     }
@@ -162,11 +163,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       candidates: sortInGroup(list),
     }));
 
-    groups.sort((a, b) => {
-      if (a.industry === 'Ohne Branche') return 1;
-      if (b.industry === 'Ohne Branche') return -1;
-      return a.industry.localeCompare(b.industry, 'de', { sensitivity: 'base' });
-    });
+    groups.sort((a, b) => a.industry.localeCompare(b.industry, 'de', { sensitivity: 'base' }));
 
     return groups;
   }, [filtered]);
@@ -787,7 +784,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         </div>
                         <div className="min-w-0">
                           <h2 className="truncate text-sm font-black tracking-tight text-white md:text-base">{industry}</h2>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Branche</p>
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
