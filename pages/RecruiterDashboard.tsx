@@ -674,7 +674,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
                 <path strokeWidth="2.2" d="M12 4v16m8-8H4" />
               </svg>
-              EXTERN
+              KANDIDAT HINZUFÜGEN
             </button>
           </nav>
         </div>
@@ -750,7 +750,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   activeView === 'external' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                Extern
+                Kandidat hinzufügen
               </button>
             </div>
           </div>
@@ -802,7 +802,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               className="h-10 text-[11px] font-black"
               onClick={() => setActiveView('external')}
             >
-              Extern
+              Kandidat hinzufügen
             </Button>
           </div>
 
@@ -840,7 +840,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           ) : activeView === 'external' ? (
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
               <div className="border-b border-slate-100 px-4 py-3">
-                <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">Externen Kandidaten anlegen</h3>
+                <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">Kandidaten hinzufügen</h3>
                 <p className="mt-1 text-xs font-medium text-slate-500">Manuell Daten erfassen und optional direkt im Marktplatz freigeben.</p>
               </div>
               <div className="space-y-4 px-4 py-4">
@@ -865,7 +865,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   Sofort für Marktplatz freigeben
                 </label>
                 <Button variant="primary" className="h-10 text-xs font-black" isLoading={isCreatingExternal} onClick={handleCreateExternalCandidate}>
-                  Externen Kandidaten speichern
+                  Kandidat speichern
                 </Button>
               </div>
             </div>
