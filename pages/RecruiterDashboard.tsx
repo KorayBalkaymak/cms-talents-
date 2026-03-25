@@ -614,7 +614,29 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         </div>
 
         <header className="relative z-10 flex flex-col gap-3 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 md:h-16 md:flex-row md:items-center md:justify-between md:gap-4 md:py-0">
-          <h1 className="hidden text-xl font-black uppercase tracking-tight text-slate-900 md:block">Dashboard Sicht</h1>
+          <div className="hidden items-center gap-2 md:flex">
+            <h1 className="text-xl font-black uppercase tracking-tight text-slate-900">Dashboard Sicht</h1>
+            <div className="ml-4 inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
+              <button
+                type="button"
+                onClick={() => setActiveView('talents')}
+                className={`rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wide transition-colors ${
+                  activeView === 'talents' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Talents
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView('inquiries')}
+                className={`rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wide transition-colors ${
+                  activeView === 'inquiries' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Externe Interessen
+              </button>
+            </div>
+          </div>
           <div className="relative w-full min-w-0 md:max-w-sm md:flex-1 lg:max-w-md">
             <input
               type="search"
