@@ -450,6 +450,18 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     const wrap = fullWidth ? 'flex w-full flex-col gap-2' : 'flex flex-col items-start gap-1.5';
     if (editing) {
       const mine = editing.userId === user.id;
+      if (!mine) {
+        return (
+          <div className={wrap}>
+            <span
+              className="max-w-full rounded-md bg-amber-50 px-2 py-1 text-[10px] font-black uppercase leading-tight tracking-wide text-amber-800 ring-1 ring-amber-200"
+              title={`${editing.label} bearbeitet diesen Kandidaten aktuell.`}
+            >
+              {editing.label} bearbeitet gerade
+            </span>
+          </div>
+        );
+      }
       return (
         <div className={wrap}>
           <span
@@ -464,12 +476,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           </span>
           <Button
             size="sm"
-            variant={mine ? 'outline' : 'secondary'}
+            variant="outline"
             className={`h-9 rounded-lg px-3 text-[10px] font-black ${fullWidth ? 'w-full justify-center' : ''}`}
             disabled={busy}
             onClick={() => void handleRecruiterEditingClaim(cand)}
           >
-            {mine ? 'Fertig – freigeben' : 'Ich übernehme'}
+            Fertig – freigeben
           </Button>
         </div>
       );
@@ -920,17 +932,19 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     <span>
                       {mine
                         ? 'Sie sind für andere als Bearbeiter eingetragen. Der Status bleibt, bis Sie „Fertig – freigeben“ wählen (auch nach Schließen dieses Fensters).'
-                        : `${e.label} bearbeitet diesen Kandidaten (Team-Sicht). Bitte nicht parallel am gleichen Profil arbeiten – oder „Ich übernehme“ nach Absprache.`}
+                        : `${e.label} bearbeitet diesen Kandidaten aktuell (Team-Sicht). Bitte nicht parallel am gleichen Profil arbeiten.`}
                     </span>
-                    <Button
-                      size="sm"
-                      variant={mine ? 'outline' : 'secondary'}
-                      className="h-8 text-[10px] font-black shrink-0"
-                      disabled={busy}
-                      onClick={() => void handleRecruiterEditingClaim(selectedCandidate)}
-                    >
-                      {mine ? 'Fertig – freigeben' : 'Ich übernehme'}
-                    </Button>
+                    {mine && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-[10px] font-black shrink-0"
+                        disabled={busy}
+                        onClick={() => void handleRecruiterEditingClaim(selectedCandidate)}
+                      >
+                        Fertig – freigeben
+                      </Button>
+                    )}
                   </div>
                 );
               })()}
