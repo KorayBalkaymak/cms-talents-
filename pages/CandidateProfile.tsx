@@ -412,22 +412,12 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                 />
               </div>
               <div className="relative w-full flex-1 space-y-3 sm:space-y-6">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-6">
-                  <div>
-                    <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:mb-1.5 sm:text-sm">
-                      Kandidatennummer
-                    </label>
-                    <div className="flex h-9 items-center rounded-xl border border-slate-200 bg-slate-100 px-3 text-sm font-black text-slate-700 sm:h-10">
-                      {formData.candidateNumber || `KT-${formData.userId.replace(/-/g, '').slice(0, 8).toUpperCase()}`}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:mb-1.5 sm:text-sm">
-                      Name
-                    </label>
-                    <div className="flex h-9 items-center rounded-xl border border-slate-200 bg-slate-100 px-3 text-sm font-bold text-slate-600 sm:h-10">
-                      Wird automatisch vergeben
-                    </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:mb-1.5 sm:text-sm">
+                    Kandidatennummer
+                  </label>
+                  <div className="flex h-9 items-center rounded-xl border border-slate-200 bg-slate-100 px-3 text-sm font-black text-slate-700 sm:h-10">
+                    {formData.candidateNumber || `KT-${formData.userId.replace(/-/g, '').slice(0, 8).toUpperCase()}`}
                   </div>
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-6">

@@ -122,6 +122,15 @@ function isCandidateNumberSchemaMissing(message?: string): boolean {
   return text.includes("could not find the 'candidate_number' column");
 }
 
+function isCandidateInquiriesSchemaMissing(message?: string): boolean {
+  const text = (message || '').toLowerCase();
+  return (
+    text.includes("could not find the table 'public.candidate_inquiries'") ||
+    text.includes("relation \"public.candidate_inquiries\" does not exist") ||
+    text.includes("relation \"candidate_inquiries\" does not exist")
+  );
+}
+
 class ApiClient {
   private fallbackCandidateNumber(userId: string): string {
     return `KT-${userId.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
@@ -1013,6 +1022,11 @@ class ApiClient {
     };
     const { error } = await supabase.from('candidate_inquiries').insert(payload);
     if (error) {
+      if (isCandidateInquiriesSchemaMissing(error.message)) {
+        throw new Error(
+          'Interessenformular ist noch nicht in der Datenbank aktiviert. Bitte Migration "20260324000000_candidate_inquiries.sql" in Supabase ausführen.'
+        );
+      }
       throw new Error(error.message);
     }
   }
