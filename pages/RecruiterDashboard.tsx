@@ -660,9 +660,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         <div className="p-6">
           <div className="mb-8 flex items-center">
             <div className="relative inline-flex">
-              <div className="pointer-events-none absolute -inset-7 rounded-full bg-orange-500/30 blur-xl" aria-hidden />
-              <div className="relative flex h-24 w-24 items-center justify-center rounded-full border border-white/20 bg-white/10 shadow-[0_14px_36px_-24px_rgba(0,0,0,0.9)]">
-                <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-[0_8px_20px_-14px_rgba(0,0,0,0.5)]">
+              <div className="pointer-events-none absolute -inset-10 rounded-full bg-orange-500/30 blur-xl" aria-hidden />
+              <div className="relative flex h-40 w-40 items-center justify-center rounded-full border border-white/20 bg-white/10 shadow-[0_14px_36px_-24px_rgba(0,0,0,0.9)]">
+                <div className="relative flex h-28 w-28 items-center justify-center rounded-full bg-white shadow-[0_8px_20px_-14px_rgba(0,0,0,0.5)]">
                   <img
                     src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
                     alt="CMS Talents"
