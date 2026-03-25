@@ -921,7 +921,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                 key={`${cat.title}-${kw}`}
                                 type="button"
                                 onClick={() => toggleExternalKeyword(kw)}
-                                className={`rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${active ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-100 ring-1 ring-slate-600 hover:bg-slate-700'}`}
+                                className={`rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${active ? 'bg-orange-500 text-white ring-1 ring-orange-300' : 'bg-orange-500/10 text-orange-300 ring-1 ring-orange-500/50 hover:bg-orange-500/20'}`}
                               >
                                 {kw}
                               </button>
