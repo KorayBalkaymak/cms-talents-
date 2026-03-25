@@ -715,22 +715,24 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </>
           )}
 
-          {claimError && (
-            <div className="mb-4 flex flex-col gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[11px] font-bold text-red-800 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-              <span className="min-w-0">{claimError}</span>
-              <button type="button" className="shrink-0 self-end text-[10px] font-black uppercase tracking-wide text-red-600 underline sm:self-auto" onClick={() => setClaimError(null)}>
-                Schließen
-              </button>
-            </div>
-          )}
-          {isInitialLoading && filtered.length === 0 ? (
-            <div className="flex h-40 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-orange-600" />
-            </div>
-          ) : filtered.length === 0 ? (
-            <EmptyState title="Keine Kandidaten" description="Nichts gefunden." />
-          ) : (
-              <div className="space-y-8">
+          {activeView === 'talents' && (
+            <>
+              {claimError && (
+                <div className="mb-4 flex flex-col gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[11px] font-bold text-red-800 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                  <span className="min-w-0">{claimError}</span>
+                  <button type="button" className="shrink-0 self-end text-[10px] font-black uppercase tracking-wide text-red-600 underline sm:self-auto" onClick={() => setClaimError(null)}>
+                    Schließen
+                  </button>
+                </div>
+              )}
+              {isInitialLoading && filtered.length === 0 ? (
+                <div className="flex h-40 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-orange-600" />
+                </div>
+              ) : filtered.length === 0 ? (
+                <EmptyState title="Keine Kandidaten" description="Nichts gefunden." />
+              ) : (
+                <div className="space-y-8">
                 <p className="-mt-2 mb-1 text-center text-[11px] font-bold text-slate-500 sm:text-left">
                   {industryGroups.length} {industryGroups.length === 1 ? 'Branche' : 'Branchen'} · {filtered.length}{' '}
                   {filtered.length === 1 ? 'Kandidat' : 'Kandidaten'}
@@ -849,7 +851,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     </div>
                   </section>
                 ))}
-              </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 
