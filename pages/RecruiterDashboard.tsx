@@ -663,9 +663,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         <div className="p-6">
           <div className="mb-8 flex items-center">
             <div className="relative inline-flex">
-              <div className="pointer-events-none absolute -inset-4 rounded-full bg-orange-500/25 blur-xl" aria-hidden />
-              <div className="relative flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 shadow-[0_14px_36px_-24px_rgba(0,0,0,0.9)]">
-                <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-[0_8px_20px_-14px_rgba(0,0,0,0.5)]">
+              <div className="pointer-events-none absolute -inset-5 rounded-full bg-orange-500/25 blur-xl" aria-hidden />
+              <div className="relative flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-white/10 shadow-[0_14px_36px_-24px_rgba(0,0,0,0.9)]">
+                <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-[0_8px_20px_-14px_rgba(0,0,0,0.5)]">
                   <img
                     src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
                     alt="CMS Talents"
@@ -729,7 +729,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center font-black text-white text-xs">{user.email.charAt(0).toUpperCase()}</div>
             <div className="min-w-0">
-              <div className="text-xs font-black text-white truncate uppercase tracking-tight">{user.role === UserRole.ADMIN ? 'ADMIN' : 'RECRUITER'}</div>
+              <div className="text-xs font-black text-white truncate uppercase tracking-tight">RECRUITER</div>
               <div className="text-[10px] text-slate-500 font-bold truncate">{user.email}</div>
             </div>
           </div>
@@ -757,7 +757,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </div>
           </div>
           <h1 className="min-w-0 flex-1 truncate text-center text-xs font-black uppercase tracking-tight text-white">
-            Dashboard Sicht
+            Dashboard
           </h1>
           <button
             type="button"
@@ -770,7 +770,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
         <header className="relative z-10 flex flex-col gap-3 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 md:h-16 md:flex-row md:items-center md:justify-between md:gap-4 md:py-0">
           <div className="hidden items-center gap-2 md:flex">
-            <h1 className="text-xl font-black uppercase tracking-tight text-slate-900">Dashboard Sicht</h1>
+            <h1 className="text-xl font-black uppercase tracking-tight text-slate-900">Dashboard</h1>
             <div className="ml-4 inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
               <button
                 type="button"
