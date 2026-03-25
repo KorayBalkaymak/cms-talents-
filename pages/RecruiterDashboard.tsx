@@ -451,7 +451,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         return (
           <div className={wrap}>
             <span
-              className="max-w-full rounded-md bg-amber-50 px-2 py-1 text-[10px] font-black uppercase leading-tight tracking-wide text-amber-800 ring-1 ring-amber-200"
+              className="max-w-full rounded-lg bg-slate-900 px-2.5 py-1.5 text-[10px] font-black uppercase leading-tight tracking-wide text-slate-100 ring-1 ring-slate-700 shadow-[0_8px_20px_-14px_rgba(15,23,42,0.85)]"
               title={`${editing.label} bearbeitet diesen Kandidaten aktuell.`}
             >
               {editing.label} bearbeitet gerade
@@ -923,7 +923,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 const mine = e.userId === user.id;
                 return (
                   <div
-                    className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-4 py-3 text-xs font-bold ${mine ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-950'}`}
+                    className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-4 py-3 text-xs font-bold ${mine ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-slate-700 bg-slate-900 text-slate-100 shadow-[0_14px_34px_-22px_rgba(15,23,42,0.9)]'}`}
                   >
                     <span>
                       {mine
