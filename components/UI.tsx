@@ -228,10 +228,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
   const dropZoneClass = darkSurface
     ? error
-      ? 'border-rose-400 bg-rose-950/40 hover:border-rose-400'
+      ? 'border-rose-400 bg-slate-900 hover:border-rose-300'
       : required && !hasFile
-        ? 'border-amber-400/50 bg-amber-950/20 hover:border-amber-400/70 hover:bg-amber-950/30'
-        : 'border-white/20 bg-white/5 hover:border-orange-400/60 hover:bg-white/10'
+        ? 'border-slate-500 bg-slate-900 hover:border-slate-400'
+        : 'border-slate-600 bg-slate-900 hover:border-slate-500'
     : error
       ? 'border-rose-400 bg-gradient-to-br from-rose-50 to-orange-50/50 hover:border-rose-500'
       : required && !hasFile
@@ -253,7 +253,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <span
             className={`rounded-md px-2 py-0.5 text-[9px] font-black uppercase tracking-widest sm:text-[10px] ${
               darkSurface
-                ? 'border border-white/15 bg-white/10 text-amber-200'
+                ? 'border border-slate-600 bg-slate-800 text-slate-200'
                 : 'border border-orange-300/90 bg-gradient-to-r from-orange-50 to-amber-50 text-orange-900 shadow-sm'
             }`}
             title="Erforderlich beim Absenden an den Recruiter"
@@ -297,7 +297,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           {files.map((file, idx) => (
             <div
               key={idx}
-              className={`flex items-center justify-between rounded-lg px-4 py-2 ${darkSurface ? 'bg-white/10' : 'bg-slate-50'}`}
+              className={`flex items-center justify-between rounded-lg px-4 py-2 ${darkSurface ? 'bg-slate-800' : 'bg-slate-50'}`}
             >
               <div className="flex min-w-0 items-center gap-2">
                 <svg
