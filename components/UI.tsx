@@ -241,10 +241,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   return (
     <div className="w-full">
       <div className="mb-1 flex flex-wrap items-center gap-2 sm:mb-1.5">
-        <span className={`text-xs font-bold sm:text-sm ${darkSurface ? 'text-orange-300' : 'text-slate-900'}`}>
+        <span className={`text-xs font-bold sm:text-sm ${darkSurface ? 'text-black' : 'text-slate-900'}`}>
           {label}
           {required && (
-            <span className={`ml-0.5 ${darkSurface ? 'text-orange-400' : 'text-orange-600'}`} aria-hidden="true">
+            <span className={`ml-0.5 ${darkSurface ? 'text-black' : 'text-orange-600'}`} aria-hidden="true">
               *
             </span>
           )}
