@@ -901,7 +901,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     {AVAILABILITY_OPTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
                   </Select>
                 </div>
-                <Input label="Skills (kommagetrennt)" value={externalForm.skillsRaw} onChange={(e) => setExternalForm((p) => ({ ...p, skillsRaw: e.target.value }))} />
+                <Input label="Skills" value={externalForm.skillsRaw} onChange={(e) => setExternalForm((p) => ({ ...p, skillsRaw: e.target.value }))} />
                 <Textarea label="Über den Kandidaten (optional)" value={externalForm.about} onChange={(e) => setExternalForm((p) => ({ ...p, about: e.target.value }))} />
                 <div className="rounded-xl border border-slate-700 bg-slate-900 p-3">
                   <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-300">Keywords auswählen</p>
