@@ -44,7 +44,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     availability: AVAILABILITY_OPTIONS[0] || '',
     about: '',
     skillsRaw: '',
-    publishNow: true,
   });
   const [externalBoostedKeywords, setExternalBoostedKeywords] = useState<string[]>([]);
   const [externalDocs, setExternalDocs] = useState<CandidateDocuments>({
@@ -495,12 +494,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         cvPdf: externalDocs.cvPdf,
         certificates: externalDocs.certificates,
         qualifications: externalDocs.qualifications,
-        isPublished: externalForm.publishNow,
+        isPublished: true,
       });
       if (onRefreshCandidates) await onRefreshCandidates();
-      setExternalSuccess(externalForm.publishNow
-        ? 'Externer Kandidat erstellt und für den Marktplatz freigegeben.'
-        : 'Externer Kandidat als Entwurf erstellt.');
+      setExternalSuccess('Kandidat wurde erstellt und für den Marktplatz freigegeben.');
       setExternalForm((prev) => ({
         ...prev,
         candidateNumber: '',
@@ -908,14 +905,14 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     {AVAILABILITY_OPTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
                   </Select>
                 </div>
-                <Input label="Skills (kommagetrennt)" value={externalForm.skillsRaw} onChange={(e) => setExternalForm((p) => ({ ...p, skillsRaw: e.target.value }))} placeholder="React, TypeScript, Sales" />
+                <Input label="Skills (kommagetrennt)" value={externalForm.skillsRaw} onChange={(e) => setExternalForm((p) => ({ ...p, skillsRaw: e.target.value }))} />
                 <Textarea label="Über den Kandidaten (optional)" value={externalForm.about} onChange={(e) => setExternalForm((p) => ({ ...p, about: e.target.value }))} />
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                  <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-500">Keywords auswählen</p>
+                <div className="rounded-xl border border-slate-700 bg-slate-900 p-3">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-300">Keywords auswählen</p>
                   <div className="space-y-3">
                     {BOOSTER_KEYWORD_CATEGORIES.map((cat) => (
                       <div key={cat.title}>
-                        <p className="mb-1 text-xs font-black text-slate-700">{cat.title}</p>
+                        <p className="mb-1 text-xs font-black text-slate-100">{cat.title}</p>
                         <div className="flex flex-wrap gap-2">
                           {cat.keywords.map((kw) => {
                             const active = externalBoostedKeywords.includes(kw);
@@ -924,7 +921,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                 key={`${cat.title}-${kw}`}
                                 type="button"
                                 onClick={() => toggleExternalKeyword(kw)}
-                                className={`rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${active ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100'}`}
+                                className={`rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${active ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-100 ring-1 ring-slate-600 hover:bg-slate-700'}`}
                               >
                                 {kw}
                               </button>
@@ -940,6 +937,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     label="Lebenslauf (Pflicht)"
                     required
                     accept="application/pdf"
+                    darkSurface
                     onChange={handleExternalCvUpload}
                     files={externalDocs.cvPdf ? [{ name: externalDocs.cvPdf.name }] : []}
                     onRemove={() => setExternalDocs((prev) => ({ ...prev, cvPdf: undefined }))}
@@ -950,6 +948,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     required
                     accept="application/pdf"
                     multiple
+                    darkSurface
                     onChange={handleExternalQualificationsUpload}
                     files={externalDocs.qualifications}
                     onRemove={(idx) => setExternalDocs((prev) => ({ ...prev, qualifications: prev.qualifications.filter((_, i) => i !== idx) }))}
@@ -959,18 +958,15 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     label="Zertifikate (optional)"
                     accept="application/pdf"
                     multiple
+                    darkSurface
                     onChange={handleExternalCertificatesUpload}
                     files={externalDocs.certificates}
                     onRemove={(idx) => setExternalDocs((prev) => ({ ...prev, certificates: prev.certificates.filter((_, i) => i !== idx) }))}
                     helperText="Optional"
                   />
                 </div>
-                <label className="inline-flex items-center gap-2 text-xs font-bold text-slate-700">
-                  <input type="checkbox" checked={externalForm.publishNow} onChange={(e) => setExternalForm((p) => ({ ...p, publishNow: e.target.checked }))} />
-                  Sofort für Marktplatz freigeben
-                </label>
                 <Button variant="primary" className="h-10 text-xs font-black" isLoading={isCreatingExternal} onClick={handleCreateExternalCandidate}>
-                  Kandidat speichern
+                  Kandidat freigeben
                 </Button>
               </div>
             </div>
