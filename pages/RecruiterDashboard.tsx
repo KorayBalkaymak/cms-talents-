@@ -36,7 +36,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [externalError, setExternalError] = useState<string | null>(null);
   const [externalSuccess, setExternalSuccess] = useState<string | null>(null);
   const [externalForm, setExternalForm] = useState({
-    candidateNumber: '',
     city: '',
     country: 'Deutschland',
     industry: INDUSTRIES[0] || '',
@@ -482,7 +481,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         .map((s) => s.trim())
         .filter(Boolean);
       await candidateService.createExternalCandidate({
-        candidateNumber: externalForm.candidateNumber.trim() || undefined,
         city: externalForm.city,
         country: externalForm.country,
         industry: externalForm.industry,
@@ -500,7 +498,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       setExternalSuccess('Kandidat wurde erstellt und für den Marktplatz freigegeben.');
       setExternalForm((prev) => ({
         ...prev,
-        candidateNumber: '',
         city: '',
         about: '',
         skillsRaw: '',
@@ -894,7 +891,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 {externalError && <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">{externalError}</div>}
                 {externalSuccess && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">{externalSuccess}</div>}
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <Input label="Kandidatennummer (optional)" value={externalForm.candidateNumber} onChange={(e) => setExternalForm((p) => ({ ...p, candidateNumber: e.target.value }))} placeholder="EXT-12345678" />
                   <Input label="Stadt" value={externalForm.city} onChange={(e) => setExternalForm((p) => ({ ...p, city: e.target.value }))} placeholder="Berlin" />
                   <Input label="Land" value={externalForm.country} onChange={(e) => setExternalForm((p) => ({ ...p, country: e.target.value }))} placeholder="Deutschland" />
                   <Select label="Branche" value={externalForm.industry} onChange={(e) => setExternalForm((p) => ({ ...p, industry: e.target.value }))}>
@@ -965,7 +961,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     helperText="Optional"
                   />
                 </div>
-                <Button variant="primary" className="h-10 text-xs font-black" isLoading={isCreatingExternal} onClick={handleCreateExternalCandidate}>
+                <Button variant="primary" className="h-10 text-xs font-black !bg-slate-900 !text-white hover:!bg-slate-800" isLoading={isCreatingExternal} onClick={handleCreateExternalCandidate}>
                   Kandidat freigeben
                 </Button>
               </div>
