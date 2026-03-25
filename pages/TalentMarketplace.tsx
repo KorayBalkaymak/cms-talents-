@@ -4,7 +4,7 @@ import { CandidateProfile, UserRole } from '../types';
 import { rankCandidates, highlightText } from '../services/SearchService';
 import { candidateService } from '../services/CandidateService';
 import { authService } from '../services/AuthService';
-import { Input, Avatar, Badge, Button, Modal, EmptyState } from '../components/UI';
+import { Input, Avatar, Badge, Button, Modal, EmptyState, Textarea } from '../components/UI';
 import { INDUSTRIES, AVAILABILITY_OPTIONS } from '../constants';
 import { User } from '../types';
 
@@ -84,6 +84,15 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const [documentLoading, setDocumentLoading] = useState<string | null>(null);
   const [pdfViewerUrl, setPdfViewerUrl] = useState<string | null>(null);
   const [pdfViewerTitle, setPdfViewerTitle] = useState<string>('');
+  const [inquiryForm, setInquiryForm] = useState({
+    contactName: '',
+    contactEmail: '',
+    contactPhone: '',
+    message: '',
+  });
+  const [inquiryLoading, setInquiryLoading] = useState(false);
+  const [inquiryError, setInquiryError] = useState('');
+  const [inquirySuccess, setInquirySuccess] = useState('');
 
   // PDF in Modal mit iframe anzeigen (zuverlässig, keine weiße Seite)
   const openDocument = async (userId: string, docType: string, docName: string) => {
@@ -121,8 +130,36 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
 
   const handleSelectCandidate = useCallback((candidate: CandidateProfile) => {
     setSelectedCandidate(candidate);
+    setInquiryError('');
+    setInquirySuccess('');
     onNavigate(`/talents/${candidate.userId}`);
   }, [onNavigate]);
+
+  const submitInquiry = async () => {
+    if (!selectedCandidate) return;
+    setInquiryError('');
+    setInquirySuccess('');
+    if (!inquiryForm.contactName.trim() || !inquiryForm.contactEmail.trim() || !inquiryForm.contactPhone.trim()) {
+      setInquiryError('Bitte Name, E-Mail und Telefonnummer ausfüllen.');
+      return;
+    }
+    setInquiryLoading(true);
+    try {
+      await candidateService.createInquiry({
+        candidateUserId: selectedCandidate.userId,
+        contactName: inquiryForm.contactName,
+        contactEmail: inquiryForm.contactEmail,
+        contactPhone: inquiryForm.contactPhone,
+        message: inquiryForm.message,
+      });
+      setInquirySuccess('Vielen Dank. Ihre Anfrage wurde an das Recruiter-Team gesendet.');
+      setInquiryForm({ contactName: '', contactEmail: '', contactPhone: '', message: '' });
+    } catch (e: any) {
+      setInquiryError(e?.message || 'Anfrage konnte nicht gesendet werden.');
+    } finally {
+      setInquiryLoading(false);
+    }
+  };
 
   // Debounce search
   useEffect(() => {
@@ -389,7 +426,13 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
 
       {/* Candidate Detail Modal */}
       {selectedCandidate && (
-        <Modal isOpen={!!selectedCandidate} onClose={() => { setSelectedCandidate(null); onNavigate('/talents'); }} title="Kandidatenprofil">
+        <Modal isOpen={!!selectedCandidate} onClose={() => {
+          setSelectedCandidate(null);
+          setInquiryError('');
+          setInquirySuccess('');
+          setInquiryForm({ contactName: '', contactEmail: '', contactPhone: '', message: '' });
+          onNavigate('/talents');
+        }} title="Kandidatenprofil">
           <div className="space-y-6">
             <div className="flex items-center gap-6 p-6 bg-slate-900 rounded-[2rem] text-white">
               <Avatar seed={selectedCandidate.firstName + selectedCandidate.lastName} size="lg" imageUrl={selectedCandidate.profileImageUrl} />
@@ -504,6 +547,52 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {(!props.user || (props.user.role !== UserRole.RECRUITER && props.user.role !== UserRole.ADMIN)) && (
+              <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-4">
+                <p className="mb-2 text-xs font-black uppercase tracking-widest text-orange-700">Interesse melden</p>
+                <p className="mb-4 text-sm font-medium text-slate-700">
+                  Wenn Sie Interesse an diesem Kandidaten haben, hinterlassen Sie Ihre Kontaktdaten.
+                </p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Input
+                    value={inquiryForm.contactName}
+                    onChange={(e) => setInquiryForm((s) => ({ ...s, contactName: e.target.value }))}
+                    placeholder="Ihr Name"
+                    className="h-10"
+                  />
+                  <Input
+                    type="email"
+                    value={inquiryForm.contactEmail}
+                    onChange={(e) => setInquiryForm((s) => ({ ...s, contactEmail: e.target.value }))}
+                    placeholder="Ihre E-Mail"
+                    className="h-10"
+                  />
+                  <Input
+                    value={inquiryForm.contactPhone}
+                    onChange={(e) => setInquiryForm((s) => ({ ...s, contactPhone: e.target.value }))}
+                    placeholder="Ihre Telefonnummer"
+                    className="h-10 sm:col-span-2"
+                  />
+                </div>
+                <Textarea
+                  value={inquiryForm.message}
+                  onChange={(e) => setInquiryForm((s) => ({ ...s, message: e.target.value }))}
+                  placeholder="Nachricht (optional)"
+                  className="mt-3"
+                />
+                {inquiryError && <p className="mt-2 text-xs font-bold text-red-600">{inquiryError}</p>}
+                {inquirySuccess && <p className="mt-2 text-xs font-bold text-emerald-700">{inquirySuccess}</p>}
+                <Button
+                  className="mt-3 w-full sm:w-auto"
+                  variant="primary"
+                  isLoading={inquiryLoading}
+                  onClick={submitInquiry}
+                >
+                  Interesse senden
+                </Button>
               </div>
             )}
 

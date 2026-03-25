@@ -66,6 +66,16 @@ create table if not exists public.audit_log (
   timestamp timestamptz not null default now()
 );
 
+create table if not exists public.candidate_inquiries (
+  id uuid primary key default gen_random_uuid(),
+  candidate_user_id uuid not null references auth.users(id) on delete cascade,
+  contact_name text not null,
+  contact_email text not null,
+  contact_phone text not null,
+  message text,
+  created_at timestamptz not null default now()
+);
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -231,6 +241,7 @@ execute function public.handle_new_auth_user();
 alter table public.profiles enable row level security;
 alter table public.candidate_documents enable row level security;
 alter table public.audit_log enable row level security;
+alter table public.candidate_inquiries enable row level security;
 
 drop policy if exists "Public can read published profiles" on public.profiles;
 create policy "Public can read published profiles"
@@ -322,6 +333,18 @@ create policy "Recruiters can insert audit log"
 on public.audit_log
 for insert
 with check (public.is_recruiter_or_admin());
+
+drop policy if exists "Public can insert inquiries" on public.candidate_inquiries;
+create policy "Public can insert inquiries"
+on public.candidate_inquiries
+for insert
+with check (true);
+
+drop policy if exists "Recruiters can read inquiries" on public.candidate_inquiries;
+create policy "Recruiters can read inquiries"
+on public.candidate_inquiries
+for select
+using (public.is_recruiter_or_admin());
 
 -- Recruiter „Bearbeitung melden“ (Team-Sichtbarkeit); siehe auch 20260320000000_recruiter_editing_claim.sql
 alter table public.profiles

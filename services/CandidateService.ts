@@ -1,4 +1,4 @@
-import { CandidateProfile, CandidateStatus, CandidateDocuments } from '../types';
+import { CandidateProfile, CandidateStatus, CandidateDocuments, CandidateInquiry } from '../types';
 import { api } from './ApiClient';
 
 // =====================================================
@@ -98,6 +98,25 @@ class CandidateService {
       return Array.from(skillSet).sort();
     } catch (e) {
       console.error('[CandidateService] Error fetching skills:', e);
+      return [];
+    }
+  }
+
+  async createInquiry(input: {
+    candidateUserId: string;
+    contactName: string;
+    contactEmail: string;
+    contactPhone: string;
+    message?: string;
+  }): Promise<void> {
+    await api.createCandidateInquiry(input);
+  }
+
+  async getInquiries(): Promise<CandidateInquiry[]> {
+    try {
+      return await api.getCandidateInquiries();
+    } catch (e) {
+      console.error('[CandidateService] Error fetching inquiries:', e);
       return [];
     }
   }

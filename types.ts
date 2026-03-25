@@ -115,6 +115,19 @@ export interface CandidateDocuments {
 }
 
 // =====================================================
+// EXTERNAL INTEREST INQUIRIES (Marketplace -> Recruiter)
+// =====================================================
+export interface CandidateInquiry {
+  id: string;
+  candidateUserId: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  message?: string;
+  createdAt: string;
+}
+
+// =====================================================
 // AUDIT LOG (Admin Actions)
 // =====================================================
 export interface AuditLog {

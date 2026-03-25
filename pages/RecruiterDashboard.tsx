@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useDeferredValue, useCallback } from 'react';
-import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, getActiveRecruiterEditing } from '../types';
+import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, CandidateInquiry, getActiveRecruiterEditing } from '../types';
 import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea } from '../components/UI';
 import { candidateService } from '../services/CandidateService';
 import { INDUSTRIES, AVAILABILITY_OPTIONS } from '../constants';
@@ -26,6 +26,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [docError, setDocError] = useState<string | null>(null);
   const [claimBusyUserId, setClaimBusyUserId] = useState<string | null>(null);
   const [claimError, setClaimError] = useState<string | null>(null);
+  const [inquiries, setInquiries] = useState<CandidateInquiry[]>([]);
+  const [isLoadingInquiries, setIsLoadingInquiries] = useState(false);
 
   // Document Preview State
   const [previewDoc, setPreviewDoc] = useState<{ name: string; data: string } | null>(null);
@@ -53,6 +55,24 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     }, 35000);
     return () => window.clearInterval(id);
   }, [onRefreshCandidates]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setIsLoadingInquiries(true);
+      const list = await candidateService.getInquiries();
+      if (!cancelled) {
+        setInquiries(list);
+        setIsLoadingInquiries(false);
+      }
+    };
+    void load();
+    const id = window.setInterval(load, 35000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, []);
 
   const handleRecruiterEditingClaim = async (cand: CandidateProfile) => {
     const editing = getActiveRecruiterEditing(cand);
@@ -146,6 +166,14 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
     return groups;
   }, [filtered]);
+
+  const candidateNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of candidates) {
+      m.set(c.userId, `${c.firstName} ${c.lastName}`.trim() || c.userId);
+    }
+    return m;
+  }, [candidates]);
 
   const handleViewCandidate = async (candidate: CandidateProfile) => {
     setSelectedCandidate(candidate);
@@ -554,6 +582,37 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         <div
           className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-slate-50/50 p-3 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:p-6 sm:pb-8"
         >
+          <div className="mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+              <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">Externe Interessen</h3>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                {isLoadingInquiries ? 'Lädt…' : `${inquiries.length} Anfrage${inquiries.length === 1 ? '' : 'n'}`}
+              </span>
+            </div>
+            {inquiries.length === 0 ? (
+              <div className="px-4 py-3 text-xs font-medium text-slate-500">
+                Noch keine Interessenanfragen vorhanden.
+              </div>
+            ) : (
+              <div className="max-h-64 overflow-auto divide-y divide-slate-100">
+                {inquiries.slice(0, 50).map((inq) => (
+                  <div key={inq.id} className="px-4 py-3 text-xs text-slate-700">
+                    <p className="font-black text-slate-900">
+                      {candidateNameById.get(inq.candidateUserId) || inq.candidateUserId}
+                    </p>
+                    <p className="mt-1 font-semibold">
+                      {inq.contactName} · {inq.contactEmail} · {inq.contactPhone}
+                    </p>
+                    {inq.message && <p className="mt-1 text-slate-600">{inq.message}</p>}
+                    <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                      {new Date(inq.createdAt).toLocaleString('de-DE')}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {claimError && (
             <div className="mb-4 flex flex-col gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[11px] font-bold text-red-800 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <span className="min-w-0">{claimError}</span>

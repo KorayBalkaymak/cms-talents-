@@ -2,6 +2,7 @@ import { supabase } from '../utils/supabase';
 import {
   AuditLog,
   CandidateDocuments,
+  CandidateInquiry,
   CandidateProfile,
   CandidateStatus,
   isRecruiterEditingClaimStale,
@@ -64,6 +65,16 @@ type DocumentRow = {
   certificates: { name: string; data: string }[] | null;
   qualifications: { name: string; data: string }[] | null;
   updated_at: string | null;
+};
+
+type InquiryRow = {
+  id: string;
+  candidate_user_id: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string;
+  message: string | null;
+  created_at: string;
 };
 
 function normalizeEmail(email: string): string {
@@ -162,6 +173,18 @@ class ApiClient {
       cvPdf: row?.cv_pdf || undefined,
       certificates: row?.certificates || [],
       qualifications: row?.qualifications || [],
+    };
+  }
+
+  private inquiryRowToInquiry(row: InquiryRow): CandidateInquiry {
+    return {
+      id: row.id,
+      candidateUserId: row.candidate_user_id,
+      contactName: row.contact_name,
+      contactEmail: row.contact_email,
+      contactPhone: row.contact_phone,
+      message: row.message || undefined,
+      createdAt: row.created_at,
     };
   }
 
@@ -940,6 +963,43 @@ class ApiClient {
       targetId: row.target_id,
       timestamp: row.timestamp,
     }));
+  }
+
+  async createCandidateInquiry(input: {
+    candidateUserId: string;
+    contactName: string;
+    contactEmail: string;
+    contactPhone: string;
+    message?: string;
+  }): Promise<void> {
+    const payload = {
+      candidate_user_id: input.candidateUserId,
+      contact_name: input.contactName.trim(),
+      contact_email: input.contactEmail.trim(),
+      contact_phone: input.contactPhone.trim(),
+      message: input.message?.trim() || null,
+    };
+    const { error } = await supabase.from('candidate_inquiries').insert(payload);
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  async getCandidateInquiries(): Promise<CandidateInquiry[]> {
+    const current = await this.getSessionUser();
+    if (!current || !isRecruiterRole(current.role)) {
+      return [];
+    }
+    const { data, error } = await supabase
+      .from('candidate_inquiries')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(300);
+
+    if (error || !data) {
+      return [];
+    }
+    return (data as InquiryRow[]).map((row) => this.inquiryRowToInquiry(row));
   }
 }
 
