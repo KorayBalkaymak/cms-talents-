@@ -442,9 +442,19 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   };
 
   const renderTeamControls = useCallback((cand: CandidateProfile, fullWidth = false) => {
+    const alreadyReleased = cand.isPublished && cand.status === CandidateStatus.ACTIVE;
     const editing = getActiveRecruiterEditing(cand);
     const busy = claimBusyUserId === cand.userId;
     const wrap = fullWidth ? 'flex w-full flex-col gap-2' : 'flex flex-col items-start gap-1.5';
+    if (alreadyReleased && !editing) {
+      return (
+        <div className={wrap}>
+          <span className="max-w-full rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[10px] font-black uppercase leading-tight tracking-wide text-emerald-700 ring-1 ring-emerald-200">
+            Schon bearbeitet und freigegeben
+          </span>
+        </div>
+      );
+    }
     if (editing) {
       const mine = editing.userId === user.id;
       if (!mine) {
