@@ -795,15 +795,33 @@ class ApiClient {
       return [];
     }
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id,email,role,first_name,last_name,is_submitted,created_at,last_seen_at')
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false });
+    // Backward-compat: last_seen_at kann fehlen, wenn Migrationen noch nicht ausgeführt wurden.
+    const load = async (includeLastSeen: boolean) => {
+      const select = includeLastSeen
+        ? 'id,email,role,first_name,last_name,is_submitted,created_at,last_seen_at'
+        : 'id,email,role,first_name,last_name,is_submitted,created_at';
+      return await supabase
+        .from('profiles')
+        .select(select)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
+    };
+
+    const res1 = await load(true);
+    let data = res1.data as any[] | null | undefined;
+    let error = res1.error;
 
     if (error || !data) {
-      return [];
+      const msg = (error?.message || '').toLowerCase();
+      const missingLastSeen = msg.includes('last_seen_at') || msg.includes('column');
+      if (missingLastSeen) {
+        const res2 = await load(false);
+        data = res2.data as any[] | null | undefined;
+        error = res2.error;
+      }
     }
+
+    if (error || !data) return [];
 
     type Row = {
       id: string;
@@ -813,7 +831,7 @@ class ApiClient {
       last_name: string;
       is_submitted: boolean;
       created_at: string;
-      last_seen_at: string | null;
+      last_seen_at?: string | null;
     };
 
     return (data as Row[]).map((r) => ({
@@ -829,7 +847,7 @@ class ApiClient {
       lastName: r.last_name || '',
       isSubmitted: !!r.is_submitted,
       createdAt: r.created_at,
-      lastSeenAt: r.last_seen_at || null,
+      lastSeenAt: (r.last_seen_at ?? null) as any,
     }));
   }
 
