@@ -208,14 +208,14 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation Bar */}
-      <header className="bg-white border-b border-slate-200">
+      <header className="bg-[#101B31] border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 cursor-pointer shrink-0" onClick={() => onNavigate('/')}>
               <div className="relative inline-flex shrink-0">
-                <div className="pointer-events-none absolute -inset-4 rounded-full bg-orange-500/30 blur-lg md:-inset-10 md:blur-xl" aria-hidden />
-                <div className="relative flex h-16 w-16 items-center justify-center rounded-full border border-slate-200/90 bg-white/90 shadow-[0_14px_34px_-24px_rgba(0,0,0,0.7)] md:h-40 md:w-40">
-                  <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-[0_8px_18px_-14px_rgba(0,0,0,0.55)] md:h-28 md:w-28">
+                <div className="pointer-events-none absolute -inset-4 rounded-full bg-orange-500/25 blur-lg md:-inset-10 md:blur-xl" aria-hidden />
+                <div className="relative flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-white/95 shadow-[0_14px_34px_-24px_rgba(0,0,0,0.55)] md:h-40 md:w-40">
+                  <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-[0_8px_18px_-14px_rgba(0,0,0,0.45)] md:h-28 md:w-28">
                     <img
                       src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
                       alt="CMS Talents"
@@ -242,29 +242,28 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {props.user ? (
                 <>
-                  <span className="text-sm text-slate-500 hidden md:block mr-1">Hallo, {props.user.firstName || 'User'}</span>
+                  <span className="text-sm text-slate-300 hidden md:block mr-1">Hallo, {props.user.firstName || 'User'}</span>
                   {(props.user.role === UserRole.ADMIN || props.user.role === UserRole.RECRUITER) ? (
-                    <Button size="sm" variant="primary" onClick={() => onNavigate('/recruiter/dashboard')} className="h-10 text-sm px-4 rounded-xl">
+                    <Button size="sm" variant="primary" onClick={() => onNavigate('/recruiter/dashboard')} className="h-10 text-sm px-4 rounded-xl focus:ring-offset-[#101B31]">
                       Dashboard
                     </Button>
                   ) : (
-                    <Button
-                      size="sm"
-                      variant="secondary"
+                    <button
+                      type="button"
                       onClick={() => onNavigate('/candidate/profile')}
-                      className="h-10 text-sm px-4 rounded-xl bg-[#101B31] border-[#101B31] hover:bg-[#0B1324] active:bg-[#070D19]"
+                      className="inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 h-10 text-sm px-4 border border-white/35 text-white bg-white/5 hover:bg-white/12 hover:border-white/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500/30 focus:ring-offset-[#101B31]"
                     >
                       Mein Profil
-                    </Button>
+                    </button>
                   )}
-                  <button type="button" onClick={handleLogout} className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200 transition-colors" title="Abmelden">
+                  <button type="button" onClick={handleLogout} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 text-slate-200 hover:text-white hover:bg-white/20 transition-colors" title="Abmelden">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                   </button>
                 </>
               ) : (
                 <>
-                  <button type="button" onClick={() => onNavigate('/recruiter/auth')} className="text-sm font-medium text-slate-600 hover:text-[#101B31] hidden sm:block">Für Arbeitgeber</button>
-                  <Button size="sm" onClick={() => onNavigate('/candidate/auth')} className="h-10 text-sm px-4 rounded-xl">
+                  <button type="button" onClick={() => onNavigate('/recruiter/auth')} className="text-sm font-medium text-slate-300 hover:text-white hidden sm:block transition-colors">Für Arbeitgeber</button>
+                  <Button size="sm" onClick={() => onNavigate('/candidate/auth')} className="h-10 text-sm px-4 rounded-xl focus:ring-offset-[#101B31]">
                     Anmelden
                   </Button>
                 </>
