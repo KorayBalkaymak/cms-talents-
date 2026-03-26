@@ -1780,7 +1780,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       )}
 
                       {candidateDocs && (
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:items-start">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start">
                           {/* Dokumente (download-only) */}
                           <div className="rounded-2xl border border-slate-200 bg-white/70 p-4 space-y-4">
                             <div className="flex items-center justify-between gap-3">
