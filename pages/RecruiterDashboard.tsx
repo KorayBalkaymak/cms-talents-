@@ -1200,7 +1200,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 <div>
                   <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">Alle Nutzer</h3>
                   <p className="mt-0.5 text-xs font-medium text-slate-500">
-                    Kandidaten: „Eingereicht“ vs. „Kein Formular“ und „Inaktiv seit“.
+                    Kandidaten: „Aktuell sichtbar“ vs. „Kein Formular“ und „Inaktiv seit“.
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -1210,7 +1210,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     </div>
                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Nutzer gesamt</div>
                   </div>
-                  <Badge variant="green">Eingereicht {filteredCandidateSubmittedCount}</Badge>
+                  <Badge variant="green">Aktuell sichtbar {filteredCandidateSubmittedCount}</Badge>
                   <Badge variant="yellow">Kein Formular {filteredCandidateOpenCount}</Badge>
                   {filteredOtherRolesCount > 0 && <Badge variant="slate">Sonstige {filteredOtherRolesCount}</Badge>}
                   {filteredRegisteredUsers.length !== registeredUsers.length && (
@@ -1256,7 +1256,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           {u.role === UserRole.CANDIDATE && (
                             <div className="mt-2 flex flex-wrap items-center gap-2">
                               {u.isSubmitted ? (
-                                <Badge variant="green">Eingereicht</Badge>
+                                <Badge variant="green">Aktuell sichtbar</Badge>
                               ) : (
                                 <Badge variant="yellow">Kein Formular</Badge>
                               )}
@@ -1303,7 +1303,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                 {u.role === UserRole.CANDIDATE && (
                                   <div className="mt-2">
                                     {u.isSubmitted ? (
-                                      <Badge variant="green">Eingereicht</Badge>
+                                  <Badge variant="green">Aktuell sichtbar</Badge>
                                     ) : (
                                       <Badge variant="yellow">Kein Formular</Badge>
                                     )}
