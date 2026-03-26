@@ -892,7 +892,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               onClick={() => setActiveView('users')}
               className={`flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-xs font-bold transition-colors ${
                 activeView === 'users'
-                  ? 'border-slate-700 bg-slate-800 text-orange-500'
+                  ? 'border-orange-500 bg-orange-600 text-white'
                   : 'border-transparent text-slate-300 hover:bg-slate-800/60'
               }`}
             >
@@ -902,7 +902,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 </svg>
                 ALLE NUTZER
               </span>
-              <span className="rounded-full border border-orange-400/40 bg-orange-500/15 px-2 py-0.5 text-[10px] font-black text-orange-300">
+              <span
+                className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${
+                  activeView === 'users'
+                    ? 'border-orange-300 bg-orange-500 text-white'
+                    : 'border-orange-400/40 bg-orange-500/15 text-orange-300'
+                }`}
+              >
                 {registeredUsers.length}
               </span>
             </button>
