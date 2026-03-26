@@ -35,6 +35,14 @@ class CandidateService {
     }
   }
 
+  async touchLastSeen(): Promise<void> {
+    try {
+      await api.touchLastSeen();
+    } catch (e) {
+      // Heartbeat ist nicht kritisch; bei Problemen still ignorieren.
+    }
+  }
+
   async getById(userId: string): Promise<CandidateProfile | undefined> {
     try {
       return await api.getCandidate(userId);

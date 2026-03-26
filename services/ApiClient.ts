@@ -754,7 +754,7 @@ class ApiClient {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('id,email,role,first_name,last_name,is_submitted,created_at')
+      .select('id,email,role,first_name,last_name,is_submitted,created_at,last_seen_at')
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
@@ -770,6 +770,7 @@ class ApiClient {
       last_name: string;
       is_submitted: boolean;
       created_at: string;
+      last_seen_at: string | null;
     };
 
     return (data as Row[]).map((r) => ({
@@ -785,7 +786,27 @@ class ApiClient {
       lastName: r.last_name || '',
       isSubmitted: !!r.is_submitted,
       createdAt: r.created_at,
+      lastSeenAt: r.last_seen_at || null,
     }));
+  }
+
+  /** Client-Heartbeat: aktualisiert last_seen_at für das eingeloggte Profil. */
+  async touchLastSeen(): Promise<void> {
+    const current = await this.getSessionUser();
+    if (!current) return;
+
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from('profiles')
+      .update({ last_seen_at: now })
+      .eq('id', current.id);
+
+    if (error) {
+      // DB-Schema älter (Spalte noch nicht vorhanden) -> einfach ignorieren.
+      const msg = (error.message || '').toLowerCase();
+      if (msg.includes('last_seen_at') || msg.includes('column')) return;
+      throw new Error(error.message);
+    }
   }
 
   async getCandidate(userId: string) {

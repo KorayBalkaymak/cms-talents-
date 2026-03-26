@@ -42,6 +42,8 @@ export interface RegisteredUserListItem {
   lastName: string;
   isSubmitted: boolean;
   createdAt: string;
+  /** Client-Heartbeat: wann der Nutzer das letzte Mal aktiv war (für „Inaktiv seit“). */
+  lastSeenAt: string | null;
 }
 
 // =====================================================
@@ -95,8 +97,11 @@ export interface CandidateProfile {
   documents?: { type: string; name: string }[]; // vom Backend: Dokumenten-Infos
 }
 
-/** Nach dieser Dauer gilt die Meldung im UI als abgelaufen (ohne DB-Schreiben). */
-export const RECRUITER_EDITING_STALE_MS = 2 * 60 * 60 * 1000;
+/**
+ * Nach dieser Dauer gilt die Meldung im UI als abgelaufen (ohne weitere „Heartbeat“-Aktualisierung).
+ * Wird im Recruiter-Dashboard während des Bearbeitens regelmäßig aufgefrischt, damit sie für andere länger sichtbar bleibt.
+ */
+export const RECRUITER_EDITING_STALE_MS = 12 * 60 * 60 * 1000;
 
 export function isRecruiterEditingClaimStale(at?: string | null): boolean {
   if (!at) return true;

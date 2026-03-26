@@ -35,6 +35,23 @@ function membershipDurationDe(createdAt: string): string {
   return `${years} Jahr${years === 1 ? '' : 'e'}`;
 }
 
+function inactivityDurationDe(lastSeenAt?: string | null): string {
+  if (!lastSeenAt) return 'noch nie online';
+  const ms = Date.now() - new Date(lastSeenAt).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return '—';
+  if (ms < 60000) return 'weniger als 1 Minute';
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 60) return `${minutes} Minute${minutes === 1 ? '' : 'n'}`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours} Stunde${hours === 1 ? '' : 'n'}`;
+  const days = Math.floor(ms / (24 * 60 * 60 * 1000));
+  if (days < 30) return `${days} Tag${days === 1 ? '' : 'e'}`;
+  const months = Math.floor(days / 30);
+  if (months < 24) return `${months} Monat${months === 1 ? '' : 'e'}`;
+  const years = Math.floor(days / 365);
+  return `${years} Jahr${years === 1 ? '' : 'e'}`;
+}
+
 function roleLabelDe(role: UserRole): string {
   if (role === UserRole.ADMIN) return 'Admin';
   if (role === UserRole.RECRUITER) return 'Recruiter';
@@ -269,6 +286,23 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         u.id.toLowerCase().includes(term)
     );
   }, [registeredUsers, deferredSearchTerm]);
+
+  const filteredCandidateSubmittedCount = useMemo(
+    () =>
+      filteredRegisteredUsers.filter((u) => u.role === UserRole.CANDIDATE && u.isSubmitted).length,
+    [filteredRegisteredUsers]
+  );
+
+  const filteredCandidateOpenCount = useMemo(
+    () =>
+      filteredRegisteredUsers.filter((u) => u.role === UserRole.CANDIDATE && !u.isSubmitted).length,
+    [filteredRegisteredUsers]
+  );
+
+  const filteredOtherRolesCount = useMemo(
+    () => filteredRegisteredUsers.filter((u) => u.role !== UserRole.CANDIDATE).length,
+    [filteredRegisteredUsers]
+  );
 
   const industryGroups = useMemo(() => {
     const sortInGroup = (arr: CandidateProfile[]) =>
@@ -1166,13 +1200,19 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 <div>
                   <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">Alle Nutzer</h3>
                   <p className="mt-0.5 text-xs font-medium text-slate-500">
-                    Registrierte Konten inkl. Kandidaten ohne eingereichtes Formular.
+                    Kandidaten: „Eingereicht“ vs. „Kein Formular“ und „Inaktiv seit“.
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-slate-900 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white">
-                    {loadingRegisteredUsers ? '…' : `${registeredUsers.length} gesamt`}
-                  </span>
+                  <div className="flex flex-col leading-tight">
+                    <div className="text-3xl font-black text-orange-600">
+                      {loadingRegisteredUsers ? '…' : registeredUsers.length}
+                    </div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Nutzer gesamt</div>
+                  </div>
+                  <Badge variant="green">Eingereicht {filteredCandidateSubmittedCount}</Badge>
+                  <Badge variant="yellow">Kein Formular {filteredCandidateOpenCount}</Badge>
+                  {filteredOtherRolesCount > 0 && <Badge variant="slate">Sonstige {filteredOtherRolesCount}</Badge>}
                   {filteredRegisteredUsers.length !== registeredUsers.length && (
                     <span className="text-[10px] font-bold text-slate-400">
                       {filteredRegisteredUsers.length} nach Filter
@@ -1213,14 +1253,17 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
                             Registriert: {new Date(u.createdAt).toLocaleString('de-DE')}
                           </p>
-                          <p className="text-xs font-semibold text-slate-600">Dabei seit: {membershipDurationDe(u.createdAt)}</p>
-                          <p className="text-xs">
-                            <span className="font-bold text-slate-700">Formular: </span>
-                            {u.isSubmitted ? (
-                              <span className="font-semibold text-emerald-600">Eingereicht</span>
-                            ) : (
-                              <span className="font-semibold text-amber-600">Noch nicht</span>
-                            )}
+                          {u.role === UserRole.CANDIDATE && (
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              {u.isSubmitted ? (
+                                <Badge variant="green">Eingereicht</Badge>
+                              ) : (
+                                <Badge variant="yellow">Kein Formular</Badge>
+                              )}
+                            </div>
+                          )}
+                          <p className="mt-2 text-xs font-semibold text-slate-700">
+                            Inaktiv seit: {inactivityDurationDe(u.lastSeenAt)}
                           </p>
                           <Button
                             type="button"
@@ -1244,8 +1287,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Name / E-Mail</th>
                           <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Rolle</th>
                           <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Registriert am</th>
-                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Dabei seit</th>
-                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Formular</th>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Inaktiv seit</th>
                           <th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Aktion</th>
                         </tr>
                       </thead>
@@ -1258,6 +1300,15 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               <td className="px-4 py-3">
                                 <div className="text-sm font-bold text-slate-900">{displayName}</div>
                                 <div className="text-[11px] font-semibold text-slate-500">{u.email}</div>
+                                {u.role === UserRole.CANDIDATE && (
+                                  <div className="mt-2">
+                                    {u.isSubmitted ? (
+                                      <Badge variant="green">Eingereicht</Badge>
+                                    ) : (
+                                      <Badge variant="yellow">Kein Formular</Badge>
+                                    )}
+                                  </div>
+                                )}
                               </td>
                               <td className="px-4 py-3">
                                 <Badge variant={u.role === UserRole.CANDIDATE ? 'slate' : u.role === UserRole.ADMIN ? 'orange' : 'dark'}>
@@ -1267,14 +1318,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               <td className="px-4 py-3 text-xs font-semibold text-slate-600">
                                 {new Date(u.createdAt).toLocaleString('de-DE')}
                               </td>
-                              <td className="px-4 py-3 text-xs font-semibold text-slate-700">{membershipDurationDe(u.createdAt)}</td>
-                              <td className="px-4 py-3">
-                                {u.isSubmitted ? (
-                                  <Badge variant="green">Eingereicht</Badge>
-                                ) : (
-                                  <Badge variant="yellow">Offen</Badge>
-                                )}
-                              </td>
+                              <td className="px-4 py-3 text-xs font-semibold text-slate-700">{inactivityDurationDe(u.lastSeenAt)}</td>
                               <td className="px-4 py-3 text-right">
                                 <Button
                                   type="button"

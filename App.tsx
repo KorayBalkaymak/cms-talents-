@@ -129,6 +129,33 @@ const App: React.FC = () => {
     };
   }, [currentPath, user]);
 
+  // Client-Heartbeat: last_seen_at für „Inaktiv seit …“.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    const touch = async () => {
+      if (cancelled) return;
+      await candidateService.touchLastSeen();
+    };
+
+    void touch();
+    const id = window.setInterval(() => {
+      void touch();
+    }, 60_000);
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') void touch();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [user]);
+
   const navigate = (path: string) => {
     window.location.hash = path;
   };
