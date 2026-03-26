@@ -1,4 +1,4 @@
-import { CandidateProfile, CandidateStatus, CandidateDocuments, CandidateInquiry, RegisteredUserListItem } from '../types';
+import { CandidateProfile, CandidateStatus, CandidateDocuments, CandidateDocumentsForRecruiter, CandidateInquiry, RegisteredUserListItem } from '../types';
 import { api } from './ApiClient';
 
 // =====================================================
@@ -103,8 +103,30 @@ class CandidateService {
     }
   }
 
+  async getOriginalDocuments(userId: string): Promise<CandidateDocuments | undefined> {
+    try {
+      return await api.getOriginalDocuments(userId);
+    } catch (e) {
+      console.error('[CandidateService] Error fetching original documents:', e);
+      return undefined;
+    }
+  }
+
   async updateDocuments(docs: CandidateDocuments): Promise<void> {
     await api.updateDocuments(docs.userId, docs);
+  }
+
+  async getDocumentsForRecruiter(userId: string): Promise<CandidateDocumentsForRecruiter | undefined> {
+    try {
+      return await api.getDocumentsForRecruiter(userId);
+    } catch (e) {
+      console.error('[CandidateService] Error fetching recruiter documents:', e);
+      return undefined;
+    }
+  }
+
+  async updateEditedDocuments(userId: string, docs: CandidateDocuments): Promise<void> {
+    await api.updateEditedDocuments(userId, docs);
   }
 
   async getUniqueSkills(): Promise<string[]> {

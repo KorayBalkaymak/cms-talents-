@@ -77,6 +77,16 @@ export interface CandidateProfile {
   experienceYears: number;  // REQUIRED - Jahre Erfahrung (min 0)
   availability: string;     // REQUIRED - Verfügbarkeit
 
+  /** Gehaltswunsch in EUR (optional). */
+  salaryWishEur?: number | null;
+
+  /**
+   * Arbeitsumkreis: entweder Kilometer-Radius oder freie Umgebung/Region (optional).
+   * Beispiel: 30 (km) oder "Umgebung Rhein-Main".
+   */
+  workRadiusKm?: number | null;
+  workArea?: string | null;
+
   // --- OPTIONAL PERSONAL INFO ---
   birthYear?: string;       // OPTIONAL - Geburtsjahr
 
@@ -129,6 +139,13 @@ export interface CandidateDocuments {
   cvPdf?: { name: string; data: string };   // OPTIONAL - Lebenslauf
   certificates: { name: string; data: string }[]; // OPTIONAL - Zertifikate
   qualifications: { name: string; data: string }[]; // OPTIONAL - Qualifikationen
+}
+
+/** Für den Recruiter: Originale (download-only) + Bearbeitete (editierbar). */
+export interface CandidateDocumentsForRecruiter {
+  userId: string;
+  original: CandidateDocuments;
+  edited: CandidateDocuments;
 }
 
 // =====================================================

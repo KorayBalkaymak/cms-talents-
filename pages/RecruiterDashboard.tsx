@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useDeferredValue, useCallback } from 'react';
-import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, CandidateInquiry, RegisteredUserListItem, getActiveRecruiterEditing } from '../types';
+import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, CandidateDocumentsForRecruiter, CandidateInquiry, RegisteredUserListItem, getActiveRecruiterEditing } from '../types';
 import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea, FileUpload } from '../components/UI';
 import { candidateService } from '../services/CandidateService';
 import { INDUSTRIES, AVAILABILITY_OPTIONS, BOOSTER_KEYWORD_CATEGORIES } from '../constants';
@@ -62,7 +62,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [searchTerm, setSearchTerm] = useState('');
   const [activeView, setActiveView] = useState<'talents' | 'inquiries' | 'external' | 'users'>('talents');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
-  const [candidateDocs, setCandidateDocs] = useState<CandidateDocuments | null>(null);
+  const [candidateDocs, setCandidateDocs] = useState<CandidateDocumentsForRecruiter | null>(null);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
   const [modalTab, setModalTab] = useState('profile');
   const [isSavingDocs, setIsSavingDocs] = useState(false);
@@ -388,7 +388,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     const loadDocs = async () => {
       setIsLoadingDocs(true);
       try {
-        const docs = await candidateService.getDocuments(selectedCandidate.userId);
+        const docs = await candidateService.getDocumentsForRecruiter(selectedCandidate.userId);
         if (!cancelled) setCandidateDocs(docs || null);
       } finally {
         if (!cancelled) setIsLoadingDocs(false);
@@ -413,7 +413,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const publishDisabledReason = (c: CandidateProfile | null) => {
     if (!c) return 'Bitte Kandidat öffnen.';
     if (isPublishing) return 'Bitte warten…';
-    if (!candidateDocs?.cvPdf) return 'Bitte zuerst einen Lebenslauf hochladen.';
+    if (!candidateDocs?.original?.cvPdf) return 'Bitte zuerst einen Lebenslauf hochladen.';
     return null;
   };
 
@@ -424,11 +424,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     try {
       let docs = candidateDocs;
       if (!docs || selectedCandidate?.userId !== c.userId) {
-        docs = await candidateService.getDocuments(c.userId);
+        docs = await candidateService.getDocumentsForRecruiter(c.userId);
         if (selectedCandidate?.userId === c.userId) setCandidateDocs(docs || null);
       }
 
-      if (!docs?.cvPdf) {
+      if (!docs?.original?.cvPdf) {
         setDocError('Bitte zuerst einen Lebenslauf hochladen.');
         return;
       }
@@ -451,8 +451,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     setIsSavingDocs(true);
     setDocError(null);
     try {
-      await candidateService.updateDocuments(nextDocs);
-      const fresh = await candidateService.getDocuments(selectedCandidate.userId);
+      await candidateService.updateEditedDocuments(selectedCandidate.userId, nextDocs);
+      const fresh = await candidateService.getDocumentsForRecruiter(selectedCandidate.userId);
       setCandidateDocs(fresh || null);
       if (onRefreshCandidates) await onRefreshCandidates();
     } catch (e: any) {
@@ -470,14 +470,14 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       setDocError(up.error || 'PDF-Upload fehlgeschlagen.');
       return;
     }
-    const base: CandidateDocuments = candidateDocs || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
+    const base: CandidateDocuments = candidateDocs?.edited || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
     await saveDocs({ ...base, userId: selectedCandidate.userId, cvPdf: { name: up.name, data: up.data } });
   };
 
   const handleRemoveCv = async () => {
     if (!selectedCandidate) return;
     if (!window.confirm('Lebenslauf wirklich entfernen?')) return;
-    const base: CandidateDocuments = candidateDocs || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
+    const base: CandidateDocuments = candidateDocs?.edited || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
     await saveDocs({ ...base, userId: selectedCandidate.userId, cvPdf: undefined });
   };
 
@@ -488,7 +488,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       setDocError('Keine gültigen PDFs ausgewählt.');
       return;
     }
-    const base: CandidateDocuments = candidateDocs || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
+    const base: CandidateDocuments = candidateDocs?.edited || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
     await saveDocs({
       ...base,
       userId: selectedCandidate.userId,
@@ -499,7 +499,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const handleRemoveCertificate = async (idx: number) => {
     if (!selectedCandidate) return;
     if (!window.confirm('Zertifikat wirklich entfernen?')) return;
-    const base: CandidateDocuments = candidateDocs || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
+    const base: CandidateDocuments = candidateDocs?.edited || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
     await saveDocs({
       ...base,
       userId: selectedCandidate.userId,
@@ -515,7 +515,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       setDocError(up.error || 'PDF-Upload fehlgeschlagen.');
       return;
     }
-    const base: CandidateDocuments = candidateDocs || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
+    const base: CandidateDocuments = candidateDocs?.edited || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
     const next = (base.certificates || []).map((d, i) => i === idx ? { name: up.name!, data: up.data! } : d);
     await saveDocs({ ...base, userId: selectedCandidate.userId, certificates: next });
   };
@@ -527,7 +527,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       setDocError('Keine gültigen PDFs ausgewählt.');
       return;
     }
-    const base: CandidateDocuments = candidateDocs || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
+    const base: CandidateDocuments = candidateDocs?.edited || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
     await saveDocs({
       ...base,
       userId: selectedCandidate.userId,
@@ -538,7 +538,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const handleRemoveQualification = async (idx: number) => {
     if (!selectedCandidate) return;
     if (!window.confirm('Qualifikation wirklich entfernen?')) return;
-    const base: CandidateDocuments = candidateDocs || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
+    const base: CandidateDocuments = candidateDocs?.edited || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
     await saveDocs({
       ...base,
       userId: selectedCandidate.userId,
@@ -554,7 +554,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       setDocError(up.error || 'PDF-Upload fehlgeschlagen.');
       return;
     }
-    const base: CandidateDocuments = candidateDocs || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
+    const base: CandidateDocuments = candidateDocs?.edited || { userId: selectedCandidate.userId, certificates: [], qualifications: [] };
     const next = (base.qualifications || []).map((d, i) => i === idx ? { name: up.name!, data: up.data! } : d);
     await saveDocs({ ...base, userId: selectedCandidate.userId, qualifications: next });
   };
@@ -1778,162 +1778,254 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           Dokumente werden geladen...
                         </div>
                       )}
-                      {/* CV */}
-                      <div>
-                        <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Lebenslauf</h4>
-                        {candidateDocs?.cvPdf ? (
-                          <div className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50 hover:bg-white hover:shadow-md transition-all">
-                            <span className="text-sm font-bold text-slate-700 truncate max-w-[200px]">{candidateDocs.cvPdf.name}</span>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => {
-                                  if (selectedCandidate?.userId && !selectedCandidate.cvReviewedAt) {
-                                    onAdminAction(selectedCandidate.userId, 'cv_reviewed', undefined, user.id);
-                                  }
-                                  setPreviewDoc(candidateDocs.cvPdf!);
-                                }}
-                                className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold text-slate-700"
-                              >
-                                Ansehen
-                              </button>
-                              <a href={candidateDocs.cvPdf.data} download={candidateDocs.cvPdf.name} className="px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded-lg text-xs font-bold text-orange-700">↓</a>
-                              <button
-                                onClick={handleRemoveCv}
-                                disabled={isSavingDocs}
-                                className="px-3 py-1 bg-red-50 hover:bg-red-100 rounded-lg text-xs font-black text-red-700 disabled:opacity-60"
-                              >
-                                Entfernen
-                              </button>
-                              <label className={`px-3 py-1 rounded-lg text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
-                                Ersetzen
-                                <input
-                                  type="file"
-                                  accept="application/pdf"
-                                  className="hidden"
-                                  disabled={isSavingDocs}
-                                  onChange={(e) => handleReplaceCv(e.target.files)}
-                                />
-                              </label>
+
+                      {candidateDocs && (
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                          {/* ORIGINALS (download-only) */}
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between gap-3">
+                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Originale Dokumente</h4>
+                              <Badge variant="dark" className="text-[10px] py-0.5 px-2 bg-slate-800 text-white">Nur Download</Badge>
+                            </div>
+
+                            {/* CV */}
+                            <div>
+                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Lebenslauf (Original)</h4>
+                              {candidateDocs.original.cvPdf ? (
+                                <div className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50">
+                                  <span className="text-sm font-bold text-slate-700 truncate max-w-[220px]">{candidateDocs.original.cvPdf.name}</span>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => {
+                                        if (selectedCandidate?.userId && !selectedCandidate.cvReviewedAt) {
+                                          onAdminAction(selectedCandidate.userId, 'cv_reviewed', undefined, user.id);
+                                        }
+                                        setPreviewDoc(candidateDocs.original.cvPdf!);
+                                      }}
+                                      className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold text-slate-700"
+                                    >
+                                      Ansehen
+                                    </button>
+                                    <a href={candidateDocs.original.cvPdf.data} download={candidateDocs.original.cvPdf.name} className="px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded-lg text-xs font-bold text-orange-700">
+                                      ↓
+                                    </a>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-xs text-slate-400 italic">Kein CV</div>
+                              )}
+                            </div>
+
+                            {/* Certificates */}
+                            <div>
+                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Zertifikate (Originale)</h4>
+                              <div className="space-y-2">
+                                {candidateDocs.original.certificates?.length ? (
+                                  candidateDocs.original.certificates.map((doc, i) => (
+                                    <div key={i} className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50">
+                                      <span className="text-sm font-bold text-slate-700 truncate max-w-[220px]">{doc.name}</span>
+                                      <div className="flex gap-2">
+                                        <button onClick={() => setPreviewDoc(doc)} className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold text-slate-700">
+                                          Ansehen
+                                        </button>
+                                        <a href={doc.data} download={doc.name} className="px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded-lg text-xs font-bold text-orange-700">
+                                          ↓
+                                        </a>
+                                      </div>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="text-xs text-slate-400 italic">Keine</div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Qualifications */}
+                            <div>
+                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Qualifikationen (Originale)</h4>
+                              <div className="space-y-2">
+                                {candidateDocs.original.qualifications?.length ? (
+                                  candidateDocs.original.qualifications.map((doc, i) => (
+                                    <div key={i} className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50">
+                                      <span className="text-sm font-bold text-slate-700 truncate max-w-[220px]">{doc.name}</span>
+                                      <div className="flex gap-2">
+                                        <button onClick={() => setPreviewDoc(doc)} className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold text-slate-700">
+                                          Ansehen
+                                        </button>
+                                        <a href={doc.data} download={doc.name} className="px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded-lg text-xs font-bold text-orange-700">
+                                          ↓
+                                        </a>
+                                      </div>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="text-xs text-slate-400 italic">Keine</div>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        ) : <div className="text-xs text-slate-400 italic">Kein CV</div>}
-                        {!candidateDocs?.cvPdf && (
-                          <div className="mt-2">
-                            <label className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
-                              CV hochladen
-                              <input
-                                type="file"
-                                accept="application/pdf"
-                                className="hidden"
-                                disabled={isSavingDocs}
-                                onChange={(e) => handleReplaceCv(e.target.files)}
-                              />
-                            </label>
-                          </div>
-                        )}
-                        {selectedCandidate?.isSubmitted && (
-                          <div className="mt-2 text-[11px] font-bold text-slate-600">
-                            {selectedCandidate.cvReviewedAt ? (
-                              <span className="text-emerald-700">Freigabe möglich (CV geprüft).</span>
-                            ) : (
-                              <span className="text-orange-700">Vor Freigabe bitte CV ansehen (wird automatisch als geprüft markiert).</span>
-                            )}
-                          </div>
-                        )}
-                        {docError && <div className="mt-2 text-[11px] font-black text-red-600">{docError}</div>}
-                      </div>
 
-                      {/* Certificates */}
-                      <div>
-                        <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Zertifikate</h4>
-                        <div className="space-y-2">
-                          {candidateDocs?.certificates?.length ? candidateDocs.certificates.map((doc, i) => (
-                            <div key={i} className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50 hover:bg-white hover:shadow-md transition-all">
-                              <span className="text-sm font-bold text-slate-700 truncate max-w-[200px]">{doc.name}</span>
-                              <div className="flex gap-2">
-                                <button onClick={() => setPreviewDoc(doc)} className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold text-slate-700">Ansehen</button>
-                                <a href={doc.data} download={doc.name} className="px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded-lg text-xs font-bold text-orange-700">↓</a>
-                                <button
-                                  onClick={() => handleRemoveCertificate(i)}
-                                  disabled={isSavingDocs}
-                                  className="px-3 py-1 bg-red-50 hover:bg-red-100 rounded-lg text-xs font-black text-red-700 disabled:opacity-60"
-                                >
-                                  Entfernen
-                                </button>
-                                <label className={`px-3 py-1 rounded-lg text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
-                                  Ersetzen
+                          {/* EDITED (editable) */}
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between gap-3">
+                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Bearbeitete Dokumente</h4>
+                              <Badge variant="orange" className="text-[10px] py-0.5 px-2">Marktplatz-Version</Badge>
+                            </div>
+
+                            {/* CV */}
+                            <div>
+                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Lebenslauf (Bearbeitet)</h4>
+                              {candidateDocs.edited.cvPdf ? (
+                                <div className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50">
+                                  <span className="text-sm font-bold text-slate-700 truncate max-w-[220px]">{candidateDocs.edited.cvPdf.name}</span>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => setPreviewDoc(candidateDocs.edited.cvPdf!)}
+                                      className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold text-slate-700"
+                                    >
+                                      Ansehen
+                                    </button>
+                                    <a href={candidateDocs.edited.cvPdf.data} download={candidateDocs.edited.cvPdf.name} className="px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded-lg text-xs font-bold text-orange-700">
+                                      ↓
+                                    </a>
+                                    <label className={`px-3 py-1 rounded-lg text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                                      Ersetzen
+                                      <input
+                                        type="file"
+                                        accept="application/pdf"
+                                        className="hidden"
+                                        disabled={isSavingDocs}
+                                        onChange={(e) => handleReplaceCv(e.target.files)}
+                                      />
+                                    </label>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="mt-2">
+                                  <label className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                                    CV hochladen / ersetzen
+                                    <input
+                                      type="file"
+                                      accept="application/pdf"
+                                      className="hidden"
+                                      disabled={isSavingDocs}
+                                      onChange={(e) => handleReplaceCv(e.target.files)}
+                                    />
+                                  </label>
+                                </div>
+                              )}
+
+                              {selectedCandidate?.isSubmitted && (
+                                <div className="mt-2 text-[11px] font-bold text-slate-600">
+                                  {selectedCandidate.cvReviewedAt ? (
+                                    <span className="text-emerald-700">Freigabe möglich (CV geprüft).</span>
+                                  ) : (
+                                    <span className="text-orange-700">Vor Freigabe bitte CV ansehen (wird automatisch als geprüft markiert).</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Certificates */}
+                            <div>
+                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Zertifikate (Bearbeitet)</h4>
+                              <div className="space-y-2">
+                                {candidateDocs.edited.certificates?.length ? (
+                                  candidateDocs.edited.certificates.map((doc, i) => (
+                                    <div key={i} className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50">
+                                      <span className="text-sm font-bold text-slate-700 truncate max-w-[220px]">{doc.name}</span>
+                                      <div className="flex gap-2">
+                                        <button onClick={() => setPreviewDoc(doc)} className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold text-slate-700">
+                                          Ansehen
+                                        </button>
+                                        <a href={doc.data} download={doc.name} className="px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded-lg text-xs font-bold text-orange-700">
+                                          ↓
+                                        </a>
+                                        <label className={`px-3 py-1 rounded-lg text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                                          Ersetzen
+                                          <input
+                                            type="file"
+                                            accept="application/pdf"
+                                            className="hidden"
+                                            disabled={isSavingDocs}
+                                            onChange={(e) => handleReplaceCertificate(i, e.target.files)}
+                                          />
+                                        </label>
+                                      </div>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="text-xs text-slate-400 italic">Keine</div>
+                                )}
+                              </div>
+
+                              <div className="mt-2">
+                                <label className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                                  Zertifikate hinzufügen / ersetzen
                                   <input
                                     type="file"
                                     accept="application/pdf"
+                                    multiple
                                     className="hidden"
                                     disabled={isSavingDocs}
-                                    onChange={(e) => handleReplaceCertificate(i, e.target.files)}
+                                    onChange={(e) => handleAddCertificates(e.target.files)}
                                   />
                                 </label>
                               </div>
                             </div>
-                          )) : <div className="text-xs text-slate-400 italic">Keine</div>}
-                        </div>
-                        <div className="mt-2">
-                          <label className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
-                            Zertifikate hinzufügen
-                            <input
-                              type="file"
-                              accept="application/pdf"
-                              multiple
-                              className="hidden"
-                              disabled={isSavingDocs}
-                              onChange={(e) => handleAddCertificates(e.target.files)}
-                            />
-                          </label>
-                        </div>
-                      </div>
 
-                      {/* Qualifications */}
-                      <div>
-                        <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Qualifikationen</h4>
-                        <div className="space-y-2">
-                          {candidateDocs?.qualifications?.length ? candidateDocs.qualifications.map((doc, i) => (
-                            <div key={i} className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50 hover:bg-white hover:shadow-md transition-all">
-                              <span className="text-sm font-bold text-slate-700 truncate max-w-[200px]">{doc.name}</span>
-                              <div className="flex gap-2">
-                                <button onClick={() => setPreviewDoc(doc)} className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold text-slate-700">Ansehen</button>
-                                <a href={doc.data} download={doc.name} className="px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded-lg text-xs font-bold text-orange-700">↓</a>
-                                <button
-                                  onClick={() => handleRemoveQualification(i)}
-                                  disabled={isSavingDocs}
-                                  className="px-3 py-1 bg-red-50 hover:bg-red-100 rounded-lg text-xs font-black text-red-700 disabled:opacity-60"
-                                >
-                                  Entfernen
-                                </button>
-                                <label className={`px-3 py-1 rounded-lg text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
-                                  Ersetzen
+                            {/* Qualifications */}
+                            <div>
+                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Qualifikationen (Bearbeitet)</h4>
+                              <div className="space-y-2">
+                                {candidateDocs.edited.qualifications?.length ? (
+                                  candidateDocs.edited.qualifications.map((doc, i) => (
+                                    <div key={i} className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50">
+                                      <span className="text-sm font-bold text-slate-700 truncate max-w-[220px]">{doc.name}</span>
+                                      <div className="flex gap-2">
+                                        <button onClick={() => setPreviewDoc(doc)} className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold text-slate-700">
+                                          Ansehen
+                                        </button>
+                                        <a href={doc.data} download={doc.name} className="px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded-lg text-xs font-bold text-orange-700">
+                                          ↓
+                                        </a>
+                                        <label className={`px-3 py-1 rounded-lg text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                                          Ersetzen
+                                          <input
+                                            type="file"
+                                            accept="application/pdf"
+                                            className="hidden"
+                                            disabled={isSavingDocs}
+                                            onChange={(e) => handleReplaceQualification(i, e.target.files)}
+                                          />
+                                        </label>
+                                      </div>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="text-xs text-slate-400 italic">Keine</div>
+                                )}
+                              </div>
+
+                              <div className="mt-2">
+                                <label className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                                  Qualifikationen hinzufügen
                                   <input
                                     type="file"
                                     accept="application/pdf"
+                                    multiple
                                     className="hidden"
                                     disabled={isSavingDocs}
-                                    onChange={(e) => handleReplaceQualification(i, e.target.files)}
+                                    onChange={(e) => handleAddQualifications(e.target.files)}
                                   />
                                 </label>
                               </div>
                             </div>
-                          )) : <div className="text-xs text-slate-400 italic">Keine</div>}
+                          </div>
                         </div>
-                        <div className="mt-2">
-                          <label className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
-                            Qualifikationen hinzufügen
-                            <input
-                              type="file"
-                              accept="application/pdf"
-                              multiple
-                              className="hidden"
-                              disabled={isSavingDocs}
-                              onChange={(e) => handleAddQualifications(e.target.files)}
-                            />
-                          </label>
-                        </div>
-                      </div>
+                      )}
+
+                      {docError && <div className="text-[11px] font-black text-red-600">{docError}</div>}
                     </div>
                   )}
 

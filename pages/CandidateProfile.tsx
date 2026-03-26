@@ -56,6 +56,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
   const [deleteError, setDeleteError] = useState('');
   /** Pflichtfeld-Hinweise für Lebenslauf / Qualifikationen beim Absenden an Recruiter */
   const [documentFieldErrors, setDocumentFieldErrors] = useState<{ cv?: string; qualifications?: string }>({});
+  const docsReadOnly = !!formData.isSubmitted || !!formData.isPublished || formData.status === CandidateStatus.ACTIVE;
 
   // Nach Speichern liefert der Parent die Server-Antwort (z. B. isPublished false) — Formular angleichen
   useEffect(() => {
@@ -65,7 +66,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
   // Load documents on mount
   useEffect(() => {
     const loadDocs = async () => {
-      const docs = await candidateService.getDocuments(profile.userId);
+      const docs = await candidateService.getOriginalDocuments(profile.userId);
       if (docs) setDocuments(docs);
     };
     loadDocs();
@@ -544,6 +545,46 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                 </Select>
               </div>
             </div>
+
+            <div className="relative mt-5">
+              <h3 className="mb-4 flex items-center gap-2 text-base font-black tracking-tight text-slate-900 sm:text-lg">
+                <span className="h-8 w-1.5 rounded-full bg-gradient-to-b from-orange-500 via-amber-500 to-orange-600 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />
+                ARBEITSRAUM & GEHALT
+              </h3>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-6">
+                <Input
+                  label="Gehaltswunsch (EUR)"
+                  name="salaryWishEur"
+                  type="number"
+                  value={formData.salaryWishEur ?? ''}
+                  onChange={handleNumberChange}
+                  placeholder="z. B. 45000"
+                  min="0"
+                  className="h-9 rounded-xl text-sm sm:h-10"
+                />
+                <Input
+                  label="Arbeitsradius (km)"
+                  name="workRadiusKm"
+                  type="number"
+                  value={formData.workRadiusKm ?? ''}
+                  onChange={handleNumberChange}
+                  placeholder="z. B. 30"
+                  min="0"
+                  className="h-9 rounded-xl text-sm sm:h-10"
+                />
+                <div className="sm:col-span-2">
+                  <Input
+                    label="Arbeitsumgebung/Region (optional)"
+                    name="workArea"
+                    value={formData.workArea ?? ''}
+                    onChange={handleChange}
+                    placeholder="z. B. Umgebung Rhein-Main"
+                    className="h-9 rounded-xl text-sm sm:h-10"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="relative">
               <Textarea
                 label="Kurz-Bio (optional)"
@@ -682,44 +723,103 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
               </span>
             </h3>
 
-            <div className="relative grid grid-cols-1 gap-4 md:grid-cols-3 sm:gap-6">
-              <FileUpload
-                label="Lebenslauf (CV)"
-                required
-                accept="application/pdf"
-                onChange={handleCvUpload}
-                files={documents.cvPdf ? [{ name: documents.cvPdf.name }] : []}
-                onRemove={() => {
-                  setDocuments(prev => ({ ...prev, cvPdf: undefined }));
-                }}
-                helperText="PDF, max 10MB"
-                error={documentFieldErrors.cv}
-              />
+            {docsReadOnly ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3 sm:gap-6">
+                  <div className="rounded-2xl border border-orange-200/80 bg-white/70 p-4">
+                    <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Lebenslauf (CV) – Original</h4>
+                    {documents.cvPdf ? (
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-bold text-slate-700 truncate max-w-[180px]">{documents.cvPdf.name}</span>
+                        <a href={documents.cvPdf.data} download={documents.cvPdf.name} className="px-3 py-2 bg-orange-100 hover:bg-orange-200 rounded-xl text-xs font-black text-orange-700">
+                          Download
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-slate-400 italic">Kein CV</div>
+                    )}
+                  </div>
 
-              <FileUpload
-                label="Zertifikate"
-                accept="application/pdf"
-                multiple
-                onChange={handleCertificatesUpload}
-                files={documents.certificates}
-                onRemove={(idx) => setDocuments(prev => ({ ...prev, certificates: prev.certificates.filter((_, i) => i !== idx) }))}
-                helperText="PDFs, max 10MB – freiwillig"
-              />
+                  <div className="rounded-2xl border border-orange-200/80 bg-white/70 p-4">
+                    <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Zertifikate – Originale</h4>
+                    <div className="space-y-2">
+                      {documents.certificates?.length ? (
+                        documents.certificates.map((doc, idx) => (
+                          <div key={idx} className="flex items-center justify-between gap-3">
+                            <span className="text-xs font-bold text-slate-700 truncate">{doc.name}</span>
+                            <a href={doc.data} download={doc.name} className="px-2.5 py-1.5 bg-orange-100 hover:bg-orange-200 rounded-lg text-[10px] font-black text-orange-700">
+                              ↓
+                            </a>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-xs text-slate-400 italic">Keine</div>
+                      )}
+                    </div>
+                  </div>
 
-              <FileUpload
-                label="Qualifikationen"
-                required
-                accept="application/pdf"
-                multiple
-                onChange={handleQualificationsUpload}
-                files={documents.qualifications}
-                onRemove={(idx) =>
-                  setDocuments(prev => ({ ...prev, qualifications: prev.qualifications.filter((_, i) => i !== idx) }))
-                }
-                helperText="PDFs, max 10MB – mindestens eine Datei"
-                error={documentFieldErrors.qualifications}
-              />
-            </div>
+                  <div className="rounded-2xl border border-orange-200/80 bg-white/70 p-4">
+                    <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Qualifikationen – Originale</h4>
+                    <div className="space-y-2">
+                      {documents.qualifications?.length ? (
+                        documents.qualifications.map((doc, idx) => (
+                          <div key={idx} className="flex items-center justify-between gap-3">
+                            <span className="text-xs font-bold text-slate-700 truncate">{doc.name}</span>
+                            <a href={doc.data} download={doc.name} className="px-2.5 py-1.5 bg-orange-100 hover:bg-orange-200 rounded-lg text-[10px] font-black text-orange-700">
+                              ↓
+                            </a>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-xs text-slate-400 italic">Keine</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-orange-200/70 bg-orange-50/40 p-4 text-xs font-medium text-slate-700">
+                  Deine Originaldokumente sind eingefroren (nur Download). Der Recruiter kann danach „bearbeitete Dokumente“ für den Marktplatz hinzufügen/ersetzen.
+                </div>
+              </div>
+            ) : (
+              <div className="relative grid grid-cols-1 gap-4 md:grid-cols-3 sm:gap-6">
+                <FileUpload
+                  label="Lebenslauf (CV)"
+                  required
+                  accept="application/pdf"
+                  onChange={handleCvUpload}
+                  files={documents.cvPdf ? [{ name: documents.cvPdf.name }] : []}
+                  onRemove={() => {
+                    setDocuments(prev => ({ ...prev, cvPdf: undefined }));
+                  }}
+                  helperText="PDF, max 10MB"
+                  error={documentFieldErrors.cv}
+                />
+
+                <FileUpload
+                  label="Zertifikate"
+                  accept="application/pdf"
+                  multiple
+                  onChange={handleCertificatesUpload}
+                  files={documents.certificates}
+                  onRemove={(idx) => setDocuments(prev => ({ ...prev, certificates: prev.certificates.filter((_, i) => i !== idx) }))}
+                  helperText="PDFs, max 10MB – freiwillig"
+                />
+
+                <FileUpload
+                  label="Qualifikationen"
+                  required
+                  accept="application/pdf"
+                  multiple
+                  onChange={handleQualificationsUpload}
+                  files={documents.qualifications}
+                  onRemove={(idx) =>
+                    setDocuments(prev => ({ ...prev, qualifications: prev.qualifications.filter((_, i) => i !== idx) }))
+                  }
+                  helperText="PDFs, max 10MB – mindestens eine Datei"
+                  error={documentFieldErrors.qualifications}
+                />
+              </div>
+            )}
           </section>
 
           {/* Action Buttons */}

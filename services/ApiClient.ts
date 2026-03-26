@@ -2,6 +2,7 @@ import { supabase } from '../utils/supabase';
 import {
   AuditLog,
   CandidateDocuments,
+  CandidateDocumentsForRecruiter,
   CandidateInquiry,
   CandidateProfile,
   CandidateStatus,
@@ -48,6 +49,9 @@ type ProfileRow = {
   about: string | null;
   profile_image_url: string | null;
   avatar_seed: string;
+  salary_wish_eur: number | null;
+  work_radius_km: number | null;
+  work_area: string | null;
   status: CandidateStatus;
   is_published: boolean;
   is_submitted: boolean;
@@ -70,6 +74,9 @@ type DocumentRow = {
   cv_pdf: { name: string; data: string } | null;
   certificates: { name: string; data: string }[] | null;
   qualifications: { name: string; data: string }[] | null;
+  edited_cv_pdf: { name: string; data: string } | null;
+  edited_certificates: { name: string; data: string }[] | null;
+  edited_qualifications: { name: string; data: string }[] | null;
   updated_at: string | null;
 };
 
@@ -360,26 +367,56 @@ class ApiClient {
     return (data as DocumentRow | null) ?? null;
   }
 
-  private documentsToList(row: DocumentRow | null | undefined): { type: string; name: string }[] {
+  private documentsToList(
+    row: DocumentRow | null | undefined,
+    useEdited: boolean
+  ): { type: string; name: string }[] {
     if (!row) return [];
 
     const items: { type: string; name: string }[] = [];
-    if (row.cv_pdf?.name) items.push({ type: 'cv', name: row.cv_pdf.name });
-    for (const cert of row.certificates || []) {
+    if (!useEdited) {
+      if (row.cv_pdf?.name) items.push({ type: 'cv', name: row.cv_pdf.name });
+      for (const cert of row.certificates || []) {
+        if (cert?.name) items.push({ type: 'certificate', name: cert.name });
+      }
+      for (const qual of row.qualifications || []) {
+        if (qual?.name) items.push({ type: 'qualification', name: qual.name });
+      }
+      return items;
+    }
+
+    // edited docs for marktplatz
+    if (row.edited_cv_pdf?.name) items.push({ type: 'cv', name: row.edited_cv_pdf.name });
+    for (const cert of row.edited_certificates || []) {
       if (cert?.name) items.push({ type: 'certificate', name: cert.name });
     }
-    for (const qual of row.qualifications || []) {
+    for (const qual of row.edited_qualifications || []) {
       if (qual?.name) items.push({ type: 'qualification', name: qual.name });
     }
     return items;
   }
 
-  private documentRowToDocuments(row: DocumentRow | null | undefined): CandidateDocuments {
+  private documentRowToDocuments(
+    row: DocumentRow | null | undefined,
+    useEdited: boolean
+  ): CandidateDocuments {
+    const source = useEdited
+      ? {
+          cv_pdf: row?.edited_cv_pdf ?? null,
+          certificates: row?.edited_certificates ?? [],
+          qualifications: row?.edited_qualifications ?? [],
+        }
+      : {
+          cv_pdf: row?.cv_pdf ?? null,
+          certificates: row?.certificates ?? [],
+          qualifications: row?.qualifications ?? [],
+        };
+
     return {
       userId: row?.user_id || '',
-      cvPdf: row?.cv_pdf || undefined,
-      certificates: row?.certificates || [],
-      qualifications: row?.qualifications || [],
+      cvPdf: source.cv_pdf || undefined,
+      certificates: source.certificates || [],
+      qualifications: source.qualifications || [],
     };
   }
 
@@ -415,6 +452,9 @@ class ApiClient {
       industry: row.industry || '',
       experienceYears: row.experience_years || 0,
       availability: row.availability || '',
+      salaryWishEur: row.salary_wish_eur ?? null,
+      workRadiusKm: row.work_radius_km ?? null,
+      workArea: row.work_area ?? null,
       birthYear: row.birth_year || undefined,
       about: row.about || undefined,
       skills: row.skills || [],
@@ -431,7 +471,7 @@ class ApiClient {
       recruiterEditingAt: isRecruiterEditingClaimStale(row.recruiter_editing_at)
         ? null
         : row.recruiter_editing_at ?? null,
-      documents: this.documentsToList(docs),
+      documents: this.documentsToList(docs, !!row.is_published),
     };
   }
 
@@ -473,6 +513,9 @@ class ApiClient {
       industry: '',
       experience_years: 0,
       availability: '',
+      salary_wish_eur: null,
+      work_radius_km: null,
+      work_area: null,
       birth_year: null,
       about: null,
       profile_image_url: null,
@@ -926,6 +969,9 @@ class ApiClient {
       industry: data.industry || current?.industry || '',
       experience_years: Number(data.experienceYears ?? current?.experience_years ?? 0),
       availability: data.availability || current?.availability || '',
+      salary_wish_eur: data.salaryWishEur ?? current?.salary_wish_eur ?? null,
+      work_radius_km: data.workRadiusKm ?? current?.work_radius_km ?? null,
+      work_area: data.workArea ?? current?.work_area ?? null,
       birth_year: data.birthYear ?? current?.birth_year ?? null,
       about: data.about ?? current?.about ?? null,
       profile_image_url: data.profileImageUrl ?? current?.profile_image_url ?? null,
@@ -1192,6 +1238,28 @@ class ApiClient {
         throw new Error(error.message);
       }
 
+      // Marketplace soll ausschließlich „bearbeitete“ Dokumente sehen.
+      // Wenn der Recruiter noch nichts bearbeitet hat, kopieren wir die Originale als edited-Version hinein,
+      // damit der Marktplatz nicht leer ist.
+      if (docs) {
+        const copyCv = !docs.edited_cv_pdf?.name && docs.cv_pdf?.name;
+        const copyCerts = (!docs.edited_certificates || docs.edited_certificates.length === 0) && (docs.certificates || []).length > 0;
+        const copyQuals = (!docs.edited_qualifications || docs.edited_qualifications.length === 0) && (docs.qualifications || []).length > 0;
+
+        if (copyCv || copyCerts || copyQuals) {
+          await supabase.from('candidate_documents').upsert(
+            {
+              user_id: userId,
+              edited_cv_pdf: copyCv ? docs.cv_pdf : docs.edited_cv_pdf || null,
+              edited_certificates: copyCerts ? (docs.certificates || []) : (docs.edited_certificates || []),
+              edited_qualifications: copyQuals ? (docs.qualifications || []) : (docs.edited_qualifications || []),
+              updated_at: now,
+            },
+            { onConflict: 'user_id' }
+          );
+        }
+      }
+
       await supabase.from('audit_log').insert({
         id: crypto.randomUUID(),
         action: 'Profil veröffentlicht (freigegeben)',
@@ -1224,12 +1292,104 @@ class ApiClient {
         };
       }
     }
+    const profile = await this.fetchProfileRow(userId);
+    const useEdited = !!profile?.is_published && profile?.status === CandidateStatus.ACTIVE;
+
     const row = await this.fetchDocumentRow(userId);
-    return row ? this.documentRowToDocuments(row) : {
-      userId,
-      certificates: [],
-      qualifications: [],
+    return row
+      ? this.documentRowToDocuments(row, useEdited)
+      : {
+          userId,
+          certificates: [],
+          qualifications: [],
+        };
+  }
+
+  /** Originaldokumente (für Kandidaten): unabhängig davon, ob der Nutzer bereits veröffentlicht ist. */
+  async getOriginalDocuments(userId: string): Promise<CandidateDocuments | undefined> {
+    if (userId.startsWith('external:')) {
+      const externalId = userId.slice('external:'.length);
+      const { data } = await supabase
+        .from('external_candidates')
+        .select('cv_pdf,certificates,qualifications')
+        .eq('id', externalId)
+        .maybeSingle();
+      if (data) {
+        const row = data as {
+          cv_pdf?: { name: string; data: string } | null;
+          certificates?: { name: string; data: string }[] | null;
+          qualifications?: { name: string; data: string }[] | null;
+        };
+        return {
+          userId,
+          cvPdf: row.cv_pdf || undefined,
+          certificates: row.certificates || [],
+          qualifications: row.qualifications || [],
+        };
+      }
+    }
+
+    const row = await this.fetchDocumentRow(userId);
+    return row
+      ? this.documentRowToDocuments(row, false)
+      : {
+          userId,
+          certificates: [],
+          qualifications: [],
+        };
+  }
+
+  async getDocumentsForRecruiter(userId: string): Promise<CandidateDocumentsForRecruiter | undefined> {
+    if (userId.startsWith('external:')) {
+      // Externe Kandidaten haben derzeit nur „Originale“ (ohne separate edited-Spalten).
+      const externalId = userId.slice('external:'.length);
+      const { data } = await supabase
+        .from('external_candidates')
+        .select('cv_pdf,certificates,qualifications')
+        .eq('id', externalId)
+        .maybeSingle();
+      if (!data) return undefined;
+      const row = data as {
+        cv_pdf?: { name: string; data: string } | null;
+        certificates?: { name: string; data: string }[] | null;
+        qualifications?: { name: string; data: string }[] | null;
+      };
+      const original: CandidateDocuments = {
+        userId,
+        cvPdf: row.cv_pdf || undefined,
+        certificates: row.certificates || [],
+        qualifications: row.qualifications || [],
+      };
+      // Für die UI setzen wir edited zunächst identisch.
+      return { userId, original, edited: original };
+    }
+
+    const row = await this.fetchDocumentRow(userId);
+    if (!row) return undefined;
+    const original = this.documentRowToDocuments(row, false);
+    const edited = this.documentRowToDocuments(row, true);
+    return { userId, original, edited };
+  }
+
+  async updateEditedDocuments(userId: string, data: CandidateDocuments): Promise<void> {
+    const authUser = await this.currentAuthUser();
+    if (!authUser || !isRecruiterRole(authUser.role)) {
+      throw new Error('Keine Berechtigung für das Bearbeiten der Dokumente.');
+    }
+
+    const now = new Date().toISOString();
+    const payload = {
+      user_id: userId,
+      edited_cv_pdf: data.cvPdf || null,
+      edited_certificates: data.certificates || [],
+      edited_qualifications: data.qualifications || [],
+      updated_at: now,
     };
+
+    const { error } = await supabase.from('candidate_documents').upsert(payload, { onConflict: 'user_id' });
+    if (error) {
+      throw new Error(error.message);
+    }
   }
 
   async updateDocuments(userId: string, data: CandidateDocuments) {
