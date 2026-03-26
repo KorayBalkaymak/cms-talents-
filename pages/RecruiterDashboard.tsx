@@ -89,6 +89,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     industry: INDUSTRIES[0] || '',
     experienceYears: 0,
     availability: AVAILABILITY_OPTIONS[0] || '',
+    salaryWishEur: 0,
     about: '',
     skillsRaw: '',
   });
@@ -653,6 +654,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         industry: externalForm.industry,
         experienceYears: Number(externalForm.experienceYears || 0),
         availability: externalForm.availability,
+        salaryWishEur: externalForm.salaryWishEur > 0 ? Number(externalForm.salaryWishEur) : undefined,
         about: externalForm.about.trim() || undefined,
         skills,
         boostedKeywords: externalBoostedKeywords,
@@ -660,7 +662,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         certificates: externalDocs.certificates,
         qualifications: externalDocs.qualifications,
         isPublished: true,
-      });
+      } as any);
       if (onRefreshCandidates) await onRefreshCandidates();
       setExternalSuccess('Kandidat wurde erstellt und für den Marktplatz freigegeben.');
       setExternalForm((prev) => ({
@@ -669,6 +671,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         about: '',
         skillsRaw: '',
         experienceYears: 0,
+        salaryWishEur: 0,
       }));
       setExternalBoostedKeywords([]);
       setExternalDocs({
@@ -1116,7 +1119,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               )}
             </div>
           ) : activeView === 'external' ? (
-            <div className="overflow-hidden rounded-2xl border border-orange-400 bg-orange-100 shadow-sm">
+            <div className="overflow-hidden rounded-2xl border border-orange-600 bg-orange-600 shadow-sm">
               <div className="border-b border-orange-400 bg-orange-600 px-4 py-3">
                 <h3 className="text-sm font-black uppercase tracking-widest text-white">Kandidaten hinzufügen</h3>
                 <p className="mt-1 text-xs font-medium text-slate-200">Manuell Daten erfassen und optional direkt im Marktplatz freigeben.</p>
@@ -1131,6 +1134,18 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
                   </Select>
                   <Input label="Erfahrung (Jahre)" type="number" value={externalForm.experienceYears} onChange={(e) => setExternalForm((p) => ({ ...p, experienceYears: parseInt(e.target.value) || 0 }))} />
+                  <Input
+                    label="Wunschgehalt (EUR)"
+                    type="number"
+                    value={externalForm.salaryWishEur}
+                    onChange={(e) =>
+                      setExternalForm((p) => ({
+                        ...p,
+                        salaryWishEur: parseInt(e.target.value) || 0,
+                      }))
+                    }
+                    placeholder="z.B. 50000"
+                  />
                   <Select label="Verfügbarkeit" value={externalForm.availability} onChange={(e) => setExternalForm((p) => ({ ...p, availability: e.target.value }))}>
                     {AVAILABILITY_OPTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
                   </Select>

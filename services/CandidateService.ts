@@ -158,6 +158,7 @@ class CandidateService {
     industry: string;
     experienceYears: number;
     availability: string;
+    salaryWishEur?: number;
     about?: string;
     skills?: string[];
     boostedKeywords?: string[];

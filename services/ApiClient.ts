@@ -98,6 +98,7 @@ type ExternalCandidateRow = {
   industry: string;
   experience_years: number;
   availability: string;
+  salary_wish_eur: number | null;
   about: string | null;
   skills: string[] | null;
   boosted_keywords: string[] | null;
@@ -181,6 +182,7 @@ class ApiClient {
       industry: row.industry || '',
       experienceYears: row.experience_years || 0,
       availability: row.availability || '',
+      salaryWishEur: row.salary_wish_eur ?? null,
       about: row.about || undefined,
       skills: row.skills || [],
       boostedKeywords: row.boosted_keywords || [],
@@ -1577,6 +1579,7 @@ class ApiClient {
     industry: string;
     experienceYears: number;
     availability: string;
+    salaryWishEur?: number;
     about?: string;
     skills?: string[];
     boostedKeywords?: string[];
@@ -1595,6 +1598,8 @@ class ApiClient {
       industry: input.industry.trim(),
       experience_years: Number(input.experienceYears || 0),
       availability: input.availability.trim(),
+      salary_wish_eur:
+        input.salaryWishEur && input.salaryWishEur > 0 ? Math.round(input.salaryWishEur) : null,
       about: input.about?.trim() || null,
       skills: (input.skills || []).filter(Boolean),
       boosted_keywords: (input.boostedKeywords || []).filter(Boolean),
@@ -1614,6 +1619,7 @@ class ApiClient {
       industry: row.industry,
       experience_years: row.experience_years,
       availability: row.availability,
+      salary_wish_eur: row.salary_wish_eur,
       about: row.about,
       skills: row.skills,
       boosted_keywords: row.boosted_keywords,
