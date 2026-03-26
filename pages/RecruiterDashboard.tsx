@@ -1116,10 +1116,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               )}
             </div>
           ) : activeView === 'external' ? (
-            <div className="overflow-hidden rounded-2xl border border-orange-200 bg-orange-50 shadow-sm">
-              <div className="border-b border-orange-200/70 bg-orange-100 px-4 py-3">
-                <h3 className="text-sm font-black uppercase tracking-widest text-slate-900">Kandidaten hinzufügen</h3>
-                <p className="mt-1 text-xs font-medium text-slate-700">Manuell Daten erfassen und optional direkt im Marktplatz freigeben.</p>
+            <div className="overflow-hidden rounded-2xl border border-orange-500/30 bg-[#101B31] shadow-sm">
+              <div className="border-b border-orange-500/30 bg-orange-600 px-4 py-3">
+                <h3 className="text-sm font-black uppercase tracking-widest text-white">Kandidaten hinzufügen</h3>
+                <p className="mt-1 text-xs font-medium text-slate-200">Manuell Daten erfassen und optional direkt im Marktplatz freigeben.</p>
               </div>
               <div className="space-y-4 px-4 py-4">
                 {externalError && <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">{externalError}</div>}
