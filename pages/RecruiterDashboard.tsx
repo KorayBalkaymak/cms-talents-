@@ -17,6 +17,7 @@ interface RecruiterDashboardProps {
 }
 
 const STALE_CANDIDATE_MS = 7 * 24 * 60 * 60 * 1000;
+const RECRUITER_EDITING_CLAIM_HEARTBEAT_MS = 60 * 60 * 1000; // 1h
 
 function membershipDurationDe(createdAt: string): string {
   const ms = Date.now() - new Date(createdAt).getTime();
@@ -52,6 +53,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [docError, setDocError] = useState<string | null>(null);
   const [claimBusyUserId, setClaimBusyUserId] = useState<string | null>(null);
   const [claimError, setClaimError] = useState<string | null>(null);
+  const [deletingInquiryId, setDeletingInquiryId] = useState<string | null>(null);
+  const [inquiryDeleteError, setInquiryDeleteError] = useState<string | null>(null);
+  const [recruiterEditingHeartbeatCandidateId, setRecruiterEditingHeartbeatCandidateId] = useState<string | null>(null);
   const [inquiries, setInquiries] = useState<CandidateInquiry[]>([]);
   const [isLoadingInquiries, setIsLoadingInquiries] = useState(false);
   const [registeredUsers, setRegisteredUsers] = useState<RegisteredUserListItem[]>([]);
@@ -95,6 +99,20 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     const fresh = candidates.find((c) => c.userId === selectedCandidate.userId);
     if (fresh) setSelectedCandidate(fresh);
   }, [candidates, selectedCandidate]);
+
+  // Heartbeat deaktivieren, wenn das Modal / die Auswahl gewechselt oder geschlossen wird.
+  useEffect(() => {
+    if (!selectedCandidate) {
+      setRecruiterEditingHeartbeatCandidateId(null);
+      return;
+    }
+    if (
+      recruiterEditingHeartbeatCandidateId &&
+      recruiterEditingHeartbeatCandidateId !== selectedCandidate.userId
+    ) {
+      setRecruiterEditingHeartbeatCandidateId(null);
+    }
+  }, [selectedCandidate, recruiterEditingHeartbeatCandidateId]);
 
   // Andere Recruiter sehen Meldungen nach kurzer Zeit automatisch aktualisiert
   useEffect(() => {
@@ -152,6 +170,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       setClaimBusyUserId(cand.userId);
       if (editing?.userId === user.id) {
         await candidateService.setRecruiterEditingClaim(cand.userId, false);
+        setRecruiterEditingHeartbeatCandidateId((prev) => (prev === cand.userId ? null : prev));
       } else if (editing) {
         if (
           !window.confirm(
@@ -161,8 +180,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           return;
         }
         await candidateService.setRecruiterEditingClaim(cand.userId, true);
+        setRecruiterEditingHeartbeatCandidateId(cand.userId);
       } else {
         await candidateService.setRecruiterEditingClaim(cand.userId, true);
+        setRecruiterEditingHeartbeatCandidateId(cand.userId);
       }
       if (onRefreshCandidates) await onRefreshCandidates();
     } catch (e: any) {
@@ -171,6 +192,41 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       setClaimBusyUserId(null);
     }
   };
+
+  const handleDeleteInquiry = async (inq: CandidateInquiry) => {
+    if (deletingInquiryId) return;
+    const ok = window.confirm('Diese Anfrage wirklich löschen?');
+    if (!ok) return;
+
+    setInquiryDeleteError(null);
+    setDeletingInquiryId(inq.id);
+    try {
+      await candidateService.deleteInquiry(inq.id);
+      setInquiries((prev) => prev.filter((x) => x.id !== inq.id));
+    } catch (e: any) {
+      setInquiryDeleteError(e?.message || 'Löschen fehlgeschlagen.');
+    } finally {
+      setDeletingInquiryId(null);
+    }
+  };
+
+  // Während der Bearbeitung die „Bearbeitung melden“-Meldung regelmäßig auffrischen,
+  // damit sie für andere Recruiter nicht nach wenigen Stunden verschwindet.
+  useEffect(() => {
+    if (!selectedCandidate) return;
+    if (!recruiterEditingHeartbeatCandidateId) return;
+    if (recruiterEditingHeartbeatCandidateId !== selectedCandidate.userId) return;
+    if (claimBusyUserId === selectedCandidate.userId) return;
+    if (activeView !== 'talents') return; // Claim-UI steckt im Kandidatenmodal (Talents-Ansicht)
+
+    const id = window.setInterval(() => {
+      void candidateService.setRecruiterEditingClaim(selectedCandidate.userId, true).catch(() => {
+        // Heartbeat Fehler einfach ignorieren; nächste reguläre UI-Refresh holt den Zustand wieder.
+      });
+    }, RECRUITER_EDITING_CLAIM_HEARTBEAT_MS);
+
+    return () => window.clearInterval(id);
+  }, [activeView, selectedCandidate, recruiterEditingHeartbeatCandidateId, claimBusyUserId]);
 
   const isAdmin = user.role === UserRole.ADMIN;
   // Recruiter dürfen NICHT Stammdaten/Skills/Links bearbeiten (nur Admin).
@@ -975,6 +1031,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   {isLoadingInquiries ? 'Lädt…' : `${inquiries.length} Anfrage${inquiries.length === 1 ? '' : 'n'}`}
                 </span>
               </div>
+              {inquiryDeleteError && (
+                <div className="mx-4 mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[11px] font-bold text-red-800">
+                  {inquiryDeleteError}
+                </div>
+              )}
               {inquiries.length === 0 ? (
                 <div className="px-4 py-3 text-xs font-medium text-slate-500">
                   Noch keine Interessenanfragen vorhanden.
@@ -982,17 +1043,33 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               ) : (
                 <div className="max-h-[70vh] overflow-auto divide-y divide-slate-100">
                   {inquiries.slice(0, 200).map((inq) => (
-                    <div key={inq.id} className="px-4 py-3 text-xs text-slate-700">
-                      <p className="font-black text-slate-900">
-                        {candidateNameById.get(inq.candidateUserId) || inq.candidateUserId}
-                      </p>
-                      <p className="mt-1 font-semibold">
-                        {inq.contactName} · {inq.contactEmail} · {inq.contactPhone}
-                      </p>
-                      {inq.message && <p className="mt-1 text-slate-600">{inq.message}</p>}
-                      <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                        {new Date(inq.createdAt).toLocaleString('de-DE')}
-                      </p>
+                    <div key={inq.id} className="px-4 py-3 text-xs text-slate-700 flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-black text-slate-900">
+                          {candidateNameById.get(inq.candidateUserId) || inq.candidateUserId}
+                        </p>
+                        <p className="mt-1 font-semibold">
+                          {inq.contactName} · {inq.contactEmail} · {inq.contactPhone}
+                        </p>
+                        {inq.message && <p className="mt-1 text-slate-600">{inq.message}</p>}
+                        <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                          {new Date(inq.createdAt).toLocaleString('de-DE')}
+                        </p>
+                      </div>
+                      <div className="shrink-0">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="danger"
+                          className="h-8 text-[10px] font-black"
+                          isLoading={deletingInquiryId === inq.id}
+                          disabled={deletingInquiryId === inq.id}
+                          onClick={() => void handleDeleteInquiry(inq)}
+                          title="Anfrage löschen"
+                        >
+                          Löschen
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

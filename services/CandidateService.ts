@@ -147,6 +147,15 @@ class CandidateService {
       return [];
     }
   }
+
+  async deleteInquiry(inquiryId: string): Promise<void> {
+    try {
+      await api.deleteCandidateInquiry(inquiryId);
+    } catch (e) {
+      console.error('[CandidateService] Error deleting inquiry:', e);
+      throw e;
+    }
+  }
 }
 
 export const candidateService = new CandidateService();

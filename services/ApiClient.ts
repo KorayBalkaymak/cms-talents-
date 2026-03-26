@@ -1342,6 +1342,35 @@ class ApiClient {
     return merged.slice(0, 300);
   }
 
+  async deleteCandidateInquiry(inquiryId: string): Promise<void> {
+    const current = await this.getSessionUser();
+    if (!current || !isRecruiterRole(current.role)) {
+      return;
+    }
+
+    // Lokalen Fallback aktualisieren (falls wir beim Insert/Fetch schon lokal gearbeitet haben).
+    try {
+      const local = this.readLocalInquiries();
+      const next = local.filter((x) => x.id !== inquiryId).slice(0, 300);
+      window.localStorage.setItem(LOCAL_INQUIRIES_KEY, JSON.stringify(next));
+    } catch {
+      // ignore local fallback errors
+    }
+
+    const { error } = await supabase
+      .from('candidate_inquiries')
+      .delete()
+      .eq('id', inquiryId);
+
+    if (error) {
+      // Backward-compat: DB ohne candidate_inquiries → wir haben schon lokal entfernt.
+      if (isCandidateInquiriesSchemaMissing(error.message)) {
+        return;
+      }
+      throw new Error(error.message);
+    }
+  }
+
   async createExternalCandidate(input: {
     candidateNumber?: string;
     city: string;
