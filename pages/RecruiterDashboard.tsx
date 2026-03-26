@@ -1781,16 +1781,16 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
                       {candidateDocs && (
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:items-start">
-                          {/* ORIGINALS (download-only) */}
-                          <div className="space-y-4">
+                          {/* Dokumente (download-only) */}
+                          <div className="rounded-2xl border border-slate-200 bg-white/70 p-4 space-y-4">
                             <div className="flex items-center justify-between gap-3">
-                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Originale Dokumente</h4>
+                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Dokumente</h4>
                               <Badge variant="dark" className="text-[10px] py-0.5 px-2 bg-slate-800 text-white">Nur Download</Badge>
                             </div>
 
                             {/* CV */}
                             <div>
-                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Lebenslauf (Original)</h4>
+                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Lebenslauf</h4>
                               {candidateDocs.original.cvPdf ? (
                                 <div className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50">
                                   <span className="text-sm font-bold text-slate-700 truncate max-w-[220px]">{candidateDocs.original.cvPdf.name}</span>
@@ -1818,7 +1818,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
                             {/* Certificates */}
                             <div>
-                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Zertifikate (Originale)</h4>
+                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Zertifikate</h4>
                               <div className="space-y-2">
                                 {candidateDocs.original.certificates?.length ? (
                                   candidateDocs.original.certificates.map((doc, i) => (
@@ -1842,7 +1842,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
                             {/* Qualifications */}
                             <div>
-                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Qualifikationen (Originale)</h4>
+                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Qualifikationen</h4>
                               <div className="space-y-2">
                                 {candidateDocs.original.qualifications?.length ? (
                                   candidateDocs.original.qualifications.map((doc, i) => (
@@ -1865,8 +1865,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             </div>
                           </div>
 
-                          {/* EDITED (editable) */}
-                          <div className="space-y-4">
+                          {/* Bearbeitete Dokumente (Marktplatz-Version) */}
+                          <div className="rounded-2xl border border-slate-200 bg-white/70 p-4 space-y-4">
                             <div className="flex items-center justify-between gap-3">
                               <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Bearbeitete Dokumente</h4>
                               <Badge variant="orange" className="text-[10px] py-0.5 px-2">Marktplatz-Version</Badge>
