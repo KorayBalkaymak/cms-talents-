@@ -1110,10 +1110,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               )}
             </div>
           ) : activeView === 'external' ? (
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="border-b border-slate-100 px-4 py-3">
-                <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">Kandidaten hinzufügen</h3>
-                <p className="mt-1 text-xs font-medium text-slate-500">Manuell Daten erfassen und optional direkt im Marktplatz freigeben.</p>
+            <div className="overflow-hidden rounded-2xl border border-orange-200 bg-orange-50 shadow-sm">
+              <div className="border-b border-orange-200/70 bg-orange-100 px-4 py-3">
+                <h3 className="text-sm font-black uppercase tracking-widest text-slate-900">Kandidaten hinzufügen</h3>
+                <p className="mt-1 text-xs font-medium text-slate-700">Manuell Daten erfassen und optional direkt im Marktplatz freigeben.</p>
               </div>
               <div className="space-y-4 px-4 py-4">
                 {externalError && <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">{externalError}</div>}
@@ -1195,20 +1195,20 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               </div>
             </div>
           ) : activeView === 'users' ? (
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex flex-col gap-2 border-b border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="overflow-hidden rounded-2xl border border-orange-200/40 bg-[#101B31] shadow-sm">
+              <div className="flex flex-col gap-2 border-b border-orange-400/20 bg-orange-600/15 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">Alle Nutzer</h3>
-                  <p className="mt-0.5 text-xs font-medium text-slate-500">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Alle Nutzer</h3>
+                  <p className="mt-0.5 text-xs font-medium text-slate-200">
                     Kandidaten: „Aktuell sichtbar“ vs. „Kein Formular“ und „Inaktiv seit“.
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="flex flex-col leading-tight">
-                    <div className="text-3xl font-black text-orange-600">
+                    <div className="text-3xl font-black text-orange-400">
                       {loadingRegisteredUsers ? '…' : registeredUsers.length}
                     </div>
-                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Nutzer gesamt</div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-300">Nutzer gesamt</div>
                   </div>
                   <Badge variant="green">Aktuell sichtbar {filteredCandidateSubmittedCount}</Badge>
                   <Badge variant="yellow">Kein Formular {filteredCandidateOpenCount}</Badge>
@@ -1227,10 +1227,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               )}
               {loadingRegisteredUsers && registeredUsers.length === 0 ? (
                 <div className="flex h-40 items-center justify-center">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-orange-600" />
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-orange-500" />
                 </div>
               ) : filteredRegisteredUsers.length === 0 ? (
-                <div className="px-4 py-8 text-center text-xs font-medium text-slate-500">
+                <div className="px-4 py-8 text-center text-xs font-medium text-slate-300">
                   {registeredUsers.length === 0 ? 'Keine Nutzer gefunden.' : 'Keine Treffer für die Suche.'}
                 </div>
               ) : (
@@ -1243,8 +1243,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         <div key={u.id} className="space-y-2 px-4 py-4">
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <p className="text-sm font-black text-slate-900">{displayName}</p>
-                              <p className="truncate text-xs font-semibold text-slate-500">{u.email}</p>
+                              <p className="text-sm font-black text-slate-100">{displayName}</p>
+                              <p className="truncate text-xs font-semibold text-slate-300">{u.email}</p>
                             </div>
                             <Badge variant={u.role === UserRole.CANDIDATE ? 'slate' : u.role === UserRole.ADMIN ? 'orange' : 'dark'}>
                               {roleLabelDe(u.role)}
@@ -1262,7 +1262,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               )}
                             </div>
                           )}
-                          <p className="mt-2 text-xs font-semibold text-slate-700">
+                          <p className="mt-2 text-xs font-semibold text-slate-200">
                             Inaktiv seit: {inactivityDurationDe(u.lastSeenAt)}
                           </p>
                           <Button
@@ -1282,24 +1282,24 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   </div>
                   <div className="hidden overflow-x-auto lg:block">
                     <table className="w-full min-w-[800px] text-left">
-                      <thead className="border-b border-slate-100 bg-slate-50/90">
+                      <thead className="border-b border-slate-800 bg-[#101B31]">
                         <tr>
-                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Name / E-Mail</th>
-                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Rolle</th>
-                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Registriert am</th>
-                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Inaktiv seit</th>
-                          <th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Aktion</th>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-300">Name / E-Mail</th>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-300">Rolle</th>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-300">Registriert am</th>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-300">Inaktiv seit</th>
+                          <th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-widest text-slate-300">Aktion</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-slate-800">
                         {filteredRegisteredUsers.map((u) => {
                           const displayName = `${u.firstName} ${u.lastName}`.trim() || '—';
                           const isSelf = u.id === user.id;
                           return (
-                            <tr key={u.id} className="transition-colors hover:bg-slate-50/80">
+                            <tr key={u.id} className="transition-colors hover:bg-white/5">
                               <td className="px-4 py-3">
-                                <div className="text-sm font-bold text-slate-900">{displayName}</div>
-                                <div className="text-[11px] font-semibold text-slate-500">{u.email}</div>
+                                <div className="text-sm font-bold text-slate-100">{displayName}</div>
+                                <div className="text-[11px] font-semibold text-slate-300">{u.email}</div>
                                 {u.role === UserRole.CANDIDATE && (
                                   <div className="mt-2">
                                     {u.isSubmitted ? (
@@ -1315,10 +1315,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                   {roleLabelDe(u.role)}
                                 </Badge>
                               </td>
-                              <td className="px-4 py-3 text-xs font-semibold text-slate-600">
+                              <td className="px-4 py-3 text-xs font-semibold text-slate-200">
                                 {new Date(u.createdAt).toLocaleString('de-DE')}
                               </td>
-                              <td className="px-4 py-3 text-xs font-semibold text-slate-700">{inactivityDurationDe(u.lastSeenAt)}</td>
+                              <td className="px-4 py-3 text-xs font-semibold text-slate-200">{inactivityDurationDe(u.lastSeenAt)}</td>
                               <td className="px-4 py-3 text-right">
                                 <Button
                                   type="button"
