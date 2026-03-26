@@ -892,7 +892,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               onClick={() => setActiveView('users')}
               className={`flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-xs font-bold transition-colors ${
                 activeView === 'users'
-                  ? 'border-orange-500 bg-orange-600 text-white'
+                  ? 'border-slate-700 bg-slate-800 text-orange-500'
                   : 'border-transparent text-slate-300 hover:bg-slate-800/60'
               }`}
             >
@@ -905,7 +905,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               <span
                 className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${
                   activeView === 'users'
-                    ? 'border-orange-300 bg-orange-500 text-white'
+                    ? 'border-orange-400/40 bg-orange-500/15 text-orange-300'
                     : 'border-orange-400/40 bg-orange-500/15 text-orange-300'
                 }`}
               >
@@ -1202,7 +1202,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </div>
           ) : activeView === 'users' ? (
             <div className="overflow-hidden rounded-2xl border border-orange-200/40 bg-[#101B31] shadow-sm">
-              <div className="flex flex-col gap-2 border-b border-orange-400/20 bg-orange-600/15 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-2 border-b border-orange-500/30 bg-orange-600 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-sm font-black uppercase tracking-widest text-white">Alle Nutzer</h3>
                   <p className="mt-0.5 text-xs font-medium text-slate-200">
@@ -1211,7 +1211,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="flex flex-col leading-tight">
-                    <div className="text-3xl font-black text-orange-400">
+                    <div className="text-3xl font-black text-white">
                       {loadingRegisteredUsers ? '…' : registeredUsers.length}
                     </div>
                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-300">Nutzer gesamt</div>
