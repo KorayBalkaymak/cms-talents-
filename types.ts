@@ -33,6 +33,17 @@ export interface User {
   firstName?: string;      // OPTIONAL - Derived from profile
 }
 
+/** Zeile für Recruiter-Dashboard „Alle Nutzer“ (aktive Profil-Konten). */
+export interface RegisteredUserListItem {
+  id: string;
+  email: string;
+  role: UserRole;
+  firstName: string;
+  lastName: string;
+  isSubmitted: boolean;
+  createdAt: string;
+}
+
 // =====================================================
 // CANDIDATE PROFILE
 // =====================================================

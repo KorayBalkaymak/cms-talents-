@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useDeferredValue, useCallback } from 'react';
-import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, CandidateInquiry, getActiveRecruiterEditing } from '../types';
+import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, CandidateInquiry, RegisteredUserListItem, getActiveRecruiterEditing } from '../types';
 import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea, FileUpload } from '../components/UI';
 import { candidateService } from '../services/CandidateService';
 import { INDUSTRIES, AVAILABILITY_OPTIONS, BOOSTER_KEYWORD_CATEGORIES } from '../constants';
@@ -18,9 +18,31 @@ interface RecruiterDashboardProps {
 
 const STALE_CANDIDATE_MS = 7 * 24 * 60 * 60 * 1000;
 
+function membershipDurationDe(createdAt: string): string {
+  const ms = Date.now() - new Date(createdAt).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return '—';
+  if (ms < 60000) return 'weniger als 1 Minute';
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 60) return `${minutes} Minute${minutes === 1 ? '' : 'n'}`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours} Stunde${hours === 1 ? '' : 'n'}`;
+  const days = Math.floor(ms / (24 * 60 * 60 * 1000));
+  if (days < 30) return `${days} Tag${days === 1 ? '' : 'e'}`;
+  const months = Math.floor(days / 30);
+  if (months < 24) return `${months} Monat${months === 1 ? '' : 'e'}`;
+  const years = Math.floor(days / 365);
+  return `${years} Jahr${years === 1 ? '' : 'e'}`;
+}
+
+function roleLabelDe(role: UserRole): string {
+  if (role === UserRole.ADMIN) return 'Admin';
+  if (role === UserRole.RECRUITER) return 'Recruiter';
+  return 'Kandidat';
+}
+
 const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidates, isInitialLoading = false, onAdminAction, onUpdateCandidate, onRefreshCandidates, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeView, setActiveView] = useState<'talents' | 'inquiries' | 'external'>('talents');
+  const [activeView, setActiveView] = useState<'talents' | 'inquiries' | 'external' | 'users'>('talents');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
   const [candidateDocs, setCandidateDocs] = useState<CandidateDocuments | null>(null);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
@@ -32,6 +54,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [claimError, setClaimError] = useState<string | null>(null);
   const [inquiries, setInquiries] = useState<CandidateInquiry[]>([]);
   const [isLoadingInquiries, setIsLoadingInquiries] = useState(false);
+  const [registeredUsers, setRegisteredUsers] = useState<RegisteredUserListItem[]>([]);
+  const [loadingRegisteredUsers, setLoadingRegisteredUsers] = useState(false);
+  const [registeredUsersError, setRegisteredUsersError] = useState<string | null>(null);
+  const [userDeleteTarget, setUserDeleteTarget] = useState<RegisteredUserListItem | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [isCreatingExternal, setIsCreatingExternal] = useState(false);
   const [externalError, setExternalError] = useState<string | null>(null);
   const [externalSuccess, setExternalSuccess] = useState<string | null>(null);
@@ -96,6 +123,28 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     };
   }, []);
 
+  useEffect(() => {
+    if (activeView !== 'users') return;
+    let cancelled = false;
+    (async () => {
+      setLoadingRegisteredUsers(true);
+      setRegisteredUsersError(null);
+      try {
+        const list = await candidateService.listRegisteredUsers();
+        if (!cancelled) setRegisteredUsers(list);
+      } catch (e) {
+        if (!cancelled) {
+          setRegisteredUsersError(e instanceof Error ? e.message : 'Nutzer konnten nicht geladen werden.');
+        }
+      } finally {
+        if (!cancelled) setLoadingRegisteredUsers(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeView]);
+
   const handleRecruiterEditingClaim = async (cand: CandidateProfile) => {
     const editing = getActiveRecruiterEditing(cand);
     setClaimError(null);
@@ -153,6 +202,17 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         c.skills.some((s) => s.toLowerCase().includes(term))
       );
   }, [visibleCandidates, deferredSearchTerm]);
+
+  const filteredRegisteredUsers = useMemo(() => {
+    const term = deferredSearchTerm.trim().toLowerCase();
+    if (!term) return registeredUsers;
+    return registeredUsers.filter(
+      (u) =>
+        u.email.toLowerCase().includes(term) ||
+        `${u.firstName} ${u.lastName}`.trim().toLowerCase().includes(term) ||
+        u.id.toLowerCase().includes(term)
+    );
+  }, [registeredUsers, deferredSearchTerm]);
 
   const industryGroups = useMemo(() => {
     const sortInGroup = (arr: CandidateProfile[]) =>
@@ -459,6 +519,23 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     }
   };
 
+  const handleConfirmDeleteRegisteredUser = async () => {
+    if (!userDeleteTarget || userDeleteTarget.id === user.id) return;
+    const id = userDeleteTarget.id;
+    setRegisteredUsersError(null);
+    setDeletingUserId(id);
+    try {
+      await Promise.resolve(onAdminAction(id, 'delete', undefined, user.id));
+      setRegisteredUsers((prev) => prev.filter((u) => u.id !== id));
+      setUserDeleteTarget(null);
+      await onRefreshCandidates?.();
+    } catch (e) {
+      setRegisteredUsersError(e instanceof Error ? e.message : 'Löschen fehlgeschlagen.');
+    } finally {
+      setDeletingUserId(null);
+    }
+  };
+
   const handleCreateExternalCandidate = async () => {
     setExternalError(null);
     setExternalSuccess(null);
@@ -720,6 +797,25 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               </svg>
               KANDIDAT HINZUFÜGEN
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('users')}
+              className={`flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-xs font-bold transition-colors ${
+                activeView === 'users'
+                  ? 'border-slate-700 bg-slate-800 text-orange-500'
+                  : 'border-transparent text-slate-300 hover:bg-slate-800/60'
+              }`}
+            >
+              <span className="flex items-center gap-3">
+                <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeWidth="2.2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                ALLE NUTZER
+              </span>
+              <span className="rounded-full border border-orange-400/40 bg-orange-500/15 px-2 py-0.5 text-[10px] font-black text-orange-300">
+                {registeredUsers.length}
+              </span>
+            </button>
           </nav>
         </div>
         <div className="mt-auto p-6 border-t border-slate-800 bg-slate-900/50">
@@ -768,7 +864,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         <header className="relative z-10 flex flex-col gap-3 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 md:h-16 md:flex-row md:items-center md:justify-between md:gap-4 md:py-0">
           <div className="hidden items-center gap-2 md:flex">
             <h1 className="text-xl font-black uppercase tracking-tight text-slate-900">Dashboard</h1>
-            <div className="ml-4 inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
+            <div className="ml-4 inline-flex max-w-full flex-wrap gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
               <button
                 type="button"
                 onClick={() => setActiveView('talents')}
@@ -796,13 +892,26 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               >
                 Kandidat hinzufügen
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveView('users')}
+                className={`rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wide transition-colors ${
+                  activeView === 'users' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Nutzer
+              </button>
             </div>
           </div>
           <div className="relative w-full min-w-0 md:max-w-sm md:flex-1 lg:max-w-md">
             <input
               type="search"
               enterKeyHint="search"
-              placeholder="Suchen nach Name, Branche, Skills…"
+              placeholder={
+                activeView === 'users'
+                  ? 'Nutzer: E-Mail, Name…'
+                  : 'Suchen nach Name, Branche, Skills…'
+              }
               className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-10 pr-4 text-xs font-bold text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 md:h-10 md:py-1.5"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -847,6 +956,14 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               onClick={() => setActiveView('external')}
             >
               Kandidat hinzufügen
+            </Button>
+            <Button
+              type="button"
+              variant={activeView === 'users' ? 'primary' : 'outline'}
+              className="h-10 text-[11px] font-black"
+              onClick={() => setActiveView('users')}
+            >
+              Alle Nutzer
             </Button>
           </div>
 
@@ -966,10 +1083,144 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 </Button>
               </div>
             </div>
-          ) : (
-            <>
-            </>
-          )}
+          ) : activeView === 'users' ? (
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="flex flex-col gap-2 border-b border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">Alle Nutzer</h3>
+                  <p className="mt-0.5 text-xs font-medium text-slate-500">
+                    Registrierte Konten inkl. Kandidaten ohne eingereichtes Formular.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-slate-900 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white">
+                    {loadingRegisteredUsers ? '…' : `${registeredUsers.length} gesamt`}
+                  </span>
+                  {filteredRegisteredUsers.length !== registeredUsers.length && (
+                    <span className="text-[10px] font-bold text-slate-400">
+                      {filteredRegisteredUsers.length} nach Filter
+                    </span>
+                  )}
+                </div>
+              </div>
+              {registeredUsersError && (
+                <div className="mx-4 mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
+                  {registeredUsersError}
+                </div>
+              )}
+              {loadingRegisteredUsers && registeredUsers.length === 0 ? (
+                <div className="flex h-40 items-center justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-orange-600" />
+                </div>
+              ) : filteredRegisteredUsers.length === 0 ? (
+                <div className="px-4 py-8 text-center text-xs font-medium text-slate-500">
+                  {registeredUsers.length === 0 ? 'Keine Nutzer gefunden.' : 'Keine Treffer für die Suche.'}
+                </div>
+              ) : (
+                <>
+                  <div className="divide-y divide-slate-100 lg:hidden">
+                    {filteredRegisteredUsers.map((u) => {
+                      const displayName = `${u.firstName} ${u.lastName}`.trim() || u.email;
+                      const isSelf = u.id === user.id;
+                      return (
+                        <div key={u.id} className="space-y-2 px-4 py-4">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-sm font-black text-slate-900">{displayName}</p>
+                              <p className="truncate text-xs font-semibold text-slate-500">{u.email}</p>
+                            </div>
+                            <Badge variant={u.role === UserRole.CANDIDATE ? 'slate' : u.role === UserRole.ADMIN ? 'orange' : 'dark'}>
+                              {roleLabelDe(u.role)}
+                            </Badge>
+                          </div>
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                            Registriert: {new Date(u.createdAt).toLocaleString('de-DE')}
+                          </p>
+                          <p className="text-xs font-semibold text-slate-600">Dabei seit: {membershipDurationDe(u.createdAt)}</p>
+                          <p className="text-xs">
+                            <span className="font-bold text-slate-700">Formular: </span>
+                            {u.isSubmitted ? (
+                              <span className="font-semibold text-emerald-600">Eingereicht</span>
+                            ) : (
+                              <span className="font-semibold text-amber-600">Noch nicht</span>
+                            )}
+                          </p>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="danger"
+                            className="h-9 w-full text-[11px] font-black"
+                            disabled={isSelf || deletingUserId === u.id}
+                            title={isSelf ? 'Eigenes Konto kann hier nicht gelöscht werden.' : undefined}
+                            onClick={() => setUserDeleteTarget(u)}
+                          >
+                            {deletingUserId === u.id ? 'Wird gelöscht…' : 'Nutzer löschen'}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="hidden overflow-x-auto lg:block">
+                    <table className="w-full min-w-[800px] text-left">
+                      <thead className="border-b border-slate-100 bg-slate-50/90">
+                        <tr>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Name / E-Mail</th>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Rolle</th>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Registriert am</th>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Dabei seit</th>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Formular</th>
+                          <th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Aktion</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {filteredRegisteredUsers.map((u) => {
+                          const displayName = `${u.firstName} ${u.lastName}`.trim() || '—';
+                          const isSelf = u.id === user.id;
+                          return (
+                            <tr key={u.id} className="transition-colors hover:bg-slate-50/80">
+                              <td className="px-4 py-3">
+                                <div className="text-sm font-bold text-slate-900">{displayName}</div>
+                                <div className="text-[11px] font-semibold text-slate-500">{u.email}</div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <Badge variant={u.role === UserRole.CANDIDATE ? 'slate' : u.role === UserRole.ADMIN ? 'orange' : 'dark'}>
+                                  {roleLabelDe(u.role)}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-3 text-xs font-semibold text-slate-600">
+                                {new Date(u.createdAt).toLocaleString('de-DE')}
+                              </td>
+                              <td className="px-4 py-3 text-xs font-semibold text-slate-700">{membershipDurationDe(u.createdAt)}</td>
+                              <td className="px-4 py-3">
+                                {u.isSubmitted ? (
+                                  <Badge variant="green">Eingereicht</Badge>
+                                ) : (
+                                  <Badge variant="yellow">Offen</Badge>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="danger"
+                                  className="h-9 text-[10px] font-black"
+                                  disabled={isSelf || deletingUserId === u.id}
+                                  title={isSelf ? 'Eigenes Konto nicht löschbar' : undefined}
+                                  onClick={() => setUserDeleteTarget(u)}
+                                >
+                                  Löschen
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : null}
 
           {activeView === 'talents' && (
             <>
@@ -1573,6 +1824,44 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             {!isEditing && <div className="pt-4 border-t border-slate-100 mt-4"><Button className="w-full" variant="outline" onClick={() => setSelectedCandidate(null)}>Schließen</Button></div>}
           </Modal>
         )}
+
+        <Modal
+          isOpen={!!userDeleteTarget}
+          onClose={() => {
+            if (deletingUserId) return;
+            setUserDeleteTarget(null);
+          }}
+          title="Nutzer löschen?"
+        >
+          {userDeleteTarget && (
+            <>
+              <p className="text-sm leading-relaxed text-slate-700">
+                Das Konto <strong className="text-slate-900">{userDeleteTarget.email}</strong> wird dauerhaft aus der Verwaltung entfernt (Profil und Dokumente werden wie beim Kandidaten-Löschen
+                gesperrt). Diese Aktion kann nicht rückgängig gemacht werden.
+              </p>
+              {userDeleteTarget.role !== UserRole.CANDIDATE && (
+                <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900">
+                  Hinweis: Recruiter- oder Admin-Konten sollten nur bei Bedarf gelöscht werden. Der Auth-Zugang in Supabase bleibt ggf. bestehen, bis er dort separat entfernt wird.
+                </p>
+              )}
+              <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button type="button" variant="outline" className="w-full sm:w-auto" disabled={!!deletingUserId} onClick={() => setUserDeleteTarget(null)}>
+                  Abbrechen
+                </Button>
+                <Button
+                  type="button"
+                  variant="danger"
+                  className="w-full sm:w-auto"
+                  isLoading={!!deletingUserId}
+                  disabled={!!deletingUserId}
+                  onClick={() => void handleConfirmDeleteRegisteredUser()}
+                >
+                  Endgültig löschen
+                </Button>
+              </div>
+            </>
+          )}
+        </Modal>
 
         {/* --- FULLSCREEN DOCUMENT PREVIEW MODAL --- */}
         {previewDoc && (

@@ -206,7 +206,7 @@ const App: React.FC = () => {
     setAllCandidates(list);
     showToast(
       action === 'delete'
-        ? 'Kandidat erfolgreich entfernt.'
+        ? 'Konto wurde entfernt.'
         : action === 'publish'
           ? 'Profil wurde veröffentlicht.'
           : action === 'cv_reviewed'

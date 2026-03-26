@@ -6,6 +6,7 @@ import {
   CandidateProfile,
   CandidateStatus,
   isRecruiterEditingClaimStale,
+  RegisteredUserListItem,
   SocialLink,
   User,
   UserRole,
@@ -742,6 +743,49 @@ class ApiClient {
     const remoteExternal = await this.loadExternalCandidatesRemote();
     const external = remoteExternal || this.readLocalExternalCandidates();
     return this.mergeUniqueCandidates(mergedBase, external);
+  }
+
+  /** Alle aktiven Profil-Konten (inkl. ohne eingereichtes Formular) – nur für Recruiter/Admin. */
+  async listRegisteredUsers(): Promise<RegisteredUserListItem[]> {
+    const current = await this.getSessionUser();
+    if (!current || !isRecruiterRole(current.role)) {
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id,email,role,first_name,last_name,is_submitted,created_at')
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+
+    if (error || !data) {
+      return [];
+    }
+
+    type Row = {
+      id: string;
+      email: string;
+      role: string;
+      first_name: string;
+      last_name: string;
+      is_submitted: boolean;
+      created_at: string;
+    };
+
+    return (data as Row[]).map((r) => ({
+      id: r.id,
+      email: r.email,
+      role:
+        r.role === 'recruiter_admin'
+          ? UserRole.ADMIN
+          : r.role === 'recruiter'
+            ? UserRole.RECRUITER
+            : UserRole.CANDIDATE,
+      firstName: r.first_name || '',
+      lastName: r.last_name || '',
+      isSubmitted: !!r.is_submitted,
+      createdAt: r.created_at,
+    }));
   }
 
   async getCandidate(userId: string) {

@@ -1,4 +1,4 @@
-import { CandidateProfile, CandidateStatus, CandidateDocuments, CandidateInquiry } from '../types';
+import { CandidateProfile, CandidateStatus, CandidateDocuments, CandidateInquiry, RegisteredUserListItem } from '../types';
 import { api } from './ApiClient';
 
 // =====================================================
@@ -22,6 +22,15 @@ class CandidateService {
       return await api.getAllCandidates();
     } catch (e) {
       console.error('[CandidateService] Error fetching all candidates:', e);
+      return [];
+    }
+  }
+
+  async listRegisteredUsers(): Promise<RegisteredUserListItem[]> {
+    try {
+      return await api.listRegisteredUsers();
+    } catch (e) {
+      console.error('[CandidateService] Error listing registered users:', e);
       return [];
     }
   }
