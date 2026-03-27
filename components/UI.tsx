@@ -241,10 +241,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   return (
     <div className="w-full">
       <div className="mb-1 flex flex-wrap items-center gap-2 sm:mb-1.5">
-        <span className={`text-xs font-bold sm:text-sm ${darkSurface ? 'text-black' : 'text-slate-900'}`}>
+        <span className={`text-xs font-bold sm:text-sm ${darkSurface ? 'text-white' : 'text-slate-900'}`}>
           {label}
           {required && (
-            <span className={`ml-0.5 ${darkSurface ? 'text-black' : 'text-orange-600'}`} aria-hidden="true">
+            <span className={`ml-0.5 ${darkSurface ? 'text-white' : 'text-orange-600'}`} aria-hidden="true">
               *
             </span>
           )}
@@ -274,9 +274,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
         </svg>
-        <p className={`text-xs font-bold sm:text-sm ${darkSurface ? 'text-slate-300' : 'text-slate-600'}`}>Klicken zum Hochladen</p>
+        <p className={`text-xs font-bold sm:text-sm ${darkSurface ? 'text-white' : 'text-slate-600'}`}>Klicken zum Hochladen</p>
         {helperText && (
-          <p className={`mt-1 text-[11px] sm:text-xs ${darkSurface ? 'text-slate-400' : 'text-slate-400'}`}>{helperText}</p>
+          <p className={`mt-1 text-[11px] sm:text-xs ${darkSurface ? 'text-white/90' : 'text-slate-400'}`}>{helperText}</p>
         )}
         {error && (
           <p className={`mt-2 text-[11px] font-bold sm:text-xs ${darkSurface ? 'text-red-300' : 'text-rose-600'}`}>{error}</p>

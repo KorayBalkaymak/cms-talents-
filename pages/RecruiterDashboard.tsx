@@ -1200,20 +1200,21 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             <div className="overflow-hidden rounded-2xl border border-neutral-700 bg-neutral-900 shadow-sm">
               <div className="border-b border-neutral-700 bg-neutral-900 px-4 py-3">
                 <h3 className="text-sm font-black uppercase tracking-widest text-white">Kandidaten hinzufügen</h3>
-                <p className="mt-1 text-xs font-medium text-slate-200">Manuell Daten erfassen und optional direkt im Marktplatz freigeben.</p>
+                <p className="mt-1 text-xs font-medium text-white/90">Manuell Daten erfassen und optional direkt im Marktplatz freigeben.</p>
               </div>
               <div className="space-y-4 px-4 py-4">
                 {externalError && <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">{externalError}</div>}
                 {externalSuccess && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">{externalSuccess}</div>}
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  <Input label="Stadt" value={externalForm.city} onChange={(e) => setExternalForm((p) => ({ ...p, city: e.target.value }))} placeholder="Berlin" />
-                  <Input label="Land" value={externalForm.country} onChange={(e) => setExternalForm((p) => ({ ...p, country: e.target.value }))} placeholder="Deutschland" />
-                  <Select label="Branche" value={externalForm.industry} onChange={(e) => setExternalForm((p) => ({ ...p, industry: e.target.value }))}>
+                  <Input label="Stadt" labelClassName="text-white" value={externalForm.city} onChange={(e) => setExternalForm((p) => ({ ...p, city: e.target.value }))} placeholder="Berlin" />
+                  <Input label="Land" labelClassName="text-white" value={externalForm.country} onChange={(e) => setExternalForm((p) => ({ ...p, country: e.target.value }))} placeholder="Deutschland" />
+                  <Select label="Branche" labelClassName="text-white" value={externalForm.industry} onChange={(e) => setExternalForm((p) => ({ ...p, industry: e.target.value }))}>
                     {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
                   </Select>
-                  <Input label="Erfahrung (Jahre)" type="number" value={externalForm.experienceYears} onChange={(e) => setExternalForm((p) => ({ ...p, experienceYears: parseInt(e.target.value) || 0 }))} />
+                  <Input label="Erfahrung (Jahre)" labelClassName="text-white" type="number" value={externalForm.experienceYears} onChange={(e) => setExternalForm((p) => ({ ...p, experienceYears: parseInt(e.target.value) || 0 }))} />
                   <Input
                     label="Wunschgehalt (EUR)"
+                    labelClassName="text-white"
                     type="number"
                     value={externalForm.salaryWishEur}
                     onChange={(e) =>
@@ -1224,18 +1225,18 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     }
                     placeholder="z.B. 50000"
                   />
-                  <Select label="Verfügbarkeit" value={externalForm.availability} onChange={(e) => setExternalForm((p) => ({ ...p, availability: e.target.value }))}>
+                  <Select label="Verfügbarkeit" labelClassName="text-white" value={externalForm.availability} onChange={(e) => setExternalForm((p) => ({ ...p, availability: e.target.value }))}>
                     {AVAILABILITY_OPTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
                   </Select>
                 </div>
-                <Input label="Skills" value={externalForm.skillsRaw} onChange={(e) => setExternalForm((p) => ({ ...p, skillsRaw: e.target.value }))} />
-                <Textarea label="Über den Kandidaten (optional)" value={externalForm.about} onChange={(e) => setExternalForm((p) => ({ ...p, about: e.target.value }))} />
-                <div className="rounded-xl border border-slate-700 bg-slate-900 p-3">
-                  <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-300">Keywords auswählen</p>
+                <Input label="Skills" labelClassName="text-white" value={externalForm.skillsRaw} onChange={(e) => setExternalForm((p) => ({ ...p, skillsRaw: e.target.value }))} />
+                <Textarea label="Über den Kandidaten (optional)" labelClassName="text-white" value={externalForm.about} onChange={(e) => setExternalForm((p) => ({ ...p, about: e.target.value }))} />
+                <div className="rounded-xl border border-white/70 bg-white p-3">
+                  <p className="mb-2 inline-flex rounded-md bg-neutral-900 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-white">Keywords auswählen</p>
                   <div className="space-y-3">
                     {BOOSTER_KEYWORD_CATEGORIES.map((cat) => (
                       <div key={cat.title}>
-                        <p className="mb-1 text-xs font-black text-slate-100">{cat.title}</p>
+                        <p className="mb-1 inline-flex rounded-md bg-neutral-900 px-2 py-0.5 text-xs font-black text-white">{cat.title}</p>
                         <div className="flex flex-wrap gap-2">
                           {cat.keywords.map((kw) => {
                             const active = externalBoostedKeywords.includes(kw);
