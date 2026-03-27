@@ -1593,7 +1593,24 @@ class ApiClient {
         .select('id,recruiter_editing_user_id')
         .eq('id', inquiryId)
         .maybeSingle();
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (isCandidateInquiriesSchemaMissing(error.message)) {
+          // Fallback: wenn Tabelle fehlt, lokalen Status zurücksetzen.
+          try {
+            const local = this.readLocalInquiries();
+            const next = local.map((x) =>
+              x.id === inquiryId
+                ? { ...x, recruiterEditingUserId: null, recruiterEditingLabel: null, recruiterEditingAt: null }
+                : x
+            );
+            window.localStorage.setItem(LOCAL_INQUIRIES_KEY, JSON.stringify(next.slice(0, 300)));
+          } catch {
+            // ignore local fallback errors
+          }
+          return;
+        }
+        throw new Error(error.message);
+      }
       if (!data) throw new Error('Anfrage nicht gefunden.');
 
       const ownerId = (data as { recruiter_editing_user_id?: string | null }).recruiter_editing_user_id ?? null;
@@ -1610,7 +1627,23 @@ class ApiClient {
           recruiter_editing_at: null,
         })
         .eq('id', inquiryId);
-      if (updateErr) throw new Error(updateErr.message);
+      if (updateErr) {
+        if (isCandidateInquiriesSchemaMissing(updateErr.message)) {
+          try {
+            const local = this.readLocalInquiries();
+            const next = local.map((x) =>
+              x.id === inquiryId
+                ? { ...x, recruiterEditingUserId: null, recruiterEditingLabel: null, recruiterEditingAt: null }
+                : x
+            );
+            window.localStorage.setItem(LOCAL_INQUIRIES_KEY, JSON.stringify(next.slice(0, 300)));
+          } catch {
+            // ignore local fallback errors
+          }
+          return;
+        }
+        throw new Error(updateErr.message);
+      }
       return;
     }
 
@@ -1622,7 +1655,29 @@ class ApiClient {
         recruiter_editing_at: now,
       })
       .eq('id', inquiryId);
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (isCandidateInquiriesSchemaMissing(error.message)) {
+        // Fallback: wenn Tabelle fehlt, Claim lokal speichern.
+        try {
+          const local = this.readLocalInquiries();
+          const next = local.map((x) =>
+            x.id === inquiryId
+              ? {
+                  ...x,
+                  recruiterEditingUserId: sessionUser.id,
+                  recruiterEditingLabel: label,
+                  recruiterEditingAt: now,
+                }
+              : x
+          );
+          window.localStorage.setItem(LOCAL_INQUIRIES_KEY, JSON.stringify(next.slice(0, 300)));
+        } catch {
+          // ignore local fallback errors
+        }
+        return;
+      }
+      throw new Error(error.message);
+    }
   }
 
   async createExternalCandidate(input: {
