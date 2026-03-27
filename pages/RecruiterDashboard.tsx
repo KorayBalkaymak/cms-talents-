@@ -1229,8 +1229,20 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     {AVAILABILITY_OPTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
                   </Select>
                 </div>
-                <Input label="Skills" labelClassName="text-white" value={externalForm.skillsRaw} onChange={(e) => setExternalForm((p) => ({ ...p, skillsRaw: e.target.value }))} />
-                <Textarea label="Über den Kandidaten (optional)" labelClassName="text-white" value={externalForm.about} onChange={(e) => setExternalForm((p) => ({ ...p, about: e.target.value }))} />
+                <Input
+                  label="Skills"
+                  labelClassName="text-white"
+                  className="!bg-white !text-black placeholder:!text-slate-500"
+                  value={externalForm.skillsRaw}
+                  onChange={(e) => setExternalForm((p) => ({ ...p, skillsRaw: e.target.value }))}
+                />
+                <Textarea
+                  label="Über den Kandidaten (optional)"
+                  labelClassName="text-white"
+                  className="!bg-white !text-black placeholder:!text-slate-500"
+                  value={externalForm.about}
+                  onChange={(e) => setExternalForm((p) => ({ ...p, about: e.target.value }))}
+                />
                 <div className="rounded-xl border border-white/70 bg-white p-3">
                   <p className="mb-2 inline-flex rounded-md bg-neutral-900 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-white">Keywords auswählen</p>
                   <div className="space-y-3">
