@@ -187,6 +187,15 @@ class CandidateService {
       throw e;
     }
   }
+
+  async setInquiryEditingClaim(inquiryId: string, active: boolean): Promise<void> {
+    try {
+      await api.setInquiryEditingClaim(inquiryId, active);
+    } catch (e) {
+      console.error('[CandidateService] Error setting inquiry editing claim:', e);
+      throw e;
+    }
+  }
 }
 
 export const candidateService = new CandidateService();

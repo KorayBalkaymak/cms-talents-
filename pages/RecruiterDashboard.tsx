@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useDeferredValue, useCallback } from 'react';
-import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, CandidateDocumentsForRecruiter, CandidateInquiry, RegisteredUserListItem, getActiveRecruiterEditing } from '../types';
+import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, CandidateDocumentsForRecruiter, CandidateInquiry, RegisteredUserListItem, getActiveInquiryEditing, getActiveRecruiterEditing } from '../types';
 import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea, FileUpload } from '../components/UI';
 import { candidateService } from '../services/CandidateService';
 import { INDUSTRIES, AVAILABILITY_OPTIONS, BOOSTER_KEYWORD_CATEGORIES } from '../constants';
@@ -71,7 +71,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [claimBusyUserId, setClaimBusyUserId] = useState<string | null>(null);
   const [claimError, setClaimError] = useState<string | null>(null);
   const [deletingInquiryId, setDeletingInquiryId] = useState<string | null>(null);
+  const [inquiryClaimBusyId, setInquiryClaimBusyId] = useState<string | null>(null);
   const [inquiryDeleteError, setInquiryDeleteError] = useState<string | null>(null);
+  const [inquiryClaimError, setInquiryClaimError] = useState<string | null>(null);
   const [recruiterEditingHeartbeatCandidateId, setRecruiterEditingHeartbeatCandidateId] = useState<string | null>(null);
   const [inquiries, setInquiries] = useState<CandidateInquiry[]>([]);
   const [isLoadingInquiries, setIsLoadingInquiries] = useState(false);
@@ -225,6 +227,43 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       setInquiryDeleteError(e?.message || 'Löschen fehlgeschlagen.');
     } finally {
       setDeletingInquiryId(null);
+    }
+  };
+
+  const handleInquiryEditingClaim = async (inq: CandidateInquiry) => {
+    if (inquiryClaimBusyId) return;
+    const editing = getActiveInquiryEditing(inq);
+    setInquiryClaimError(null);
+    try {
+      setInquiryClaimBusyId(inq.id);
+      if (editing?.userId === user.id) {
+        await candidateService.setInquiryEditingClaim(inq.id, false);
+        setInquiries((prev) =>
+          prev.map((x) =>
+            x.id === inq.id
+              ? { ...x, recruiterEditingUserId: null, recruiterEditingLabel: null, recruiterEditingAt: null }
+              : x
+          )
+        );
+      } else {
+        if (editing && !window.confirm(`${editing.label} bearbeitet diese Anfrage gerade. Wirklich übernehmen?`)) {
+          return;
+        }
+        const now = new Date().toISOString();
+        const label = user.firstName?.trim() || (user.email || '').split('@')[0] || 'Recruiter';
+        await candidateService.setInquiryEditingClaim(inq.id, true);
+        setInquiries((prev) =>
+          prev.map((x) =>
+            x.id === inq.id
+              ? { ...x, recruiterEditingUserId: user.id, recruiterEditingLabel: label, recruiterEditingAt: now }
+              : x
+          )
+        );
+      }
+    } catch (e: any) {
+      setInquiryClaimError(e?.message || 'Bearbeitungs-Meldung fehlgeschlagen.');
+    } finally {
+      setInquiryClaimBusyId(null);
     }
   };
 
@@ -1079,13 +1118,25 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   {inquiryDeleteError}
                 </div>
               )}
+              {inquiryClaimError && (
+                <div className="mx-4 mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-800">
+                  {inquiryClaimError}
+                </div>
+              )}
               {inquiries.length === 0 ? (
                 <div className="px-4 py-3 text-xs font-medium text-slate-500">
                   Noch keine Interessenanfragen vorhanden.
                 </div>
               ) : (
                 <div className="max-h-[70vh] overflow-auto divide-y divide-slate-100">
-                  {inquiries.slice(0, 200).map((inq) => (
+                  {inquiries.slice(0, 200).map((inq) => {
+                    const editing = getActiveInquiryEditing(inq);
+                    const isMine = editing?.userId === user.id;
+                    const mailSubject = encodeURIComponent(`Rueckmeldung zu Ihrer Anfrage (${candidateNameById.get(inq.candidateUserId) || 'Kandidat'})`);
+                    const mailBody = encodeURIComponent(
+                      `Hallo ${inq.contactName},\n\nvielen Dank fuer Ihr Interesse.\n\nBeste Gruesse\n${user.firstName?.trim() || 'Recruiter-Team'}`
+                    );
+                    return (
                     <div key={inq.id} className="px-4 py-3 text-xs text-slate-700 flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <p className="font-black text-slate-900">
@@ -1098,8 +1149,35 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
                           {new Date(inq.createdAt).toLocaleString('de-DE')}
                         </p>
+                        {editing && (
+                          <p className={`mt-2 text-[10px] font-black uppercase tracking-wide ${isMine ? 'text-emerald-700' : 'text-amber-700'}`}>
+                            {isMine ? 'Du bearbeitest diese Anfrage gerade' : `${editing.label} bearbeitet diese Anfrage gerade`}
+                          </p>
+                        )}
                       </div>
-                      <div className="shrink-0">
+                      <div className="shrink-0 flex flex-col gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={isMine ? 'outline' : 'secondary'}
+                          className="h-8 text-[10px] font-black"
+                          isLoading={inquiryClaimBusyId === inq.id}
+                          disabled={inquiryClaimBusyId === inq.id}
+                          onClick={() => void handleInquiryEditingClaim(inq)}
+                          title={isMine ? 'Bearbeitung beenden' : 'Bearbeitung melden'}
+                        >
+                          {isMine ? 'Bearbeitung beenden' : 'Ich bearbeite'}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-[10px] font-black"
+                          onClick={() => window.open(`mailto:${inq.contactEmail}?subject=${mailSubject}&body=${mailBody}`, '_self')}
+                          title="E-Mail an Interessent senden"
+                        >
+                          E-Mail senden
+                        </Button>
                         <Button
                           type="button"
                           size="sm"
@@ -1114,7 +1192,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         </Button>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               )}
             </div>

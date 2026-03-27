@@ -88,6 +88,9 @@ type InquiryRow = {
   contact_phone: string;
   message: string | null;
   created_at: string;
+  recruiter_editing_user_id?: string | null;
+  recruiter_editing_label?: string | null;
+  recruiter_editing_at?: string | null;
 };
 
 type ExternalCandidateRow = {
@@ -431,6 +434,9 @@ class ApiClient {
       contactPhone: row.contact_phone,
       message: row.message || undefined,
       createdAt: row.created_at,
+      recruiterEditingUserId: row.recruiter_editing_user_id ?? null,
+      recruiterEditingLabel: row.recruiter_editing_label ?? null,
+      recruiterEditingAt: row.recruiter_editing_at ?? null,
     };
   }
 
@@ -1570,6 +1576,53 @@ class ApiClient {
       }
       throw new Error(error.message);
     }
+  }
+
+  async setInquiryEditingClaim(inquiryId: string, active: boolean): Promise<void> {
+    const sessionUser = await this.getSessionUser();
+    if (!sessionUser || !isRecruiterRole(sessionUser.role)) {
+      throw new Error('Keine Berechtigung für diese Aktion.');
+    }
+
+    const now = new Date().toISOString();
+    const label = recruiterClaimLabelFromUser(sessionUser);
+
+    if (!active) {
+      const { data, error } = await supabase
+        .from('candidate_inquiries')
+        .select('id,recruiter_editing_user_id')
+        .eq('id', inquiryId)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error('Anfrage nicht gefunden.');
+
+      const ownerId = (data as { recruiter_editing_user_id?: string | null }).recruiter_editing_user_id ?? null;
+      const isAdmin = sessionUser.role === UserRole.ADMIN;
+      if (ownerId && ownerId !== sessionUser.id && !isAdmin) {
+        throw new Error('Nur der gemeldete Recruiter kann die Bearbeitung beenden.');
+      }
+
+      const { error: updateErr } = await supabase
+        .from('candidate_inquiries')
+        .update({
+          recruiter_editing_user_id: null,
+          recruiter_editing_label: null,
+          recruiter_editing_at: null,
+        })
+        .eq('id', inquiryId);
+      if (updateErr) throw new Error(updateErr.message);
+      return;
+    }
+
+    const { error } = await supabase
+      .from('candidate_inquiries')
+      .update({
+        recruiter_editing_user_id: sessionUser.id,
+        recruiter_editing_label: label,
+        recruiter_editing_at: now,
+      })
+      .eq('id', inquiryId);
+    if (error) throw new Error(error.message);
   }
 
   async createExternalCandidate(input: {

@@ -159,6 +159,22 @@ export interface CandidateInquiry {
   contactPhone: string;
   message?: string;
   createdAt: string;
+  recruiterEditingUserId?: string | null;
+  recruiterEditingLabel?: string | null;
+  recruiterEditingAt?: string | null;
+}
+
+/** Aktive Team-Meldung auf einer Anfrage oder null (fehlt oder veraltet). */
+export function getActiveInquiryEditing(
+  inq: CandidateInquiry
+): { userId: string; label: string; at: string } | null {
+  if (!inq.recruiterEditingUserId || !inq.recruiterEditingLabel || !inq.recruiterEditingAt) return null;
+  if (isRecruiterEditingClaimStale(inq.recruiterEditingAt)) return null;
+  return {
+    userId: inq.recruiterEditingUserId,
+    label: inq.recruiterEditingLabel,
+    at: inq.recruiterEditingAt,
+  };
 }
 
 // =====================================================
