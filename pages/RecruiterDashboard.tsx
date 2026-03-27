@@ -1197,8 +1197,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               )}
             </div>
           ) : activeView === 'external' ? (
-            <div className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-sm">
-              <div className="border-b border-slate-700 bg-slate-900 px-4 py-3">
+            <div className="overflow-hidden rounded-2xl border border-neutral-700 bg-neutral-900 shadow-sm">
+              <div className="border-b border-neutral-700 bg-neutral-900 px-4 py-3">
                 <h3 className="text-sm font-black uppercase tracking-widest text-white">Kandidaten hinzufügen</h3>
                 <p className="mt-1 text-xs font-medium text-slate-200">Manuell Daten erfassen und optional direkt im Marktplatz freigeben.</p>
               </div>
