@@ -385,6 +385,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     return m;
   }, [candidates]);
 
+  const displayProfession = useCallback((cand: CandidateProfile): string => {
+    const raw = (cand.profession || '').trim();
+    if (raw && raw !== '-' && raw !== '—' && raw.toLowerCase() !== 'n/a') return raw;
+    const industry = (cand.industry || '').trim();
+    return industry || '-';
+  }, []);
+
   const isCandidateStale = useCallback((cand: CandidateProfile) => {
     const updatedAtMs = new Date(cand.updatedAt).getTime();
     return Number.isFinite(updatedAtMs) && Date.now() - updatedAtMs >= STALE_CANDIDATE_MS;
@@ -1585,7 +1592,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                 </div>
                               </td>
                               <td className="px-5 py-3 text-xs font-semibold text-slate-700">
-                                {cand.profession?.trim() || cand.industry || '-'}
+                                {displayProfession(cand)}
                               </td>
                               <td className="px-5 py-3 text-xs font-semibold text-slate-600">{cand.experienceYears}J</td>
                               <td className="align-top px-5 py-3">{renderTeamControls(cand, false)}</td>
@@ -1799,7 +1806,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Beruf</p>
                             <p className="font-medium text-slate-700 text-sm">
-                              {selectedCandidate.profession?.trim() || selectedCandidate.industry || '-'}
+                              {displayProfession(selectedCandidate)}
                             </p>
                           </div>
                           <div>
@@ -1855,7 +1862,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         <div className="bg-slate-50 p-3 rounded-xl">
                           <p className="text-[10px] font-black text-slate-400 uppercase">Beruf</p>
                           <p className="text-sm font-bold text-slate-900">
-                            {selectedCandidate.profession?.trim() || selectedCandidate.industry || '-'}
+                            {displayProfession(selectedCandidate)}
                           </p>
                         </div>
                         <div className="bg-slate-50 p-3 rounded-xl">
