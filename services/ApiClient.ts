@@ -176,6 +176,15 @@ function isCandidateInquiriesSchemaMissing(message?: string): boolean {
 }
 
 class ApiClient {
+  private toMarketplaceCodename(c: CandidateProfile): CandidateProfile {
+    const code = c.candidateNumber || `KT-${c.userId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase()}`;
+    return {
+      ...c,
+      firstName: 'Talent',
+      lastName: code,
+    };
+  }
+
   private externalRowToCandidate(row: ExternalCandidateRow): CandidateProfile {
     const number = row.candidate_number || `EXT-${row.id.slice(0, 8).toUpperCase()}`;
     return {
@@ -789,7 +798,8 @@ class ApiClient {
     const external = (remoteExternal || this.readLocalExternalCandidates()).filter(
       (c) => c.isPublished && c.status === CandidateStatus.ACTIVE
     );
-    return this.mergeUniqueCandidates(mergedBase, external);
+    const merged = this.mergeUniqueCandidates(mergedBase, external);
+    return merged.map((c) => this.toMarketplaceCodename(c));
   }
 
   async getAllCandidates() {
