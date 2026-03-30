@@ -144,6 +144,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
 
     if (!formData.firstName?.trim()) newErrors.firstName = 'Pflichtfeld';
     if (!formData.lastName?.trim()) newErrors.lastName = 'Pflichtfeld';
+    if (!formData.profession?.trim()) newErrors.profession = 'Pflichtfeld';
     if (!formData.city?.trim()) newErrors.city = 'Pflichtfeld';
     if (!formData.country?.trim()) newErrors.country = 'Pflichtfeld';
     if (!formData.industry?.trim()) newErrors.industry = 'Pflichtfeld';
@@ -523,12 +524,14 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
               <div>
                 <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:text-sm">
                   Beruf
+                  <RequiredBadge />
                 </label>
                 <Input
                   name="profession"
                   value={formData.profession ?? ''}
                   onChange={handleChange}
                   placeholder="z. B. Schweißer"
+                  error={errors.profession}
                   className="h-9 rounded-xl text-sm sm:h-10"
                 />
               </div>

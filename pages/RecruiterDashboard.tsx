@@ -1562,7 +1562,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           <tr>
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Name</th>
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Exp</th>
-                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Live</th>
                             <th className="min-w-[150px] px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">
                               Team
                               <span className="mt-0.5 block font-bold normal-case tracking-normal text-[9px] text-orange-100">Wer bearbeitet?</span>
@@ -1585,9 +1584,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                 </div>
                               </td>
                               <td className="px-5 py-3 text-xs font-semibold text-slate-600">{cand.experienceYears}J</td>
-                              <td className="px-5 py-3">
-                                <Badge variant={cand.isPublished ? 'green' : 'slate'}>{cand.isPublished ? 'Ja' : 'Nein'}</Badge>
-                              </td>
                               <td className="align-top px-5 py-3">{renderTeamControls(cand, false)}</td>
                               <td className="px-5 py-3 text-right">{renderPublishAndManage(cand, false)}</td>
                             </tr>
@@ -1845,6 +1841,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         <div className="bg-slate-50 p-3 rounded-xl">
                           <p className="text-[10px] font-black text-slate-400 uppercase">Ort</p>
                           <p className="text-sm font-bold text-slate-900">{selectedCandidate.city || '-'}, {selectedCandidate.country || '-'}</p>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-xl">
+                          <p className="text-[10px] font-black text-slate-400 uppercase">Beruf</p>
+                          <p className="text-sm font-bold text-slate-900">{selectedCandidate.profession || '-'}</p>
                         </div>
                         <div className="bg-slate-50 p-3 rounded-xl">
                           <p className="text-[10px] font-black text-slate-400 uppercase">Branche</p>

@@ -203,6 +203,7 @@ export interface MatchResult {
 export const REQUIRED_PROFILE_FIELDS = [
   'firstName',
   'lastName',
+  'profession',
   'city',
   'country',
   'industry',
@@ -215,6 +216,7 @@ export function validateProfileForPublishing(profile: CandidateProfile): string[
 
   if (!profile.firstName?.trim()) missing.push('Vorname');
   if (!profile.lastName?.trim()) missing.push('Nachname');
+  if (!profile.profession?.trim()) missing.push('Beruf');
   if (!profile.city?.trim()) missing.push('Stadt');
   if (!profile.country?.trim()) missing.push('Land');
   if (!profile.industry?.trim()) missing.push('Branche');
