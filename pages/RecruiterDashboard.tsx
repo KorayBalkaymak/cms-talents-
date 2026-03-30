@@ -1528,7 +1528,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             <Avatar seed={cand.firstName + cand.lastName} size="sm" imageUrl={cand.profileImageUrl} />
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-bold text-slate-900">
-                                {cand.candidateNumber || `${cand.firstName} ${cand.lastName}`}
+                                {`${cand.firstName || ''} ${cand.lastName || ''}`.trim() || cand.candidateNumber || 'Unbekannter Kandidat'}
                               </p>
                               <p className="text-xs font-semibold text-slate-500">
                                 {[cand.city?.trim(), `${cand.experienceYears} J. Erfahrung`].filter(Boolean).join(' · ')}
@@ -1580,7 +1580,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                   <Avatar seed={cand.firstName + cand.lastName} size="sm" imageUrl={cand.profileImageUrl} />
                                   <div>
                                     <div className="text-sm font-bold text-slate-900">
-                                      {cand.candidateNumber || `${cand.firstName} ${cand.lastName}`}
+                                      {`${cand.firstName || ''} ${cand.lastName || ''}`.trim() || cand.candidateNumber || 'Unbekannter Kandidat'}
                                     </div>
                                     <div className="text-[10px] font-bold uppercase text-slate-400">{cand.city}</div>
                                   </div>
@@ -1675,7 +1675,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               <div className="flex items-center gap-4 p-4 bg-slate-900 rounded-2xl text-white">
                 <Avatar seed={selectedCandidate.candidateNumber || selectedCandidate.firstName} size="md" imageUrl={selectedCandidate.profileImageUrl} />
                 <div className="flex-1 leading-tight">
-                  <h3 className="text-lg font-black">{selectedCandidate.candidateNumber || `${selectedCandidate.firstName} ${selectedCandidate.lastName}`}</h3>
+                  <h3 className="text-lg font-black">
+                    {`${selectedCandidate.firstName || ''} ${selectedCandidate.lastName || ''}`.trim() || selectedCandidate.candidateNumber || 'Unbekannter Kandidat'}
+                  </h3>
                   <p className="text-orange-500 font-bold uppercase text-[10px] tracking-wider">{selectedCandidate.industry}</p>
                 </div>
                 {!isEditing && canShowPublishFor(selectedCandidate) && (
