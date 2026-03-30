@@ -149,6 +149,12 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
     if (!formData.country?.trim()) newErrors.country = 'Pflichtfeld';
     if (!formData.industry?.trim()) newErrors.industry = 'Pflichtfeld';
     if (!formData.availability?.trim()) newErrors.availability = 'Pflichtfeld';
+    if (formData.salaryWishEur === null || formData.salaryWishEur === undefined || formData.salaryWishEur < 0) {
+      newErrors.salaryWishEur = 'Pflichtfeld';
+    }
+    if (formData.workRadiusKm === null || formData.workRadiusKm === undefined || formData.workRadiusKm < 0) {
+      newErrors.workRadiusKm = 'Pflichtfeld';
+    }
 
     return newErrors;
   };
@@ -591,23 +597,27 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
               </h3>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-6">
                 <Input
-                  label="Gehaltswunsch (EUR)"
+                  label="Gehaltswunsch (EUR) *"
+                  labelClassName="text-slate-900 font-bold"
                   name="salaryWishEur"
                   type="number"
                   value={formData.salaryWishEur ?? ''}
                   onChange={handleNumberChange}
                   placeholder="z. B. 45000"
                   min="0"
+                  error={errors.salaryWishEur}
                   className="h-9 rounded-xl text-sm sm:h-10"
                 />
                 <Input
-                  label="Arbeitsradius (km)"
+                  label="Arbeitsradius (km) *"
+                  labelClassName="text-slate-900 font-bold"
                   name="workRadiusKm"
                   type="number"
                   value={formData.workRadiusKm ?? ''}
                   onChange={handleNumberChange}
                   placeholder="z. B. 30"
                   min="0"
+                  error={errors.workRadiusKm}
                   className="h-9 rounded-xl text-sm sm:h-10"
                 />
                 <div className="sm:col-span-2">

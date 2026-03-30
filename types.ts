@@ -207,7 +207,9 @@ export const REQUIRED_PROFILE_FIELDS = [
   'city',
   'country',
   'industry',
-  'availability'
+  'availability',
+  'salaryWishEur',
+  'workRadiusKm',
 ] as const;
 
 // Returns list of missing required field names
@@ -222,6 +224,12 @@ export function validateProfileForPublishing(profile: CandidateProfile): string[
   if (!profile.industry?.trim()) missing.push('Branche');
   if (!profile.availability?.trim()) missing.push('Verfügbarkeit');
   if (profile.experienceYears === undefined || profile.experienceYears < 0) missing.push('Berufserfahrung');
+  if (profile.salaryWishEur === null || profile.salaryWishEur === undefined || profile.salaryWishEur < 0) {
+    missing.push('Gehaltswunsch');
+  }
+  if (profile.workRadiusKm === null || profile.workRadiusKm === undefined || profile.workRadiusKm < 0) {
+    missing.push('Arbeitsradius');
+  }
 
   return missing;
 }
