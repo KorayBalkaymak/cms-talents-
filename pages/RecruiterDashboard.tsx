@@ -1211,16 +1211,31 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   <Select label="Branche" labelClassName="text-white" value={externalForm.industry} onChange={(e) => setExternalForm((p) => ({ ...p, industry: e.target.value }))}>
                     {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
                   </Select>
-                  <Input label="Erfahrung (Jahre)" labelClassName="text-white" type="number" value={externalForm.experienceYears} onChange={(e) => setExternalForm((p) => ({ ...p, experienceYears: e.target.value }))} />
+                  <Input
+                    label="Erfahrung (Jahre)"
+                    labelClassName="text-white"
+                    type="number"
+                    min="0"
+                    value={externalForm.experienceYears}
+                    onChange={(e) =>
+                      setExternalForm((p) => ({
+                        ...p,
+                        experienceYears:
+                          e.target.value === '' ? '' : Math.max(0, Number(e.target.value)).toString(),
+                      }))
+                    }
+                  />
                   <Input
                     label="Wunschgehalt (EUR)"
                     labelClassName="text-white"
                     type="number"
+                    min="0"
                     value={externalForm.salaryWishEur}
                     onChange={(e) =>
                       setExternalForm((p) => ({
                         ...p,
-                        salaryWishEur: e.target.value,
+                        salaryWishEur:
+                          e.target.value === '' ? '' : Math.max(0, Number(e.target.value)).toString(),
                       }))
                     }
                     placeholder="z.B. 50000"
