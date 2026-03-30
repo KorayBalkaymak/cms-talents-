@@ -479,6 +479,7 @@ class ApiClient {
       zipCode: row.zip_code || undefined,
       phoneNumber: row.phone_number || undefined,
       industry: row.industry || '',
+      profession: row.profession ?? null,
       experienceYears: row.experience_years || 0,
       availability: row.availability || '',
       salaryWishEur: row.salary_wish_eur ?? null,
