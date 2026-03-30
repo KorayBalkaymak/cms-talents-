@@ -1558,18 +1558,18 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
                     <div className="hidden overflow-x-auto lg:block">
                       <table className="w-full min-w-[720px] text-left">
-                        <thead className="border-b border-slate-100 bg-slate-50/90">
+                        <thead className="border-b border-orange-500 bg-orange-600">
                           <tr>
-                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Name</th>
-                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Exp</th>
-                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
-                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Live</th>
-                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Hinweis</th>
-                            <th className="min-w-[150px] px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Name</th>
+                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Exp</th>
+                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Status</th>
+                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Live</th>
+                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Hinweis</th>
+                            <th className="min-w-[150px] px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">
                               Team
-                              <span className="mt-0.5 block font-bold normal-case tracking-normal text-[9px] text-slate-400/90">Wer bearbeitet?</span>
+                              <span className="mt-0.5 block font-bold normal-case tracking-normal text-[9px] text-orange-100">Wer bearbeitet?</span>
                             </th>
-                            <th className="px-5 py-3 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Action</th>
+                            <th className="px-5 py-3 text-right text-[10px] font-black uppercase tracking-widest text-white">Action</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
