@@ -178,6 +178,43 @@ function isCandidateInquiriesSchemaMissing(message?: string): boolean {
 }
 
 class ApiClient {
+  private readonly legacyProfessionPrefix = '[profession]:';
+
+  private extractLegacyProfession(
+    profession: string | null | undefined,
+    about: string | null | undefined
+  ): { profession: string | null; about: string | null } {
+    const normalizedProfession = profession?.trim() || '';
+    const normalizedAbout = (about || '').trim();
+    if (normalizedProfession) {
+      return { profession: normalizedProfession, about: normalizedAbout || null };
+    }
+    if (!normalizedAbout.startsWith(this.legacyProfessionPrefix)) {
+      return { profession: null, about: normalizedAbout || null };
+    }
+
+    const firstLineEnd = normalizedAbout.indexOf('\n');
+    const header = (firstLineEnd >= 0 ? normalizedAbout.slice(0, firstLineEnd) : normalizedAbout).trim();
+    const rest = firstLineEnd >= 0 ? normalizedAbout.slice(firstLineEnd + 1).trim() : '';
+    const encoded = header.slice(this.legacyProfessionPrefix.length);
+    const decoded = decodeURIComponent(encoded || '').trim();
+    return {
+      profession: decoded || null,
+      about: rest || null,
+    };
+  }
+
+  private withLegacyProfessionInAbout(
+    profession: string | null | undefined,
+    about: string | null | undefined
+  ): string | null {
+    const p = (profession || '').trim();
+    const { about: cleanAbout } = this.extractLegacyProfession(null, about || null);
+    if (!p) return cleanAbout || null;
+    const prefix = `${this.legacyProfessionPrefix}${encodeURIComponent(p)}`;
+    return cleanAbout ? `${prefix}\n${cleanAbout}` : prefix;
+  }
+
   private toMarketplaceCodename(c: CandidateProfile): CandidateProfile {
     const code = c.candidateNumber || `KT-${c.userId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase()}`;
     return {
@@ -462,6 +499,7 @@ class ApiClient {
   }
 
   private profileRowToCandidate(row: ProfileRow, docs?: DocumentRow | null): CandidateProfile {
+    const normalized = this.extractLegacyProfession(row.profession ?? null, row.about ?? null);
     return {
       userId: row.id,
       avatarSeed: row.avatar_seed || row.id.substring(0, 8),
@@ -479,14 +517,14 @@ class ApiClient {
       zipCode: row.zip_code || undefined,
       phoneNumber: row.phone_number || undefined,
       industry: row.industry || '',
-      profession: row.profession ?? null,
+      profession: normalized.profession,
       experienceYears: row.experience_years || 0,
       availability: row.availability || '',
       salaryWishEur: row.salary_wish_eur ?? null,
       workRadiusKm: row.work_radius_km ?? null,
       workArea: row.work_area ?? null,
       birthYear: row.birth_year || undefined,
-      about: row.about || undefined,
+      about: normalized.about || undefined,
       skills: row.skills || [],
       boostedKeywords: row.boosted_keywords || [],
       socialLinks: row.social_links || [],
@@ -1071,6 +1109,11 @@ class ApiClient {
           recruiter_editing_at: _dropAt,
           ...legacyPayload
         } = payload as any;
+        // Legacy-Fallback: wenn profession-Spalte fehlt, Beruf in about mit Marker mitschreiben.
+        legacyPayload.about = this.withLegacyProfessionInAbout(
+          data.profession ?? current?.profession ?? null,
+          legacyPayload.about ?? null
+        );
         const { error: retryError } = await supabase.from('profiles').upsert(legacyPayload, { onConflict: 'id' });
         if (retryError) {
           throw new Error(retryError.message);
