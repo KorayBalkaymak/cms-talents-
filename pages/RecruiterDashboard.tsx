@@ -1258,12 +1258,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   value={externalForm.about}
                   onChange={(e) => setExternalForm((p) => ({ ...p, about: e.target.value }))}
                 />
-                <div className="rounded-xl border border-white/70 bg-white p-3">
-                  <p className="mb-2 inline-flex rounded-md bg-neutral-900 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-white">Keywords auswählen</p>
+                <div className="rounded-xl border border-orange-400 bg-orange-500 p-3">
+                  <p className="mb-2 inline-flex rounded-md bg-[#101B31] px-2 py-1 text-[10px] font-black uppercase tracking-widest text-white">Keywords auswählen</p>
                   <div className="space-y-3">
                     {BOOSTER_KEYWORD_CATEGORIES.map((cat) => (
                       <div key={cat.title}>
-                        <p className="mb-1 inline-flex rounded-md bg-neutral-900 px-2 py-0.5 text-xs font-black text-white">{cat.title}</p>
+                        <p className="mb-1 inline-flex rounded-md bg-[#101B31] px-2 py-0.5 text-xs font-black text-white">{cat.title}</p>
                         <div className="flex flex-wrap gap-2">
                           {cat.keywords.map((kw) => {
                             const active = externalBoostedKeywords.includes(kw);
@@ -1272,7 +1272,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                 key={`${cat.title}-${kw}`}
                                 type="button"
                                 onClick={() => toggleExternalKeyword(kw)}
-                                className={`rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${active ? 'bg-orange-500 text-white ring-1 ring-orange-300' : 'bg-orange-500/10 text-orange-300 ring-1 ring-orange-500/50 hover:bg-orange-500/20'}`}
+                                className={`rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${active ? 'bg-[#101B31] text-white ring-1 ring-blue-300' : 'bg-[#101B31]/85 text-white ring-1 ring-[#101B31] hover:bg-[#101B31]'}`}
                               >
                                 {kw}
                               </button>
