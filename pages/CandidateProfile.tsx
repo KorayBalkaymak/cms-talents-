@@ -408,21 +408,13 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             <div className="relative flex flex-col items-center gap-3.5 md:flex-row md:gap-10 sm:gap-8">
               <div className="relative">
                 <Avatar
-                  seed={formData.candidateNumber || formData.userId || 'user'}
+                  seed={`${formData.firstName || ''}${formData.lastName || ''}` || formData.userId || 'user'}
                   size="md"
                   className="w-16 h-16 text-lg shadow-md ring-[5px] ring-orange-100 ring-offset-2 ring-offset-white sm:w-32 sm:h-32 sm:text-3xl sm:ring-[10px]"
                   imageUrl={formData.profileImageUrl}
                 />
               </div>
               <div className="relative w-full flex-1 space-y-3 sm:space-y-6">
-                <div>
-                  <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:mb-1.5 sm:text-sm">
-                    Kandidatennummer
-                  </label>
-                  <div className="flex h-9 items-center rounded-xl border border-slate-200 bg-slate-100 px-3 text-sm font-black text-slate-700 sm:h-10">
-                    {formData.candidateNumber || `KT-${formData.userId.replace(/-/g, '').slice(0, 8).toUpperCase()}`}
-                  </div>
-                </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-6">
                   <div>
                     <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:mb-1.5 sm:text-sm">
