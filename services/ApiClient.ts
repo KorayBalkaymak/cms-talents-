@@ -157,6 +157,15 @@ function isCandidateNumberSchemaMissing(message?: string): boolean {
   return text.includes("could not find the 'candidate_number' column");
 }
 
+function isProfileSalaryWorkSchemaMissing(message?: string): boolean {
+  const text = (message || '').toLowerCase();
+  return (
+    text.includes("could not find the 'salary_wish_eur' column") ||
+    text.includes("could not find the 'work_radius_km' column") ||
+    text.includes("could not find the 'work_area' column")
+  );
+}
+
 function isCandidateInquiriesSchemaMissing(message?: string): boolean {
   const text = (message || '').toLowerCase();
   return (
@@ -1029,9 +1038,16 @@ class ApiClient {
 
     const { error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
     if (error) {
-      // Backward-compat: ältere DBs ohne recruiter_editing_* Spalten sollen trotzdem speichern können.
-      if (isRecruiterEditingSchemaMissing(error.message) || isCandidateNumberSchemaMissing(error.message)) {
+      // Backward-compat: ältere DBs ohne neuere Profiles-Spalten sollen trotzdem speichern können.
+      if (
+        isRecruiterEditingSchemaMissing(error.message) ||
+        isCandidateNumberSchemaMissing(error.message) ||
+        isProfileSalaryWorkSchemaMissing(error.message)
+      ) {
         const {
+          salary_wish_eur: _dropSalaryWish,
+          work_radius_km: _dropWorkRadius,
+          work_area: _dropWorkArea,
           candidate_number: _dropCandidateNumber,
           recruiter_editing_user_id: _dropUser,
           recruiter_editing_label: _dropLabel,
