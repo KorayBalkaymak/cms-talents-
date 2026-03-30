@@ -179,40 +179,69 @@ function isCandidateInquiriesSchemaMissing(message?: string): boolean {
 
 class ApiClient {
   private readonly legacyProfessionPrefix = '[profession]:';
+  private readonly legacySalaryPrefix = '[salary]:';
+  private readonly legacyRadiusPrefix = '[radius]:';
 
-  private extractLegacyProfession(
+  private extractLegacyProfileFields(
     profession: string | null | undefined,
+    salaryWishEur: number | null | undefined,
+    workRadiusKm: number | null | undefined,
     about: string | null | undefined
-  ): { profession: string | null; about: string | null } {
+  ): { profession: string | null; salaryWishEur: number | null; workRadiusKm: number | null; about: string | null } {
     const normalizedProfession = profession?.trim() || '';
-    const normalizedAbout = (about || '').trim();
-    if (normalizedProfession) {
-      return { profession: normalizedProfession, about: normalizedAbout || null };
-    }
-    if (!normalizedAbout.startsWith(this.legacyProfessionPrefix)) {
-      return { profession: null, about: normalizedAbout || null };
+    const normalizedSalary = salaryWishEur ?? null;
+    const normalizedRadius = workRadiusKm ?? null;
+    const lines = (about || '').split('\n');
+    const bodyLines: string[] = [];
+    let legacyProfession: string | null = null;
+    let legacySalary: number | null = null;
+    let legacyRadius: number | null = null;
+
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (line.startsWith(this.legacyProfessionPrefix)) {
+        const decoded = decodeURIComponent(line.slice(this.legacyProfessionPrefix.length) || '').trim();
+        legacyProfession = decoded || legacyProfession;
+        continue;
+      }
+      if (line.startsWith(this.legacySalaryPrefix)) {
+        const num = Number(line.slice(this.legacySalaryPrefix.length));
+        if (Number.isFinite(num)) legacySalary = Math.max(0, Math.round(num));
+        continue;
+      }
+      if (line.startsWith(this.legacyRadiusPrefix)) {
+        const num = Number(line.slice(this.legacyRadiusPrefix.length));
+        if (Number.isFinite(num)) legacyRadius = Math.max(0, Math.round(num));
+        continue;
+      }
+      bodyLines.push(raw);
     }
 
-    const firstLineEnd = normalizedAbout.indexOf('\n');
-    const header = (firstLineEnd >= 0 ? normalizedAbout.slice(0, firstLineEnd) : normalizedAbout).trim();
-    const rest = firstLineEnd >= 0 ? normalizedAbout.slice(firstLineEnd + 1).trim() : '';
-    const encoded = header.slice(this.legacyProfessionPrefix.length);
-    const decoded = decodeURIComponent(encoded || '').trim();
     return {
-      profession: decoded || null,
-      about: rest || null,
+      profession: normalizedProfession || legacyProfession,
+      salaryWishEur: normalizedSalary ?? legacySalary,
+      workRadiusKm: normalizedRadius ?? legacyRadius,
+      about: bodyLines.join('\n').trim() || null,
     };
   }
 
-  private withLegacyProfessionInAbout(
+  private withLegacyProfileFieldsInAbout(
     profession: string | null | undefined,
+    salaryWishEur: number | null | undefined,
+    workRadiusKm: number | null | undefined,
     about: string | null | undefined
   ): string | null {
+    const extracted = this.extractLegacyProfileFields(null, null, null, about || null);
     const p = (profession || '').trim();
-    const { about: cleanAbout } = this.extractLegacyProfession(null, about || null);
-    if (!p) return cleanAbout || null;
-    const prefix = `${this.legacyProfessionPrefix}${encodeURIComponent(p)}`;
-    return cleanAbout ? `${prefix}\n${cleanAbout}` : prefix;
+    const s = salaryWishEur ?? null;
+    const r = workRadiusKm ?? null;
+    const headers: string[] = [];
+    if (p) headers.push(`${this.legacyProfessionPrefix}${encodeURIComponent(p)}`);
+    if (s !== null && s !== undefined && Number.isFinite(Number(s))) headers.push(`${this.legacySalaryPrefix}${Math.max(0, Math.round(Number(s)))}`);
+    if (r !== null && r !== undefined && Number.isFinite(Number(r))) headers.push(`${this.legacyRadiusPrefix}${Math.max(0, Math.round(Number(r)))}`);
+    const cleanAbout = extracted.about;
+    if (headers.length === 0) return cleanAbout || null;
+    return cleanAbout ? `${headers.join('\n')}\n${cleanAbout}` : headers.join('\n');
   }
 
   private toMarketplaceCodename(c: CandidateProfile): CandidateProfile {
@@ -499,7 +528,12 @@ class ApiClient {
   }
 
   private profileRowToCandidate(row: ProfileRow, docs?: DocumentRow | null): CandidateProfile {
-    const normalized = this.extractLegacyProfession(row.profession ?? null, row.about ?? null);
+    const normalized = this.extractLegacyProfileFields(
+      row.profession ?? null,
+      row.salary_wish_eur ?? null,
+      row.work_radius_km ?? null,
+      row.about ?? null
+    );
     return {
       userId: row.id,
       avatarSeed: row.avatar_seed || row.id.substring(0, 8),
@@ -520,8 +554,8 @@ class ApiClient {
       profession: normalized.profession,
       experienceYears: row.experience_years || 0,
       availability: row.availability || '',
-      salaryWishEur: row.salary_wish_eur ?? null,
-      workRadiusKm: row.work_radius_km ?? null,
+      salaryWishEur: normalized.salaryWishEur,
+      workRadiusKm: normalized.workRadiusKm,
       workArea: row.work_area ?? null,
       birthYear: row.birth_year || undefined,
       about: normalized.about || undefined,
@@ -1109,9 +1143,11 @@ class ApiClient {
           recruiter_editing_at: _dropAt,
           ...legacyPayload
         } = payload as any;
-        // Legacy-Fallback: wenn profession-Spalte fehlt, Beruf in about mit Marker mitschreiben.
-        legacyPayload.about = this.withLegacyProfessionInAbout(
+        // Legacy-Fallback: wenn neue Spalten fehlen, Felder kompatibel in about mit Marker mitschreiben.
+        legacyPayload.about = this.withLegacyProfileFieldsInAbout(
           data.profession ?? current?.profession ?? null,
+          data.salaryWishEur ?? current?.salary_wish_eur ?? null,
+          data.workRadiusKm ?? current?.work_radius_km ?? null,
           legacyPayload.about ?? null
         );
         const { error: retryError } = await supabase.from('profiles').upsert(legacyPayload, { onConflict: 'id' });
