@@ -1562,7 +1562,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           <tr>
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Name</th>
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Exp</th>
-                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Status</th>
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Live</th>
                             <th className="min-w-[150px] px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">
                               Team
@@ -1586,9 +1585,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                 </div>
                               </td>
                               <td className="px-5 py-3 text-xs font-semibold text-slate-600">{cand.experienceYears}J</td>
-                              <td className="px-5 py-3">
-                                <div className="flex flex-col gap-1">{statusBadgeBlock(cand)}</div>
-                              </td>
                               <td className="px-5 py-3">
                                 <Badge variant={cand.isPublished ? 'green' : 'slate'}>{cand.isPublished ? 'Ja' : 'Nein'}</Badge>
                               </td>
