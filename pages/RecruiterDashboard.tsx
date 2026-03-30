@@ -1869,6 +1869,22 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           <p className="text-sm font-bold text-slate-900">{selectedCandidate.experienceYears} Jahre</p>
                         </div>
                         <div className="bg-slate-50 p-3 rounded-xl">
+                          <p className="text-[10px] font-black text-slate-400 uppercase">Gehaltswunsch</p>
+                          <p className="text-sm font-bold text-slate-900">
+                            {selectedCandidate.salaryWishEur !== null && selectedCandidate.salaryWishEur !== undefined
+                              ? `${selectedCandidate.salaryWishEur} EUR`
+                              : '-'}
+                          </p>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-xl">
+                          <p className="text-[10px] font-black text-slate-400 uppercase">Arbeitsradius</p>
+                          <p className="text-sm font-bold text-slate-900">
+                            {selectedCandidate.workRadiusKm !== null && selectedCandidate.workRadiusKm !== undefined
+                              ? `${selectedCandidate.workRadiusKm} km`
+                              : '-'}
+                          </p>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-xl">
                           <p className="text-[10px] font-black text-slate-400 uppercase">Status</p>
                           <p className="text-sm font-bold text-slate-900">{selectedCandidate.status}</p>
                         </div>
