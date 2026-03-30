@@ -1564,7 +1564,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Exp</th>
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Status</th>
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Live</th>
-                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Hinweis</th>
                             <th className="min-w-[150px] px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">
                               Team
                               <span className="mt-0.5 block font-bold normal-case tracking-normal text-[9px] text-orange-100">Wer bearbeitet?</span>
@@ -1592,11 +1591,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               </td>
                               <td className="px-5 py-3">
                                 <Badge variant={cand.isPublished ? 'green' : 'slate'}>{cand.isPublished ? 'Ja' : 'Nein'}</Badge>
-                              </td>
-                              <td className="px-5 py-3">
-                                <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${candidateReviewHint(cand).className}`}>
-                                  {candidateReviewHint(cand).text}
-                                </span>
                               </td>
                               <td className="align-top px-5 py-3">{renderTeamControls(cand, false)}</td>
                               <td className="px-5 py-3 text-right">{renderPublishAndManage(cand, false)}</td>
