@@ -522,6 +522,18 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
             <div className="relative mb-5 grid grid-cols-1 gap-4 sm:mb-8 sm:grid-cols-2 sm:gap-8">
               <div>
                 <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:text-sm">
+                  Beruf
+                </label>
+                <Input
+                  name="profession"
+                  value={formData.profession ?? ''}
+                  onChange={handleChange}
+                  placeholder="z. B. Schweißer"
+                  className="h-9 rounded-xl text-sm sm:h-10"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:text-sm">
                   Hauptbranche
                   <RequiredBadge />
                 </label>

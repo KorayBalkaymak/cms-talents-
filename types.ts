@@ -74,6 +74,7 @@ export interface CandidateProfile {
   // --- REQUIRED PROFESSIONAL INFO ---
   // --- REQUIRED PROFESSIONAL INFO ---
   industry: string;         // REQUIRED - Branche
+  profession?: string | null; // OPTIONAL - Beruf / Jobtitel
   experienceYears: number;  // REQUIRED - Jahre Erfahrung (min 0)
   availability: string;     // REQUIRED - Verfügbarkeit
 

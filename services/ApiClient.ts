@@ -43,6 +43,7 @@ type ProfileRow = {
   zip_code: string | null;
   phone_number: string | null;
   industry: string;
+  profession: string | null;
   experience_years: number;
   availability: string;
   birth_year: string | null;
@@ -162,7 +163,8 @@ function isProfileSalaryWorkSchemaMissing(message?: string): boolean {
   return (
     text.includes("could not find the 'salary_wish_eur' column") ||
     text.includes("could not find the 'work_radius_km' column") ||
-    text.includes("could not find the 'work_area' column")
+    text.includes("could not find the 'work_area' column") ||
+    text.includes("could not find the 'profession' column")
   );
 }
 
@@ -201,6 +203,7 @@ class ApiClient {
       city: row.city || '',
       country: row.country || '',
       industry: row.industry || '',
+      profession: row.profession ?? null,
       experienceYears: row.experience_years || 0,
       availability: row.availability || '',
       salaryWishEur: row.salary_wish_eur ?? null,
@@ -537,6 +540,7 @@ class ApiClient {
       zip_code: null,
       phone_number: null,
       industry: '',
+      profession: null,
       experience_years: 0,
       availability: '',
       salary_wish_eur: null,
@@ -1020,6 +1024,7 @@ class ApiClient {
       zip_code: data.zipCode ?? current?.zip_code ?? null,
       phone_number: data.phoneNumber ?? current?.phone_number ?? null,
       industry: data.industry || current?.industry || '',
+      profession: data.profession ?? current?.profession ?? null,
       experience_years: Number(data.experienceYears ?? current?.experience_years ?? 0),
       availability: data.availability || current?.availability || '',
       salary_wish_eur: data.salaryWishEur ?? current?.salary_wish_eur ?? null,
@@ -1058,6 +1063,7 @@ class ApiClient {
           salary_wish_eur: _dropSalaryWish,
           work_radius_km: _dropWorkRadius,
           work_area: _dropWorkArea,
+          profession: _dropProfession,
           candidate_number: _dropCandidateNumber,
           recruiter_editing_user_id: _dropUser,
           recruiter_editing_label: _dropLabel,
