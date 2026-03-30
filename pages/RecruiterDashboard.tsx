@@ -379,7 +379,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const candidateNameById = useMemo(() => {
     const m = new Map<string, string>();
     for (const c of candidates) {
-      m.set(c.userId, c.candidateNumber || `${c.firstName} ${c.lastName}`.trim() || c.userId);
+      const fullName = `${c.firstName || ''} ${c.lastName || ''}`.trim();
+      m.set(c.userId, fullName || c.candidateNumber || 'Unbekannter Kandidat');
     }
     return m;
   }, [candidates]);
