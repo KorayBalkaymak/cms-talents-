@@ -1854,7 +1854,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         </div>
                         <div className="bg-slate-50 p-3 rounded-xl">
                           <p className="text-[10px] font-black text-slate-400 uppercase">Beruf</p>
-                          <p className="text-sm font-bold text-slate-900">{selectedCandidate.profession || '-'}</p>
+                          <p className="text-sm font-bold text-slate-900">
+                            {selectedCandidate.profession?.trim() || selectedCandidate.industry || '-'}
+                          </p>
                         </div>
                         <div className="bg-slate-50 p-3 rounded-xl">
                           <p className="text-[10px] font-black text-slate-400 uppercase">Branche</p>
