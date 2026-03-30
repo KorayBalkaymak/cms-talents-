@@ -263,7 +263,6 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
                 </>
               ) : (
                 <>
-                  <button type="button" onClick={() => onNavigate('/recruiter/auth')} className="text-sm font-medium text-slate-300 hover:text-white hidden sm:block transition-colors">Für Arbeitgeber</button>
                   <Button size="sm" onClick={() => onNavigate('/candidate/auth')} className="h-10 text-sm px-4 rounded-xl focus:ring-offset-[#101B31]">
                     Anmelden
                   </Button>
