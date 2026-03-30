@@ -511,8 +511,8 @@ class ApiClient {
       id: userId,
       email: authUser.email || '',
       role,
-      first_name: 'Kandidat',
-      last_name: candidateNumber,
+      first_name: '',
+      last_name: '',
       city: '',
       country: '',
       address: null,
@@ -584,6 +584,14 @@ class ApiClient {
     }
 
     return this.profileRowToUser(profile);
+  }
+
+  private async getEffectiveSessionRole(): Promise<UserRole | null> {
+    const current = await this.getSessionUser();
+    if (current?.role) return current.role;
+    const authUser = await this.currentAuthUser();
+    if (!authUser) return null;
+    return recruiterRoleFromEmail(authUser.email);
   }
 
   async verifyEmail(): Promise<{ success: boolean; message?: string; error?: string }> {
@@ -984,9 +992,9 @@ class ApiClient {
       id: userId,
       email: current?.email || authUser?.email || '',
       role: current?.role || recruiterRoleFromEmail(authUser?.email ?? null),
-      // Kandidat kann Name nicht frei setzen; wir halten einen neutralen Namen + feste Kandidatennummer.
-      first_name: isOwnerCandidate ? (current?.first_name || 'Kandidat') : (data.firstName || current?.first_name || ''),
-      last_name: isOwnerCandidate ? (current?.last_name || existingCandidateNumber) : (data.lastName || current?.last_name || ''),
+      // Kandidat darf Vor-/Nachname selbst pflegen; Kandidatennummer bleibt separat/fix.
+      first_name: data.firstName ?? current?.first_name ?? '',
+      last_name: data.lastName ?? current?.last_name ?? '',
       city: data.city || current?.city || '',
       country: data.country || current?.country || '',
       address: data.address ?? current?.address ?? null,
@@ -1525,8 +1533,8 @@ class ApiClient {
   }
 
   async getCandidateInquiries(): Promise<CandidateInquiry[]> {
-    const current = await this.getSessionUser();
-    if (!current || !isRecruiterRole(current.role)) {
+    const role = await this.getEffectiveSessionRole();
+    if (!role || !isRecruiterRole(role)) {
       return [];
     }
     const local = this.readLocalInquiries();
@@ -1550,8 +1558,8 @@ class ApiClient {
   }
 
   async deleteCandidateInquiry(inquiryId: string): Promise<void> {
-    const current = await this.getSessionUser();
-    if (!current || !isRecruiterRole(current.role)) {
+    const role = await this.getEffectiveSessionRole();
+    if (!role || !isRecruiterRole(role)) {
       return;
     }
 
@@ -1580,12 +1588,21 @@ class ApiClient {
 
   async setInquiryEditingClaim(inquiryId: string, active: boolean): Promise<void> {
     const sessionUser = await this.getSessionUser();
-    if (!sessionUser || !isRecruiterRole(sessionUser.role)) {
+    const authUser = await this.currentAuthUser();
+    const effectiveRole = sessionUser?.role || recruiterRoleFromEmail(authUser?.email ?? null);
+    if (!effectiveRole || !isRecruiterRole(effectiveRole) || !authUser) {
       throw new Error('Keine Berechtigung für diese Aktion.');
     }
 
     const now = new Date().toISOString();
-    const label = recruiterClaimLabelFromUser(sessionUser);
+    const label = recruiterClaimLabelFromUser(
+      sessionUser || {
+        id: authUser.id,
+        email: authUser.email || '',
+        role: effectiveRole,
+        createdAt: authUser.created_at || now,
+      }
+    );
 
     if (!active) {
       const { data, error } = await supabase
@@ -1614,8 +1631,8 @@ class ApiClient {
       if (!data) throw new Error('Anfrage nicht gefunden.');
 
       const ownerId = (data as { recruiter_editing_user_id?: string | null }).recruiter_editing_user_id ?? null;
-      const isAdmin = sessionUser.role === UserRole.ADMIN;
-      if (ownerId && ownerId !== sessionUser.id && !isAdmin) {
+      const isAdmin = effectiveRole === UserRole.ADMIN;
+      if (ownerId && ownerId !== authUser.id && !isAdmin) {
         throw new Error('Nur der gemeldete Recruiter kann die Bearbeitung beenden.');
       }
 
@@ -1650,7 +1667,7 @@ class ApiClient {
     const { error } = await supabase
       .from('candidate_inquiries')
       .update({
-        recruiter_editing_user_id: sessionUser.id,
+        recruiter_editing_user_id: authUser.id,
         recruiter_editing_label: label,
         recruiter_editing_at: now,
       })
@@ -1664,7 +1681,7 @@ class ApiClient {
             x.id === inquiryId
               ? {
                   ...x,
-                  recruiterEditingUserId: sessionUser.id,
+                  recruiterEditingUserId: authUser.id,
                   recruiterEditingLabel: label,
                   recruiterEditingAt: now,
                 }

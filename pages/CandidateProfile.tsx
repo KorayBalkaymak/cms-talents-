@@ -141,6 +141,8 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
   const validateRequiredFields = (): Record<string, string> => {
     const newErrors: Record<string, string> = {};
 
+    if (!formData.firstName?.trim()) newErrors.firstName = 'Pflichtfeld';
+    if (!formData.lastName?.trim()) newErrors.lastName = 'Pflichtfeld';
     if (!formData.city?.trim()) newErrors.city = 'Pflichtfeld';
     if (!formData.country?.trim()) newErrors.country = 'Pflichtfeld';
     if (!formData.industry?.trim()) newErrors.industry = 'Pflichtfeld';
@@ -422,6 +424,34 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                   </div>
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-6">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:mb-1.5 sm:text-sm">
+                      Vorname
+                      <RequiredBadge />
+                    </label>
+                    <Input
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      placeholder="Max"
+                      error={errors.firstName}
+                      className="h-9 rounded-xl text-sm sm:h-10"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:mb-1.5 sm:text-sm">
+                      Nachname
+                      <RequiredBadge />
+                    </label>
+                    <Input
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      placeholder="Mustermann"
+                      error={errors.lastName}
+                      className="h-9 rounded-xl text-sm sm:h-10"
+                    />
+                  </div>
                   <div>
                     <label className="mb-1.5 block text-xs font-bold text-slate-900 sm:mb-1.5 sm:text-sm">
                       Stadt

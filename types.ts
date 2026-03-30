@@ -200,6 +200,8 @@ export interface MatchResult {
 // VALIDATION HELPER - Required fields for publishing
 // =====================================================
 export const REQUIRED_PROFILE_FIELDS = [
+  'firstName',
+  'lastName',
   'city',
   'country',
   'industry',
@@ -210,6 +212,8 @@ export const REQUIRED_PROFILE_FIELDS = [
 export function validateProfileForPublishing(profile: CandidateProfile): string[] {
   const missing: string[] = [];
 
+  if (!profile.firstName?.trim()) missing.push('Vorname');
+  if (!profile.lastName?.trim()) missing.push('Nachname');
   if (!profile.city?.trim()) missing.push('Stadt');
   if (!profile.country?.trim()) missing.push('Land');
   if (!profile.industry?.trim()) missing.push('Branche');
