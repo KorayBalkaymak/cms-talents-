@@ -56,7 +56,8 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
   const [deleteError, setDeleteError] = useState('');
   /** Pflichtfeld-Hinweise für Lebenslauf / Qualifikationen beim Absenden an Recruiter */
   const [documentFieldErrors, setDocumentFieldErrors] = useState<{ cv?: string; qualifications?: string }>({});
-  const docsReadOnly = !!formData.isSubmitted || !!formData.isPublished || formData.status === CandidateStatus.ACTIVE;
+  // Kandidaten sollen Dokumente im Mein-Profil jederzeit austauschen/ergänzen können.
+  const docsReadOnly = false;
 
   // Nach Speichern liefert der Parent die Server-Antwort (z. B. isPublished false) — Formular angleichen
   useEffect(() => {
