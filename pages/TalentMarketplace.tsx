@@ -20,6 +20,22 @@ type MatchItem = { candidate: CandidateProfile; score: number };
 const CandidateCard = memo(({ item, search, onSelect }: { item: MatchItem; search: string; onSelect: (c: CandidateProfile) => void }) => {
   const { candidate, score } = item;
   const skills = candidate.skills ?? [];
+  const profession = useMemo(() => {
+    const raw = (candidate.profession || '').trim();
+    if (raw) return raw;
+    const about = candidate.about || '';
+    const legacyLine = about.split('\n').find((line) => line.trim().startsWith('[profession]:'));
+    if (legacyLine) {
+      const encoded = legacyLine.trim().slice('[profession]:'.length);
+      try {
+        const decoded = decodeURIComponent(encoded || '').trim();
+        if (decoded) return decoded;
+      } catch {
+        // ignore invalid legacy encoding
+      }
+    }
+    return (candidate.industry || '').trim();
+  }, [candidate.profession, candidate.about, candidate.industry]);
   const handleClick = useCallback(() => { onSelect(candidate); }, [candidate, onSelect]);
   return (
     <div
@@ -49,9 +65,9 @@ const CandidateCard = memo(({ item, search, onSelect }: { item: MatchItem; searc
       </div>
       <div className="space-y-4 mb-6 flex-1">
         <div className="flex flex-wrap gap-2">
-          {candidate.profession && (
+          {profession && (
             <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">
-              {candidate.profession}
+              {profession}
             </Badge>
           )}
           {candidate.industry && <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">{candidate.industry}</Badge>}

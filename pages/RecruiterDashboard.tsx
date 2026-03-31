@@ -388,6 +388,17 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const displayProfession = useCallback((cand: CandidateProfile): string => {
     const raw = (cand.profession || '').trim();
     if (raw && raw !== '-' && raw !== '—' && raw.toLowerCase() !== 'n/a') return raw;
+    const about = cand.about || '';
+    const legacyLine = about.split('\n').find((line) => line.trim().startsWith('[profession]:'));
+    if (legacyLine) {
+      const encoded = legacyLine.trim().slice('[profession]:'.length);
+      try {
+        const decoded = decodeURIComponent(encoded || '').trim();
+        if (decoded && decoded !== '-' && decoded !== '—' && decoded.toLowerCase() !== 'n/a') return decoded;
+      } catch {
+        // ignore invalid legacy encoding
+      }
+    }
     const industry = (cand.industry || '').trim();
     return industry || '-';
   }, []);
