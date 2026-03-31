@@ -1532,8 +1532,8 @@ class ApiClient {
   }
 
   async updateEditedDocuments(userId: string, data: CandidateDocuments): Promise<void> {
-    const authUser = await this.currentAuthUser();
-    if (!authUser || !isRecruiterRole(authUser.role)) {
+    const role = await this.getEffectiveSessionRole();
+    if (!role || !isRecruiterRole(role)) {
       throw new Error('Keine Berechtigung für das Bearbeiten der Dokumente.');
     }
 
