@@ -98,6 +98,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const [inquiryLoading, setInquiryLoading] = useState(false);
   const [inquiryError, setInquiryError] = useState('');
   const [inquirySuccess, setInquirySuccess] = useState('');
+  const [isModalContentReady, setIsModalContentReady] = useState(false);
 
   // PDF in Modal mit iframe anzeigen (zuverlässig, keine weiße Seite)
   const openDocument = async (userId: string, docType: string, docName: string) => {
@@ -134,6 +135,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   }, []);
 
   const handleSelectCandidate = useCallback((candidate: CandidateProfile) => {
+    setIsModalContentReady(false);
     setSelectedCandidate(candidate);
     setInquiryError('');
     setInquirySuccess('');
@@ -215,6 +217,15 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
       if (found && selectedCandidate?.userId !== found.userId) setSelectedCandidate(found);
     }
   }, [selectedId, candidates, selectedCandidate?.userId]);
+
+  useEffect(() => {
+    if (!selectedCandidate) {
+      setIsModalContentReady(false);
+      return;
+    }
+    const t = window.setTimeout(() => setIsModalContentReady(true), 80);
+    return () => window.clearTimeout(t);
+  }, [selectedCandidate?.userId]);
 
   const filteredAndRanked = useMemo(() => {
     let list = rankCandidates(candidates, debouncedSearch);
@@ -473,6 +484,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
       {/* Candidate Detail Modal */}
       {selectedCandidate && (
         <Modal isOpen={!!selectedCandidate} onClose={() => {
+          setIsModalContentReady(false);
           setSelectedCandidate(null);
           setInquiryError('');
           setInquirySuccess('');
@@ -516,7 +528,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               )}
             </div>
 
-            {(selectedCandidate.address || selectedCandidate.zipCode || selectedCandidate.phoneNumber) && (
+            {isModalContentReady && (selectedCandidate.address || selectedCandidate.zipCode || selectedCandidate.phoneNumber) && (
               <div className="bg-slate-50 p-4 rounded-xl">
                 <p className="text-xs font-black text-slate-400 uppercase mb-2">Kontakt / Adresse</p>
                 <div className="space-y-1 text-slate-700">
@@ -531,15 +543,15 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               </div>
             )}
 
-            {selectedCandidate.about && (
-              <div className="bg-slate-50 p-4 rounded-xl">
+            {isModalContentReady && selectedCandidate.about && (
+              <div className="bg-slate-50 p-4 rounded-xl" style={{ contentVisibility: 'auto' }}>
                 <p className="text-xs font-black text-slate-400 uppercase mb-2">Über</p>
                 <p className="text-slate-700">{selectedCandidate.about}</p>
               </div>
             )}
 
-            {(selectedCandidate.skills?.length ?? 0) > 0 && (
-              <div>
+            {isModalContentReady && (selectedCandidate.skills?.length ?? 0) > 0 && (
+              <div style={{ contentVisibility: 'auto' }}>
                 <p className="text-xs font-black text-slate-400 uppercase mb-3">Skills</p>
                 <div className="flex flex-wrap gap-2">
                   {selectedCandidate.skills.map(skill => (
@@ -549,8 +561,8 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               </div>
             )}
 
-            {(selectedCandidate.boostedKeywords?.length ?? 0) > 0 && (
-              <div>
+            {isModalContentReady && (selectedCandidate.boostedKeywords?.length ?? 0) > 0 && (
+              <div style={{ contentVisibility: 'auto' }}>
                 <p className="text-xs font-black text-slate-400 uppercase mb-3">Spezialisierungen</p>
                 <div className="flex flex-wrap gap-2">
                   {selectedCandidate.boostedKeywords.map(kw => (
@@ -560,8 +572,8 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               </div>
             )}
 
-            {(selectedCandidate.socialLinks?.length ?? 0) > 0 && (
-              <div>
+            {isModalContentReady && (selectedCandidate.socialLinks?.length ?? 0) > 0 && (
+              <div style={{ contentVisibility: 'auto' }}>
                 <p className="text-xs font-black text-slate-400 uppercase mb-3">Links</p>
                 <div className="space-y-2">
                   {selectedCandidate.socialLinks.map((link, idx) => (
@@ -574,8 +586,8 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               </div>
             )}
 
-            {selectedCandidate.documents && selectedCandidate.documents.length > 0 && (
-              <div>
+            {isModalContentReady && selectedCandidate.documents && selectedCandidate.documents.length > 0 && (
+              <div style={{ contentVisibility: 'auto' }}>
                 <p className="text-xs font-black text-slate-400 uppercase mb-3">Dokumente (anklicken zum Ansehen)</p>
                 <div className="space-y-2">
                   {selectedCandidate.documents.map((doc, idx) => (
@@ -606,8 +618,8 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               </div>
             )}
 
-            {(!props.user || (props.user.role !== UserRole.RECRUITER && props.user.role !== UserRole.ADMIN)) && (
-              <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-4">
+            {isModalContentReady && (!props.user || (props.user.role !== UserRole.RECRUITER && props.user.role !== UserRole.ADMIN)) && (
+              <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-4" style={{ contentVisibility: 'auto' }}>
                 <p className="mb-2 text-xs font-black uppercase tracking-widest text-orange-700">Interesse melden</p>
                 <p className="mb-4 text-sm font-medium text-slate-700">
                   Wenn Sie Interesse an diesem Kandidaten haben, füllen Sie bitte alle Pflichtfelder aus.
@@ -688,6 +700,11 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
                 <Button className="w-full py-4" variant="primary" onClick={() => { setSelectedCandidate(null); onNavigate('/recruiter/dashboard'); }}>
                   Zum Recruiter-Dashboard
                 </Button>
+              </div>
+            )}
+            {!isModalContentReady && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold text-slate-500">
+                Profil wird optimiert geladen...
               </div>
             )}
           </div>
