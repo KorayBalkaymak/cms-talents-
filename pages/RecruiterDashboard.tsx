@@ -431,7 +431,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   };
 
   useEffect(() => {
-    if (!selectedCandidate || modalTab !== 'documents' || candidateDocs) return;
+    if (!selectedCandidate || (modalTab !== 'documents' && modalTab !== 'edited-documents') || candidateDocs) return;
     let cancelled = false;
     const loadDocs = async () => {
       setIsLoadingDocs(true);
@@ -1704,7 +1704,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 />
               ) : (
                 <Tabs
-                  tabs={[{ id: 'profile', label: 'Profil' }, { id: 'documents', label: 'Dokumente' }]}
+                  tabs={[
+                    { id: 'profile', label: 'Profil' },
+                    { id: 'documents', label: 'Dokumente' },
+                    { id: 'edited-documents', label: 'Bearbeitete Dokumente' },
+                  ]}
                   activeTab={modalTab}
                   onChange={setModalTab}
                 />
@@ -2020,8 +2024,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             </div>
                           </div>
 
-                          {/* Bearbeitete Dokumente (Marktplatz-Version) */}
-                          <div className="rounded-2xl border border-slate-200 bg-white/70 p-4 space-y-4">
+                          {/* Bearbeitete Dokumente (Marktplatz-Version) - jetzt eigener Tab */}
+                          {false && <div className="rounded-2xl border border-slate-200 bg-white/70 p-4 space-y-4">
                             <div className="flex items-center justify-between gap-3">
                               <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Bearbeitete Dokumente</h4>
                               <Badge variant="orange" className="text-[10px] py-0.5 px-2">Marktplatz-Version</Badge>
@@ -2130,6 +2134,177 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             </div>
 
                             {/* Qualifications */}
+                            <div>
+                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Qualifikationen (Bearbeitet)</h4>
+                              <div className="space-y-2">
+                                {candidateDocs.edited.qualifications?.length ? (
+                                  candidateDocs.edited.qualifications.map((doc, i) => (
+                                    <div key={i} className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50">
+                                      <span className="text-sm font-bold text-slate-700 truncate max-w-[220px]">{doc.name}</span>
+                                      <div className="flex gap-2">
+                                        <button onClick={() => setPreviewDoc(doc)} className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold text-slate-700">
+                                          Ansehen
+                                        </button>
+                                        <a href={doc.data} download={doc.name} className="px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded-lg text-xs font-bold text-orange-700">
+                                          ↓
+                                        </a>
+                                        <label className={`px-3 py-1 rounded-lg text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                                          Ersetzen
+                                          <input
+                                            type="file"
+                                            accept="application/pdf"
+                                            className="hidden"
+                                            disabled={isSavingDocs}
+                                            onChange={(e) => handleReplaceQualification(i, e.target.files)}
+                                          />
+                                        </label>
+                                      </div>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="text-xs text-slate-400 italic">Keine</div>
+                                )}
+                              </div>
+
+                              <div className="mt-2">
+                                <label className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                                  Qualifikationen hinzufügen
+                                  <input
+                                    type="file"
+                                    accept="application/pdf"
+                                    multiple
+                                    className="hidden"
+                                    disabled={isSavingDocs}
+                                    onChange={(e) => handleAddQualifications(e.target.files)}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          </div>}
+                        </div>
+                      )}
+
+                      {docError && <div className="text-[11px] font-black text-red-600">{docError}</div>}
+                    </div>
+                  )}
+
+                  {modalTab === 'edited-documents' && (
+                    <div className="space-y-4">
+                      {isLoadingDocs && (
+                        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600">
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-orange-500" />
+                          Dokumente werden geladen...
+                        </div>
+                      )}
+
+                      {candidateDocs && (
+                        <div className="grid grid-cols-1 gap-4">
+                          <div className="rounded-2xl border border-slate-200 bg-white/70 p-4 space-y-4">
+                            <div className="flex items-center justify-between gap-3">
+                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Bearbeitete Dokumente</h4>
+                              <Badge variant="orange" className="text-[10px] py-0.5 px-2">Marktplatz-Version</Badge>
+                            </div>
+
+                            <div>
+                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Lebenslauf (Bearbeitet)</h4>
+                              {candidateDocs.edited.cvPdf ? (
+                                <div className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50">
+                                  <span className="text-sm font-bold text-slate-700 truncate max-w-[220px]">{candidateDocs.edited.cvPdf.name}</span>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => setPreviewDoc(candidateDocs.edited.cvPdf!)}
+                                      className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold text-slate-700"
+                                    >
+                                      Ansehen
+                                    </button>
+                                    <a href={candidateDocs.edited.cvPdf.data} download={candidateDocs.edited.cvPdf.name} className="px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded-lg text-xs font-bold text-orange-700">
+                                      ↓
+                                    </a>
+                                    <label className={`px-3 py-1 rounded-lg text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                                      Ersetzen
+                                      <input
+                                        type="file"
+                                        accept="application/pdf"
+                                        className="hidden"
+                                        disabled={isSavingDocs}
+                                        onChange={(e) => handleReplaceCv(e.target.files)}
+                                      />
+                                    </label>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="mt-2">
+                                  <label className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                                    CV hochladen / ersetzen
+                                    <input
+                                      type="file"
+                                      accept="application/pdf"
+                                      className="hidden"
+                                      disabled={isSavingDocs}
+                                      onChange={(e) => handleReplaceCv(e.target.files)}
+                                    />
+                                  </label>
+                                </div>
+                              )}
+
+                              {selectedCandidate?.isSubmitted && (
+                                <div className="mt-2 text-[11px] font-bold text-slate-600">
+                                  {selectedCandidate.cvReviewedAt ? (
+                                    <span className="text-emerald-700">Freigabe möglich (CV geprüft).</span>
+                                  ) : (
+                                    <span className="text-orange-700">Vor Freigabe bitte CV ansehen (wird automatisch als geprüft markiert).</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            <div>
+                              <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Zertifikate (Bearbeitet)</h4>
+                              <div className="space-y-2">
+                                {candidateDocs.edited.certificates?.length ? (
+                                  candidateDocs.edited.certificates.map((doc, i) => (
+                                    <div key={i} className="flex items-center justify-between p-3 border border-slate-200 rounded-xl bg-slate-50">
+                                      <span className="text-sm font-bold text-slate-700 truncate max-w-[220px]">{doc.name}</span>
+                                      <div className="flex gap-2">
+                                        <button onClick={() => setPreviewDoc(doc)} className="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold text-slate-700">
+                                          Ansehen
+                                        </button>
+                                        <a href={doc.data} download={doc.name} className="px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded-lg text-xs font-bold text-orange-700">
+                                          ↓
+                                        </a>
+                                        <label className={`px-3 py-1 rounded-lg text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                                          Ersetzen
+                                          <input
+                                            type="file"
+                                            accept="application/pdf"
+                                            className="hidden"
+                                            disabled={isSavingDocs}
+                                            onChange={(e) => handleReplaceCertificate(i, e.target.files)}
+                                          />
+                                        </label>
+                                      </div>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="text-xs text-slate-400 italic">Keine</div>
+                                )}
+                              </div>
+
+                              <div className="mt-2">
+                                <label className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black ${isSavingDocs ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'} cursor-pointer`}>
+                                  Zertifikate hinzufügen / ersetzen
+                                  <input
+                                    type="file"
+                                    accept="application/pdf"
+                                    multiple
+                                    className="hidden"
+                                    disabled={isSavingDocs}
+                                    onChange={(e) => handleAddCertificates(e.target.files)}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+
                             <div>
                               <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-2">Qualifikationen (Bearbeitet)</h4>
                               <div className="space-y-2">
