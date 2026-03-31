@@ -222,7 +222,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
         `Position (Kunde): ${inquiryForm.customerPosition.trim()}`,
         `Projektlaufzeit: ${inquiryForm.projectDuration.trim()}`,
         `Projektstandort: ${inquiryForm.projectLocation.trim()}`,
-        `Budget: ${inquiryForm.budget.trim()}`,
+        `Budget (EUR): ${inquiryForm.budget.trim()} EUR`,
       ].join('\n');
       await candidateService.createInquiry({
         candidateUserId: selectedCandidate.userId,
@@ -582,7 +582,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
                     <Input value={inquiryForm.contactPhone} onChange={(e) => setInquiryForm((s) => ({ ...s, contactPhone: e.target.value }))} placeholder="Telefonnummer *" className="h-10" />
                     <Input value={inquiryForm.projectDuration} onChange={(e) => setInquiryForm((s) => ({ ...s, projectDuration: e.target.value }))} placeholder="Projektlaufzeit *" className="h-10" />
                     <Input value={inquiryForm.projectLocation} onChange={(e) => setInquiryForm((s) => ({ ...s, projectLocation: e.target.value }))} placeholder="Projektstandort *" className="h-10" />
-                    <Input value={inquiryForm.budget} onChange={(e) => setInquiryForm((s) => ({ ...s, budget: e.target.value }))} placeholder="Budget *" className="h-10" />
+                    <Input type="number" min="0" value={inquiryForm.budget} onChange={(e) => setInquiryForm((s) => ({ ...s, budget: e.target.value }))} placeholder="Budget (EUR) *" className="h-10" />
                   </div>
                   {inquiryError && <p className="mt-2 text-xs font-bold text-red-600">{inquiryError}</p>}
                   {inquirySuccess && <p className="mt-2 text-xs font-bold text-emerald-700">{inquirySuccess}</p>}
