@@ -4,7 +4,7 @@ import { CandidateProfile, UserRole } from '../types';
 import { rankCandidates, highlightText } from '../services/SearchService';
 import { candidateService } from '../services/CandidateService';
 import { authService } from '../services/AuthService';
-import { Input, Avatar, Badge, Button, Modal, EmptyState, Textarea } from '../components/UI';
+import { Input, Avatar, Badge, Button, Modal, EmptyState } from '../components/UI';
 import { INDUSTRIES, AVAILABILITY_OPTIONS } from '../constants';
 import { User } from '../types';
 
@@ -85,10 +85,15 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const [pdfViewerUrl, setPdfViewerUrl] = useState<string | null>(null);
   const [pdfViewerTitle, setPdfViewerTitle] = useState<string>('');
   const [inquiryForm, setInquiryForm] = useState({
-    contactName: '',
+    companyName: '',
+    firstName: '',
+    lastName: '',
+    customerPosition: '',
     contactEmail: '',
     contactPhone: '',
-    message: '',
+    projectDuration: '',
+    projectLocation: '',
+    budget: '',
   });
   const [inquiryLoading, setInquiryLoading] = useState(false);
   const [inquiryError, setInquiryError] = useState('');
@@ -139,21 +144,54 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
     if (!selectedCandidate) return;
     setInquiryError('');
     setInquirySuccess('');
-    if (!inquiryForm.contactName.trim() || !inquiryForm.contactEmail.trim() || !inquiryForm.contactPhone.trim()) {
-      setInquiryError('Bitte Name, E-Mail und Telefonnummer ausfüllen.');
+    const missingRequired =
+      !inquiryForm.companyName.trim() ||
+      !inquiryForm.firstName.trim() ||
+      !inquiryForm.lastName.trim() ||
+      !inquiryForm.customerPosition.trim() ||
+      !inquiryForm.contactEmail.trim() ||
+      !inquiryForm.contactPhone.trim() ||
+      !inquiryForm.projectDuration.trim() ||
+      !inquiryForm.projectLocation.trim() ||
+      !inquiryForm.budget.trim();
+    if (missingRequired) {
+      setInquiryError('Bitte alle Pflichtfelder ausfüllen.');
+      return;
+    }
+    const email = inquiryForm.contactEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setInquiryError('Bitte eine gültige E-Mail-Adresse eingeben.');
       return;
     }
     setInquiryLoading(true);
     try {
+      const fullName = `${inquiryForm.firstName.trim()} ${inquiryForm.lastName.trim()}`.trim();
+      const structuredMessage = [
+        `Firma: ${inquiryForm.companyName.trim()}`,
+        `Position (Kunde): ${inquiryForm.customerPosition.trim()}`,
+        `Projektlaufzeit: ${inquiryForm.projectDuration.trim()}`,
+        `Projektstandort: ${inquiryForm.projectLocation.trim()}`,
+        `Budget: ${inquiryForm.budget.trim()}`,
+      ].join('\n');
       await candidateService.createInquiry({
         candidateUserId: selectedCandidate.userId,
-        contactName: inquiryForm.contactName,
-        contactEmail: inquiryForm.contactEmail,
-        contactPhone: inquiryForm.contactPhone,
-        message: inquiryForm.message,
+        contactName: fullName,
+        contactEmail: email,
+        contactPhone: inquiryForm.contactPhone.trim(),
+        message: structuredMessage,
       });
       setInquirySuccess('Vielen Dank. Ihre Anfrage wurde an das Recruiter-Team gesendet.');
-      setInquiryForm({ contactName: '', contactEmail: '', contactPhone: '', message: '' });
+      setInquiryForm({
+        companyName: '',
+        firstName: '',
+        lastName: '',
+        customerPosition: '',
+        contactEmail: '',
+        contactPhone: '',
+        projectDuration: '',
+        projectLocation: '',
+        budget: '',
+      });
     } catch (e: any) {
       setInquiryError(e?.message || 'Anfrage konnte nicht gesendet werden.');
     } finally {
@@ -429,7 +467,17 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
           setSelectedCandidate(null);
           setInquiryError('');
           setInquirySuccess('');
-          setInquiryForm({ contactName: '', contactEmail: '', contactPhone: '', message: '' });
+          setInquiryForm({
+            companyName: '',
+            firstName: '',
+            lastName: '',
+            customerPosition: '',
+            contactEmail: '',
+            contactPhone: '',
+            projectDuration: '',
+            projectLocation: '',
+            budget: '',
+          });
           onNavigate('/talents');
         }} title="Kandidatenprofil">
           <div className="space-y-6">
@@ -553,35 +601,65 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-4">
                 <p className="mb-2 text-xs font-black uppercase tracking-widest text-orange-700">Interesse melden</p>
                 <p className="mb-4 text-sm font-medium text-slate-700">
-                  Wenn Sie Interesse an diesem Kandidaten haben, hinterlassen Sie Ihre Kontaktdaten.
+                  Wenn Sie Interesse an diesem Kandidaten haben, füllen Sie bitte alle Pflichtfelder aus.
                 </p>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Input
-                    value={inquiryForm.contactName}
-                    onChange={(e) => setInquiryForm((s) => ({ ...s, contactName: e.target.value }))}
-                    placeholder="Ihr Name"
+                    value={inquiryForm.companyName}
+                    onChange={(e) => setInquiryForm((s) => ({ ...s, companyName: e.target.value }))}
+                    placeholder="Welche Firma *"
+                    className="h-10"
+                  />
+                  <Input
+                    value={inquiryForm.firstName}
+                    onChange={(e) => setInquiryForm((s) => ({ ...s, firstName: e.target.value }))}
+                    placeholder="Vorname *"
+                    className="h-10"
+                  />
+                  <Input
+                    value={inquiryForm.lastName}
+                    onChange={(e) => setInquiryForm((s) => ({ ...s, lastName: e.target.value }))}
+                    placeholder="Nachname *"
+                    className="h-10"
+                  />
+                  <Input
+                    value={inquiryForm.customerPosition}
+                    onChange={(e) => setInquiryForm((s) => ({ ...s, customerPosition: e.target.value }))}
+                    placeholder="Welche Position haben Sie? *"
                     className="h-10"
                   />
                   <Input
                     type="email"
                     value={inquiryForm.contactEmail}
                     onChange={(e) => setInquiryForm((s) => ({ ...s, contactEmail: e.target.value }))}
-                    placeholder="Ihre E-Mail"
+                    placeholder="E-Mail *"
                     className="h-10"
                   />
                   <Input
                     value={inquiryForm.contactPhone}
                     onChange={(e) => setInquiryForm((s) => ({ ...s, contactPhone: e.target.value }))}
-                    placeholder="Ihre Telefonnummer"
-                    className="h-10 sm:col-span-2"
+                    placeholder="Telefonnummer *"
+                    className="h-10"
+                  />
+                  <Input
+                    value={inquiryForm.projectDuration}
+                    onChange={(e) => setInquiryForm((s) => ({ ...s, projectDuration: e.target.value }))}
+                    placeholder="Projektlaufzeit *"
+                    className="h-10"
+                  />
+                  <Input
+                    value={inquiryForm.projectLocation}
+                    onChange={(e) => setInquiryForm((s) => ({ ...s, projectLocation: e.target.value }))}
+                    placeholder="Projektstandort *"
+                    className="h-10"
+                  />
+                  <Input
+                    value={inquiryForm.budget}
+                    onChange={(e) => setInquiryForm((s) => ({ ...s, budget: e.target.value }))}
+                    placeholder="Budget *"
+                    className="h-10"
                   />
                 </div>
-                <Textarea
-                  value={inquiryForm.message}
-                  onChange={(e) => setInquiryForm((s) => ({ ...s, message: e.target.value }))}
-                  placeholder="Nachricht (optional)"
-                  className="mt-3"
-                />
                 {inquiryError && <p className="mt-2 text-xs font-bold text-red-600">{inquiryError}</p>}
                 {inquirySuccess && <p className="mt-2 text-xs font-bold text-emerald-700">{inquirySuccess}</p>}
                 <Button
