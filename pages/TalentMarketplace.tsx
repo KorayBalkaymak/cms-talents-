@@ -49,8 +49,18 @@ const CandidateCard = memo(({ item, search, onSelect }: { item: MatchItem; searc
       </div>
       <div className="space-y-4 mb-6 flex-1">
         <div className="flex flex-wrap gap-2">
+          {candidate.profession && (
+            <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">
+              {candidate.profession}
+            </Badge>
+          )}
           {candidate.industry && <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">{candidate.industry}</Badge>}
           <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">{candidate.experienceYears} J. Exp</Badge>
+          {candidate.workRadiusKm !== null && candidate.workRadiusKm !== undefined && (
+            <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">
+              {candidate.workRadiusKm} km
+            </Badge>
+          )}
           {candidate.availability && <Badge variant="green" className="px-3 py-1">{candidate.availability}</Badge>}
         </div>
         {candidate.about && (
