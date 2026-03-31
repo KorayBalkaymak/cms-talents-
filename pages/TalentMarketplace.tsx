@@ -59,13 +59,25 @@ const CandidateCard = memo(({ item, search, onSelect }: { item: MatchItem; searc
           </p>
         )}
       </div>
-      <div className="flex flex-wrap gap-1.5 border-t border-slate-100 pt-4">
-        {skills.slice(0, 4).map(skill => (
-          <span key={skill} className="text-xs font-medium text-slate-500">
-            #{highlightText(skill, search)}
-          </span>
-        ))}
-        {skills.length > 4 && <span className="text-xs font-medium text-orange-600">+{skills.length - 4}</span>}
+      <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
+        <div className="flex flex-wrap gap-1.5">
+          {skills.slice(0, 4).map(skill => (
+            <span key={skill} className="text-xs font-medium text-slate-500">
+              #{highlightText(skill, search)}
+            </span>
+          ))}
+          {skills.length > 4 && <span className="text-xs font-medium text-orange-600">+{skills.length - 4}</span>}
+        </div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleClick();
+          }}
+          className="shrink-0 rounded-xl bg-[#101B31] px-3 py-2 text-[11px] font-black uppercase tracking-wide text-white hover:bg-slate-800"
+        >
+          Ich habe Interesse
+        </button>
       </div>
     </div>
   );
