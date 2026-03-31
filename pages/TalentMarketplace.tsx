@@ -36,6 +36,17 @@ const CandidateCard = memo(({ item, search, onSelect }: { item: MatchItem; searc
     }
     return (candidate.industry || '').trim();
   }, [candidate.profession, candidate.about, candidate.industry]);
+  const workRadiusKm = useMemo(() => {
+    if (candidate.workRadiusKm !== null && candidate.workRadiusKm !== undefined) return candidate.workRadiusKm;
+    const about = candidate.about || '';
+    const legacyLine = about.split('\n').find((line) => line.trim().startsWith('[radius]:'));
+    if (legacyLine) {
+      const raw = legacyLine.trim().slice('[radius]:'.length);
+      const n = Number(raw);
+      if (Number.isFinite(n) && n >= 0) return Math.round(n);
+    }
+    return null;
+  }, [candidate.workRadiusKm, candidate.about]);
   const handleClick = useCallback(() => { onSelect(candidate); }, [candidate, onSelect]);
   return (
     <div
@@ -72,9 +83,9 @@ const CandidateCard = memo(({ item, search, onSelect }: { item: MatchItem; searc
           )}
           {candidate.industry && <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">{candidate.industry}</Badge>}
           <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">{candidate.experienceYears} J. Exp</Badge>
-          {candidate.workRadiusKm !== null && candidate.workRadiusKm !== undefined && (
+          {workRadiusKm !== null && workRadiusKm !== undefined && (
             <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">
-              {candidate.workRadiusKm} km
+              {workRadiusKm} km Radius
             </Badge>
           )}
           {candidate.availability && <Badge variant="green" className="px-3 py-1">{candidate.availability}</Badge>}
