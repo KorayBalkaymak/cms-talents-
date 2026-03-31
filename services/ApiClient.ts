@@ -177,6 +177,16 @@ function isCandidateInquiriesSchemaMissing(message?: string): boolean {
   );
 }
 
+function isEditedDocumentsSchemaMissing(message?: string): boolean {
+  const m = (message || '').toLowerCase();
+  return (
+    (m.includes('edited_cv_pdf') ||
+      m.includes('edited_certificates') ||
+      m.includes('edited_qualifications')) &&
+    (m.includes('column') || m.includes('schema cache'))
+  );
+}
+
 class ApiClient {
   private readonly legacyProfessionPrefix = '[profession]:';
   private readonly legacySalaryPrefix = '[salary]:';
@@ -1513,7 +1523,11 @@ class ApiClient {
     const row = await this.fetchDocumentRow(userId);
     if (!row) return undefined;
     const original = this.documentRowToDocuments(row, false);
-    const edited = this.documentRowToDocuments(row, true);
+    const hasEditedColumns =
+      Object.prototype.hasOwnProperty.call(row as object, 'edited_cv_pdf') ||
+      Object.prototype.hasOwnProperty.call(row as object, 'edited_certificates') ||
+      Object.prototype.hasOwnProperty.call(row as object, 'edited_qualifications');
+    const edited = hasEditedColumns ? this.documentRowToDocuments(row, true) : original;
     return { userId, original, edited };
   }
 
@@ -1533,9 +1547,24 @@ class ApiClient {
     };
 
     const { error } = await supabase.from('candidate_documents').upsert(payload, { onConflict: 'user_id' });
-    if (error) {
-      throw new Error(error.message);
+    if (!error) return;
+
+    // Legacy fallback: wenn edited_* Spalten noch nicht existieren,
+    // speichern wir in die Original-Spalten, damit Recruiter weiterhin CVs pflegen können.
+    if (isEditedDocumentsSchemaMissing(error.message)) {
+      const legacyPayload = {
+        user_id: userId,
+        cv_pdf: data.cvPdf || null,
+        certificates: data.certificates || [],
+        qualifications: data.qualifications || [],
+        updated_at: now,
+      };
+      const { error: legacyError } = await supabase.from('candidate_documents').upsert(legacyPayload, { onConflict: 'user_id' });
+      if (!legacyError) return;
+      throw new Error(legacyError.message);
     }
+
+    throw new Error(error.message);
   }
 
   async updateDocuments(userId: string, data: CandidateDocuments) {
