@@ -4,7 +4,7 @@ import { CandidateProfile, UserRole } from '../types';
 import { rankCandidates, highlightText } from '../services/SearchService';
 import { candidateService } from '../services/CandidateService';
 import { authService } from '../services/AuthService';
-import { Input, Avatar, Badge, Button, Modal, EmptyState } from '../components/UI';
+import { Input, Avatar, Badge, Button, EmptyState } from '../components/UI';
 import { INDUSTRIES, AVAILABILITY_OPTIONS } from '../constants';
 import { User } from '../types';
 
@@ -98,7 +98,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const [inquiryLoading, setInquiryLoading] = useState(false);
   const [inquiryError, setInquiryError] = useState('');
   const [inquirySuccess, setInquirySuccess] = useState('');
-  const [isModalContentReady, setIsModalContentReady] = useState(false);
+  const [showInquiryForm, setShowInquiryForm] = useState(false);
 
   // PDF in Modal mit iframe anzeigen (zuverlässig, keine weiße Seite)
   const openDocument = async (userId: string, docType: string, docName: string) => {
@@ -135,14 +135,11 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   }, []);
 
   const handleSelectCandidate = useCallback((candidate: CandidateProfile) => {
-    setIsModalContentReady(false);
+    setShowInquiryForm(false);
     setSelectedCandidate(candidate);
     setInquiryError('');
     setInquirySuccess('');
-    // Navigation erst nach dem ersten Paint, damit der Klick sofort fluessig wirkt.
-    window.requestAnimationFrame(() => {
-      onNavigate(`/talents/${candidate.userId}`);
-    });
+    onNavigate('/talents');
   }, [onNavigate]);
 
   const submitInquiry = async () => {
@@ -217,15 +214,6 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
       if (found && selectedCandidate?.userId !== found.userId) setSelectedCandidate(found);
     }
   }, [selectedId, candidates, selectedCandidate?.userId]);
-
-  useEffect(() => {
-    if (!selectedCandidate) {
-      setIsModalContentReady(false);
-      return;
-    }
-    const t = window.setTimeout(() => setIsModalContentReady(true), 80);
-    return () => window.clearTimeout(t);
-  }, [selectedCandidate?.userId]);
 
   const filteredAndRanked = useMemo(() => {
     let list = rankCandidates(candidates, debouncedSearch);
@@ -481,234 +469,93 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
         </div>
       </main>
 
-      {/* Candidate Detail Modal */}
+      {/* Kandidatenprofil direkt in der Ansicht (kein extra Modal) */}
       {selectedCandidate && (
-        <Modal isOpen={!!selectedCandidate} onClose={() => {
-          setIsModalContentReady(false);
-          setSelectedCandidate(null);
-          setInquiryError('');
-          setInquirySuccess('');
-          setInquiryForm({
-            companyName: '',
-            firstName: '',
-            lastName: '',
-            customerPosition: '',
-            contactEmail: '',
-            contactPhone: '',
-            projectDuration: '',
-            projectLocation: '',
-            budget: '',
-          });
-          onNavigate('/talents');
-        }} title="Kandidatenprofil">
-          <div className="space-y-6">
-            <div className="flex items-center gap-6 p-6 bg-slate-900 rounded-[2rem] text-white">
-              <Avatar seed={selectedCandidate.firstName + selectedCandidate.lastName} size="lg" imageUrl={selectedCandidate.profileImageUrl} />
-              <div className="flex-1">
-                <h3 className="text-2xl font-black tracking-tight">{selectedCandidate.firstName} {selectedCandidate.lastName}</h3>
-                <p className="text-orange-500 font-bold uppercase text-xs tracking-widest">{selectedCandidate.industry}</p>
-                <p className="text-slate-400 text-sm mt-1">{selectedCandidate.city}, {selectedCandidate.country}</p>
-              </div>
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-5">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-xl font-black text-[#101B31]">
+                {selectedCandidate.firstName} {selectedCandidate.lastName}
+              </h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedCandidate(null);
+                  setShowInquiryForm(false);
+                  setInquiryError('');
+                  setInquirySuccess('');
+                }}
+              >
+                Schließen
+              </Button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-50 p-4 rounded-xl">
-                <p className="text-xs font-black text-slate-400 uppercase">Erfahrung</p>
-                <p className="text-lg font-bold text-slate-900">{selectedCandidate.experienceYears} Jahre</p>
-              </div>
-              <div className="bg-slate-50 p-4 rounded-xl">
-                <p className="text-xs font-black text-slate-400 uppercase">Verfügbarkeit</p>
-                <p className="text-lg font-bold text-slate-900">{selectedCandidate.availability || '-'}</p>
-              </div>
-              {selectedCandidate.birthYear && (
-                <div className="bg-slate-50 p-4 rounded-xl">
-                  <p className="text-xs font-black text-slate-400 uppercase">Geburtsjahr</p>
-                  <p className="text-lg font-bold text-slate-900">{selectedCandidate.birthYear}</p>
-                </div>
-              )}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              <div className="bg-slate-50 p-4 rounded-xl"><p className="text-xs font-black text-slate-400 uppercase">Erfahrung</p><p className="text-lg font-bold text-slate-900">{selectedCandidate.experienceYears} Jahre</p></div>
+              <div className="bg-slate-50 p-4 rounded-xl"><p className="text-xs font-black text-slate-400 uppercase">Verfügbarkeit</p><p className="text-lg font-bold text-slate-900">{selectedCandidate.availability || '-'}</p></div>
+              {selectedCandidate.birthYear && <div className="bg-slate-50 p-4 rounded-xl"><p className="text-xs font-black text-slate-400 uppercase">Geburtsjahr</p><p className="text-lg font-bold text-slate-900">{selectedCandidate.birthYear}</p></div>}
             </div>
 
-            {isModalContentReady && (selectedCandidate.address || selectedCandidate.zipCode || selectedCandidate.phoneNumber) && (
+            {(selectedCandidate.address || selectedCandidate.zipCode || selectedCandidate.phoneNumber) && (
               <div className="bg-slate-50 p-4 rounded-xl">
                 <p className="text-xs font-black text-slate-400 uppercase mb-2">Kontakt / Adresse</p>
                 <div className="space-y-1 text-slate-700">
                   {selectedCandidate.address && <p>{selectedCandidate.address}</p>}
-                  {(selectedCandidate.zipCode || selectedCandidate.city) && (
-                    <p>{[selectedCandidate.zipCode, selectedCandidate.city].filter(Boolean).join(' ')}</p>
-                  )}
-                  {selectedCandidate.phoneNumber && (
-                    <p><a href={`tel:${selectedCandidate.phoneNumber}`} className="text-orange-600 hover:underline">{selectedCandidate.phoneNumber}</a></p>
-                  )}
+                  {(selectedCandidate.zipCode || selectedCandidate.city) && <p>{[selectedCandidate.zipCode, selectedCandidate.city].filter(Boolean).join(' ')}</p>}
+                  {selectedCandidate.phoneNumber && <p><a href={`tel:${selectedCandidate.phoneNumber}`} className="text-orange-600 hover:underline">{selectedCandidate.phoneNumber}</a></p>}
                 </div>
               </div>
             )}
 
-            {isModalContentReady && selectedCandidate.about && (
-              <div className="bg-slate-50 p-4 rounded-xl" style={{ contentVisibility: 'auto' }}>
-                <p className="text-xs font-black text-slate-400 uppercase mb-2">Über</p>
-                <p className="text-slate-700">{selectedCandidate.about}</p>
-              </div>
-            )}
+            {selectedCandidate.about && <div className="bg-slate-50 p-4 rounded-xl"><p className="text-xs font-black text-slate-400 uppercase mb-2">Über</p><p className="text-slate-700">{selectedCandidate.about}</p></div>}
+            {(selectedCandidate.skills?.length ?? 0) > 0 && <div><p className="text-xs font-black text-slate-400 uppercase mb-3">Skills</p><div className="flex flex-wrap gap-2">{selectedCandidate.skills.map(skill => <Badge key={skill} variant="orange">{highlightText(skill, debouncedSearch)}</Badge>)}</div></div>}
+            {(selectedCandidate.boostedKeywords?.length ?? 0) > 0 && <div><p className="text-xs font-black text-slate-400 uppercase mb-3">Spezialisierungen</p><div className="flex flex-wrap gap-2">{selectedCandidate.boostedKeywords.map(kw => <Badge key={kw} variant="dark">{kw}</Badge>)}</div></div>}
 
-            {isModalContentReady && (selectedCandidate.skills?.length ?? 0) > 0 && (
-              <div style={{ contentVisibility: 'auto' }}>
-                <p className="text-xs font-black text-slate-400 uppercase mb-3">Skills</p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedCandidate.skills.map(skill => (
-                    <Badge key={skill} variant="orange">{highlightText(skill, debouncedSearch)}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {isModalContentReady && (selectedCandidate.boostedKeywords?.length ?? 0) > 0 && (
-              <div style={{ contentVisibility: 'auto' }}>
-                <p className="text-xs font-black text-slate-400 uppercase mb-3">Spezialisierungen</p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedCandidate.boostedKeywords.map(kw => (
-                    <Badge key={kw} variant="dark">{kw}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {isModalContentReady && (selectedCandidate.socialLinks?.length ?? 0) > 0 && (
-              <div style={{ contentVisibility: 'auto' }}>
-                <p className="text-xs font-black text-slate-400 uppercase mb-3">Links</p>
-                <div className="space-y-2">
-                  {selectedCandidate.socialLinks.map((link, idx) => (
-                    <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-orange-600 hover:underline">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                      {link.label}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {isModalContentReady && selectedCandidate.documents && selectedCandidate.documents.length > 0 && (
-              <div style={{ contentVisibility: 'auto' }}>
+            {selectedCandidate.documents && selectedCandidate.documents.length > 0 && (
+              <div>
                 <p className="text-xs font-black text-slate-400 uppercase mb-3">Dokumente (anklicken zum Ansehen)</p>
                 <div className="space-y-2">
                   {selectedCandidate.documents.map((doc, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => openDocument(selectedCandidate.userId, doc.type, doc.name)}
-                      disabled={!!documentLoading}
-                      className="flex items-center gap-2 w-full text-left p-3 rounded-xl bg-slate-50 hover:bg-orange-50 border border-slate-100 hover:border-orange-200 transition-colors group"
-                    >
-                      <span className="w-10 h-10 rounded-lg bg-slate-200 group-hover:bg-orange-100 flex items-center justify-center shrink-0">
-                        <svg className="w-5 h-5 text-slate-600 group-hover:text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-slate-500 text-xs uppercase block">
-                          {doc.type === 'cv' ? 'Lebenslauf (CV)' : doc.type === 'certificate' ? 'Zertifikat' : 'Qualifikation'}
-                        </span>
-                        <span className="font-bold text-slate-900 truncate block">{doc.name}</span>
-                      </div>
-                      {documentLoading === doc.name ? (
-                        <span className="text-xs text-slate-400">Wird geladen…</span>
-                      ) : (
-                        <svg className="w-5 h-5 text-orange-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                      )}
+                    <button key={idx} type="button" onClick={() => openDocument(selectedCandidate.userId, doc.type, doc.name)} disabled={!!documentLoading} className="flex items-center gap-2 w-full text-left p-3 rounded-xl bg-slate-50 hover:bg-orange-50 border border-slate-100 hover:border-orange-200 transition-colors group">
+                      <span className="w-10 h-10 rounded-lg bg-slate-200 group-hover:bg-orange-100 flex items-center justify-center shrink-0"><svg className="w-5 h-5 text-slate-600 group-hover:text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg></span>
+                      <div className="flex-1 min-w-0"><span className="text-slate-500 text-xs uppercase block">{doc.type === 'cv' ? 'Lebenslauf (CV)' : doc.type === 'certificate' ? 'Zertifikat' : 'Qualifikation'}</span><span className="font-bold text-slate-900 truncate block">{doc.name}</span></div>
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
-            {isModalContentReady && (!props.user || (props.user.role !== UserRole.RECRUITER && props.user.role !== UserRole.ADMIN)) && (
-              <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-4" style={{ contentVisibility: 'auto' }}>
-                <p className="mb-2 text-xs font-black uppercase tracking-widest text-orange-700">Interesse melden</p>
-                <p className="mb-4 text-sm font-medium text-slate-700">
-                  Wenn Sie Interesse an diesem Kandidaten haben, füllen Sie bitte alle Pflichtfelder aus.
-                </p>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <Input
-                    value={inquiryForm.companyName}
-                    onChange={(e) => setInquiryForm((s) => ({ ...s, companyName: e.target.value }))}
-                    placeholder="Welche Firma *"
-                    className="h-10"
-                  />
-                  <Input
-                    value={inquiryForm.firstName}
-                    onChange={(e) => setInquiryForm((s) => ({ ...s, firstName: e.target.value }))}
-                    placeholder="Vorname *"
-                    className="h-10"
-                  />
-                  <Input
-                    value={inquiryForm.lastName}
-                    onChange={(e) => setInquiryForm((s) => ({ ...s, lastName: e.target.value }))}
-                    placeholder="Nachname *"
-                    className="h-10"
-                  />
-                  <Input
-                    value={inquiryForm.customerPosition}
-                    onChange={(e) => setInquiryForm((s) => ({ ...s, customerPosition: e.target.value }))}
-                    placeholder="Welche Position haben Sie? *"
-                    className="h-10"
-                  />
-                  <Input
-                    type="email"
-                    value={inquiryForm.contactEmail}
-                    onChange={(e) => setInquiryForm((s) => ({ ...s, contactEmail: e.target.value }))}
-                    placeholder="E-Mail *"
-                    className="h-10"
-                  />
-                  <Input
-                    value={inquiryForm.contactPhone}
-                    onChange={(e) => setInquiryForm((s) => ({ ...s, contactPhone: e.target.value }))}
-                    placeholder="Telefonnummer *"
-                    className="h-10"
-                  />
-                  <Input
-                    value={inquiryForm.projectDuration}
-                    onChange={(e) => setInquiryForm((s) => ({ ...s, projectDuration: e.target.value }))}
-                    placeholder="Projektlaufzeit *"
-                    className="h-10"
-                  />
-                  <Input
-                    value={inquiryForm.projectLocation}
-                    onChange={(e) => setInquiryForm((s) => ({ ...s, projectLocation: e.target.value }))}
-                    placeholder="Projektstandort *"
-                    className="h-10"
-                  />
-                  <Input
-                    value={inquiryForm.budget}
-                    onChange={(e) => setInquiryForm((s) => ({ ...s, budget: e.target.value }))}
-                    placeholder="Budget *"
-                    className="h-10"
-                  />
-                </div>
-                {inquiryError && <p className="mt-2 text-xs font-bold text-red-600">{inquiryError}</p>}
-                {inquirySuccess && <p className="mt-2 text-xs font-bold text-emerald-700">{inquirySuccess}</p>}
-                <Button
-                  className="mt-3 w-full sm:w-auto"
-                  variant="primary"
-                  isLoading={inquiryLoading}
-                  onClick={submitInquiry}
-                >
-                  Interesse senden
+            {(!props.user || (props.user.role !== UserRole.RECRUITER && props.user.role !== UserRole.ADMIN)) && (
+              <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-4">
+                <Button className="w-full sm:w-auto" variant="primary" onClick={() => setShowInquiryForm((v) => !v)}>
+                  Ich habe Interesse
                 </Button>
-              </div>
-            )}
-
-            {/* Vollständiges Profil ist für alle sichtbar (Zuschauer, Kunden, Interessenten). Optional: Arbeitgeber-Link. */}
-            {props.user && (props.user.role === UserRole.RECRUITER || props.user.role === UserRole.ADMIN) && (
-              <div className="pt-6 border-t border-slate-100">
-                <Button className="w-full py-4" variant="primary" onClick={() => { setSelectedCandidate(null); onNavigate('/recruiter/dashboard'); }}>
-                  Zum Recruiter-Dashboard
-                </Button>
-              </div>
-            )}
-            {!isModalContentReady && (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-bold text-slate-500">
-                Profil wird optimiert geladen...
+                {showInquiryForm && (
+                  <>
+                    <p className="mt-4 mb-3 text-sm font-medium text-slate-700">Bitte alle Pflichtfelder ausfüllen.</p>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <Input value={inquiryForm.companyName} onChange={(e) => setInquiryForm((s) => ({ ...s, companyName: e.target.value }))} placeholder="Welche Firma *" className="h-10" />
+                      <Input value={inquiryForm.firstName} onChange={(e) => setInquiryForm((s) => ({ ...s, firstName: e.target.value }))} placeholder="Vorname *" className="h-10" />
+                      <Input value={inquiryForm.lastName} onChange={(e) => setInquiryForm((s) => ({ ...s, lastName: e.target.value }))} placeholder="Nachname *" className="h-10" />
+                      <Input value={inquiryForm.customerPosition} onChange={(e) => setInquiryForm((s) => ({ ...s, customerPosition: e.target.value }))} placeholder="Welche Position haben Sie? *" className="h-10" />
+                      <Input type="email" value={inquiryForm.contactEmail} onChange={(e) => setInquiryForm((s) => ({ ...s, contactEmail: e.target.value }))} placeholder="E-Mail *" className="h-10" />
+                      <Input value={inquiryForm.contactPhone} onChange={(e) => setInquiryForm((s) => ({ ...s, contactPhone: e.target.value }))} placeholder="Telefonnummer *" className="h-10" />
+                      <Input value={inquiryForm.projectDuration} onChange={(e) => setInquiryForm((s) => ({ ...s, projectDuration: e.target.value }))} placeholder="Projektlaufzeit *" className="h-10" />
+                      <Input value={inquiryForm.projectLocation} onChange={(e) => setInquiryForm((s) => ({ ...s, projectLocation: e.target.value }))} placeholder="Projektstandort *" className="h-10" />
+                      <Input value={inquiryForm.budget} onChange={(e) => setInquiryForm((s) => ({ ...s, budget: e.target.value }))} placeholder="Budget *" className="h-10" />
+                    </div>
+                    {inquiryError && <p className="mt-2 text-xs font-bold text-red-600">{inquiryError}</p>}
+                    {inquirySuccess && <p className="mt-2 text-xs font-bold text-emerald-700">{inquirySuccess}</p>}
+                    <Button className="mt-3 w-full sm:w-auto" variant="primary" isLoading={inquiryLoading} onClick={submitInquiry}>
+                      Interesse senden
+                    </Button>
+                  </>
+                )}
               </div>
             )}
           </div>
-        </Modal>
+        </section>
       )}
 
       {/* PDF-Viewer: Dokument im gleichen Fenster anzeigen (keine weiße Seite) */}
