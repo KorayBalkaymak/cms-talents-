@@ -17,6 +17,7 @@ const SESSION_KEY = 'cms_talents_session';
 const LOCAL_INQUIRIES_KEY = 'cms_talents_local_inquiries';
 const LOCAL_EXTERNAL_CANDIDATES_KEY = 'cms_talents_local_external_candidates';
 const LOCAL_EDITED_DOCS_KEY = 'cms_talents_local_edited_documents';
+const LOCAL_ORIGINAL_DOCS_KEY = 'cms_talents_local_original_documents';
 const EDITING_CLAIM_SET_PREFIX = 'editing_claim:set:';
 const EDITING_CLAIM_CLEAR = 'editing_claim:clear';
 
@@ -456,6 +457,50 @@ class ApiClient {
       qualifications: data.qualifications || [],
     };
     this.writeLocalEditedDocumentsMap(map);
+  }
+
+  private readLocalOriginalDocumentsMap(): Record<string, CandidateDocuments> {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.localStorage.getItem(LOCAL_ORIGINAL_DOCS_KEY);
+      return raw ? ((JSON.parse(raw) as Record<string, CandidateDocuments>) || {}) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private writeLocalOriginalDocumentsMap(next: Record<string, CandidateDocuments>): void {
+    if (typeof window === 'undefined') return;
+    try {
+      const entries = Object.entries(next).slice(0, 300);
+      window.localStorage.setItem(LOCAL_ORIGINAL_DOCS_KEY, JSON.stringify(Object.fromEntries(entries)));
+    } catch {
+      // ignore local fallback errors
+    }
+  }
+
+  private readLocalOriginalDocuments(userId: string): CandidateDocuments | undefined {
+    const map = this.readLocalOriginalDocumentsMap();
+    const doc = map[userId];
+    if (!doc) return undefined;
+    return {
+      userId,
+      cvPdf: doc.cvPdf || undefined,
+      certificates: doc.certificates || [],
+      qualifications: doc.qualifications || [],
+    };
+  }
+
+  private writeLocalOriginalDocumentsIfMissing(userId: string, data: CandidateDocuments): void {
+    const map = this.readLocalOriginalDocumentsMap();
+    if (map[userId]) return;
+    map[userId] = {
+      userId,
+      cvPdf: data.cvPdf || undefined,
+      certificates: data.certificates || [],
+      qualifications: data.qualifications || [],
+    };
+    this.writeLocalOriginalDocumentsMap(map);
   }
 
   private fallbackCandidateNumber(userId: string): string {
@@ -1566,11 +1611,12 @@ class ApiClient {
 
     const row = await this.fetchDocumentRow(userId);
     if (!row) return undefined;
-    const original = this.documentRowToDocuments(row, false);
+    const dbOriginal = this.documentRowToDocuments(row, false);
     const hasEditedColumns =
       Object.prototype.hasOwnProperty.call(row as object, 'edited_cv_pdf') ||
       Object.prototype.hasOwnProperty.call(row as object, 'edited_certificates') ||
       Object.prototype.hasOwnProperty.call(row as object, 'edited_qualifications');
+    const original = hasEditedColumns ? dbOriginal : (this.readLocalOriginalDocuments(userId) || dbOriginal);
     const edited = hasEditedColumns
       ? this.documentRowToDocuments(row, true)
       : (this.readLocalEditedDocuments(userId) || original);
@@ -1605,6 +1651,8 @@ class ApiClient {
     // Legacy fallback: edited_* Spalten fehlen.
     // In diesem Fall speichern wir separat lokal, damit Original-Dokumente unverändert bleiben.
     if (isEditedDocumentsSchemaMissing(error.message)) {
+      const current = await this.getDocuments(userId);
+      if (current) this.writeLocalOriginalDocumentsIfMissing(userId, current);
       this.writeLocalEditedDocuments(userId, data);
       return;
     }
