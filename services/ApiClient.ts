@@ -16,6 +16,7 @@ import {
 const SESSION_KEY = 'cms_talents_session';
 const LOCAL_INQUIRIES_KEY = 'cms_talents_local_inquiries';
 const LOCAL_EXTERNAL_CANDIDATES_KEY = 'cms_talents_local_external_candidates';
+const LOCAL_EDITED_DOCS_KEY = 'cms_talents_local_edited_documents';
 const EDITING_CLAIM_SET_PREFIX = 'editing_claim:set:';
 const EDITING_CLAIM_CLEAR = 'editing_claim:clear';
 
@@ -412,6 +413,49 @@ class ApiClient {
     } catch {
       return [];
     }
+  }
+
+  private readLocalEditedDocumentsMap(): Record<string, CandidateDocuments> {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.localStorage.getItem(LOCAL_EDITED_DOCS_KEY);
+      return raw ? ((JSON.parse(raw) as Record<string, CandidateDocuments>) || {}) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private writeLocalEditedDocumentsMap(next: Record<string, CandidateDocuments>): void {
+    if (typeof window === 'undefined') return;
+    try {
+      const entries = Object.entries(next).slice(0, 300);
+      window.localStorage.setItem(LOCAL_EDITED_DOCS_KEY, JSON.stringify(Object.fromEntries(entries)));
+    } catch {
+      // ignore local fallback errors
+    }
+  }
+
+  private readLocalEditedDocuments(userId: string): CandidateDocuments | undefined {
+    const map = this.readLocalEditedDocumentsMap();
+    const doc = map[userId];
+    if (!doc) return undefined;
+    return {
+      userId,
+      cvPdf: doc.cvPdf || undefined,
+      certificates: doc.certificates || [],
+      qualifications: doc.qualifications || [],
+    };
+  }
+
+  private writeLocalEditedDocuments(userId: string, data: CandidateDocuments): void {
+    const map = this.readLocalEditedDocumentsMap();
+    map[userId] = {
+      userId,
+      cvPdf: data.cvPdf || undefined,
+      certificates: data.certificates || [],
+      qualifications: data.qualifications || [],
+    };
+    this.writeLocalEditedDocumentsMap(map);
   }
 
   private fallbackCandidateNumber(userId: string): string {
@@ -1527,7 +1571,9 @@ class ApiClient {
       Object.prototype.hasOwnProperty.call(row as object, 'edited_cv_pdf') ||
       Object.prototype.hasOwnProperty.call(row as object, 'edited_certificates') ||
       Object.prototype.hasOwnProperty.call(row as object, 'edited_qualifications');
-    const edited = hasEditedColumns ? this.documentRowToDocuments(row, true) : original;
+    const edited = hasEditedColumns
+      ? this.documentRowToDocuments(row, true)
+      : (this.readLocalEditedDocuments(userId) || original);
     return { userId, original, edited };
   }
 
@@ -1549,19 +1595,11 @@ class ApiClient {
     const { error } = await supabase.from('candidate_documents').upsert(payload, { onConflict: 'user_id' });
     if (!error) return;
 
-    // Legacy fallback: wenn edited_* Spalten noch nicht existieren,
-    // speichern wir in die Original-Spalten, damit Recruiter weiterhin CVs pflegen können.
+    // Legacy fallback: edited_* Spalten fehlen.
+    // In diesem Fall speichern wir separat lokal, damit Original-Dokumente unverändert bleiben.
     if (isEditedDocumentsSchemaMissing(error.message)) {
-      const legacyPayload = {
-        user_id: userId,
-        cv_pdf: data.cvPdf || null,
-        certificates: data.certificates || [],
-        qualifications: data.qualifications || [],
-        updated_at: now,
-      };
-      const { error: legacyError } = await supabase.from('candidate_documents').upsert(legacyPayload, { onConflict: 'user_id' });
-      if (!legacyError) return;
-      throw new Error(legacyError.message);
+      this.writeLocalEditedDocuments(userId, data);
+      return;
     }
 
     throw new Error(error.message);
