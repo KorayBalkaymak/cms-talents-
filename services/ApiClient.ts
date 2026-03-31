@@ -1560,8 +1560,8 @@ class ApiClient {
         certificates: row.certificates || [],
         qualifications: row.qualifications || [],
       };
-      // Für die UI setzen wir edited zunächst identisch.
-      return { userId, original, edited: original };
+      const edited = this.readLocalEditedDocuments(userId) || original;
+      return { userId, original, edited };
     }
 
     const row = await this.fetchDocumentRow(userId);
@@ -1581,6 +1581,13 @@ class ApiClient {
     const role = await this.getEffectiveSessionRole();
     if (!role || !isRecruiterRole(role)) {
       throw new Error('Keine Berechtigung für das Bearbeiten der Dokumente.');
+    }
+
+    // Externe Kandidaten haben keine separaten edited_* DB-Spalten.
+    // Daher bearbeiten wir diese Marktplatz-Version lokal getrennt von den Originalen.
+    if (userId.startsWith('external:')) {
+      this.writeLocalEditedDocuments(userId, data);
+      return;
     }
 
     const now = new Date().toISOString();
