@@ -137,7 +137,10 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
     setSelectedCandidate(candidate);
     setInquiryError('');
     setInquirySuccess('');
-    onNavigate(`/talents/${candidate.userId}`);
+    // Navigation erst nach dem ersten Paint, damit der Klick sofort fluessig wirkt.
+    window.requestAnimationFrame(() => {
+      onNavigate(`/talents/${candidate.userId}`);
+    });
   }, [onNavigate]);
 
   const submitInquiry = async () => {
@@ -209,9 +212,9 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   useEffect(() => {
     if (selectedId) {
       const found = candidates.find(c => c.userId === selectedId);
-      if (found) setSelectedCandidate(found);
+      if (found && selectedCandidate?.userId !== found.userId) setSelectedCandidate(found);
     }
-  }, [selectedId, candidates]);
+  }, [selectedId, candidates, selectedCandidate?.userId]);
 
   const filteredAndRanked = useMemo(() => {
     let list = rankCandidates(candidates, debouncedSearch);
@@ -236,6 +239,19 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
 
     return list;
   }, [candidates, debouncedSearch, filterIndustry, filterAvailability, filterExp, sortBy]);
+
+  const resultCards = useMemo(
+    () =>
+      filteredAndRanked.map((item) => (
+        <CandidateCard
+          key={item.candidate.userId}
+          item={item}
+          search={debouncedSearch}
+          onSelect={handleSelectCandidate}
+        />
+      )),
+    [filteredAndRanked, debouncedSearch, handleSelectCandidate]
+  );
 
   const handleLogout = () => {
     authService.logout();
@@ -448,14 +464,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" style={{ contain: 'layout' }}>
-              {filteredAndRanked.map((item) => (
-                <CandidateCard
-                  key={item.candidate.userId}
-                  item={item}
-                  search={debouncedSearch}
-                  onSelect={handleSelectCandidate}
-                />
-              ))}
+              {resultCards}
             </div>
           )}
         </div>
