@@ -16,7 +16,7 @@ interface RecruiterDashboardProps {
   onLogout: () => void;
 }
 
-const STALE_CANDIDATE_MS = 7 * 24 * 60 * 60 * 1000;
+const STALE_CANDIDATE_MS = 3 * 24 * 60 * 60 * 1000;
 const RECRUITER_EDITING_CLAIM_HEARTBEAT_MS = 60 * 60 * 1000; // 1h
 
 function membershipDurationDe(createdAt: string): string {
@@ -468,7 +468,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     if (isCandidateStale(cand)) {
       return {
         text: 'Bearbeiten noetig',
-        mobileText: 'Bearbeiten noetig: seit 7+ Tagen offen',
+        mobileText: 'Bearbeiten noetig: seit 3+ Tagen offen',
         className: 'bg-red-50 text-red-700 ring-1 ring-red-200',
       };
     }
