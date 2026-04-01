@@ -615,7 +615,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               </div>
             )}
 
-            {selectedCandidate.about && <div className="bg-slate-50 p-4 rounded-xl"><p className="text-xs font-black text-slate-400 uppercase mb-2">Über</p><p className="text-slate-700">{anonymizeCandidateText(selectedCandidate.about, selectedCandidate, selectedCandidateCodeName)}</p></div>}
+            {selectedCandidate.about && <div className="bg-slate-50 p-4 rounded-xl"><p className="text-xs font-black text-slate-400 uppercase mb-2">Über</p><p className="break-words [overflow-wrap:anywhere] text-slate-700">{anonymizeCandidateText(selectedCandidate.about, selectedCandidate, selectedCandidateCodeName)}</p></div>}
             {(selectedCandidate.skills?.length ?? 0) > 0 && <div><p className="text-xs font-black text-slate-400 uppercase mb-3">Skills</p><div className="flex flex-wrap gap-2">{selectedCandidate.skills.map(skill => <Badge key={skill} variant="orange">{highlightText(skill, debouncedSearch)}</Badge>)}</div></div>}
             {(selectedCandidate.boostedKeywords?.length ?? 0) > 0 && <div><p className="text-xs font-black text-slate-400 uppercase mb-3">Spezialisierungen</p><div className="flex flex-wrap gap-2">{selectedCandidate.boostedKeywords.map(kw => <Badge key={kw} variant="dark">{kw}</Badge>)}</div></div>}
 
