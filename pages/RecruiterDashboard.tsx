@@ -143,23 +143,39 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     return () => window.clearInterval(id);
   }, [onRefreshCandidates]);
 
+  const loadInquiries = useCallback(async () => {
+    setIsLoadingInquiries(true);
+    try {
+      const list = await candidateService.getInquiries();
+      setInquiries(list);
+    } finally {
+      setIsLoadingInquiries(false);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
-    const load = async () => {
+    const safeLoad = async () => {
       setIsLoadingInquiries(true);
-      const list = await candidateService.getInquiries();
-      if (!cancelled) {
-        setInquiries(list);
-        setIsLoadingInquiries(false);
+      try {
+        const list = await candidateService.getInquiries();
+        if (!cancelled) setInquiries(list);
+      } finally {
+        if (!cancelled) setIsLoadingInquiries(false);
       }
     };
-    void load();
-    const id = window.setInterval(load, 35000);
+    void safeLoad();
+    const id = window.setInterval(safeLoad, 35000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
     };
   }, []);
+
+  useEffect(() => {
+    if (activeView !== 'inquiries') return;
+    void loadInquiries();
+  }, [activeView, loadInquiries]);
 
   useEffect(() => {
     if (activeView !== 'users') return;
