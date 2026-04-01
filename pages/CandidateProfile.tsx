@@ -84,7 +84,13 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: parseInt(value) || 0 }));
+    if (name === 'salaryWishEur' || name === 'workRadiusKm') {
+      const trimmed = value.trim();
+      const parsed = Number.parseInt(trimmed, 10);
+      setFormData(prev => ({ ...prev, [name]: trimmed === '' || !Number.isFinite(parsed) ? null : parsed }));
+      return;
+    }
+    setFormData(prev => ({ ...prev, [name]: Number.parseInt(value, 10) || 0 }));
   };
 
   const handleAddSkill = (e: React.KeyboardEvent) => {
@@ -149,7 +155,7 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
     if (!formData.country?.trim()) newErrors.country = 'Pflichtfeld';
     if (!formData.industry?.trim()) newErrors.industry = 'Pflichtfeld';
     if (!formData.availability?.trim()) newErrors.availability = 'Pflichtfeld';
-    if (formData.salaryWishEur === null || formData.salaryWishEur === undefined || formData.salaryWishEur < 0) {
+    if (formData.salaryWishEur === null || formData.salaryWishEur === undefined || formData.salaryWishEur <= 0) {
       newErrors.salaryWishEur = 'Pflichtfeld';
     }
     if (formData.workRadiusKm === null || formData.workRadiusKm === undefined || formData.workRadiusKm < 0) {
@@ -601,10 +607,10 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                   labelClassName="text-slate-900 font-bold"
                   name="salaryWishEur"
                   type="number"
-                  value={formData.salaryWishEur ?? ''}
+                  value={formData.salaryWishEur && formData.salaryWishEur > 0 ? formData.salaryWishEur : ''}
                   onChange={handleNumberChange}
                   placeholder="z. B. 45000"
-                  min="0"
+                  min="1"
                   error={errors.salaryWishEur}
                   className="h-9 rounded-xl text-sm sm:h-10"
                 />
