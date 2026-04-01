@@ -18,16 +18,14 @@ interface TalentMarketplaceProps {
 type MatchItem = { candidate: CandidateProfile; score: number };
 
 function codeNameFromUserId(userId: string): string {
-  const first = ['Nova', 'Luna', 'Astra', 'Mika', 'Nuri', 'Elio', 'Kian', 'Riva', 'Sora', 'Tala'];
-  const second = ['Fox', 'Wave', 'Pine', 'Vale', 'Sky', 'Flare', 'Stone', 'Birch', 'River', 'Spark'];
+  const labels = ['TX', 'QN', 'VK', 'RM', 'SL', 'PN', 'ZR', 'LF', 'MK', 'JD'];
   let hash = 0;
   for (let i = 0; i < userId.length; i += 1) {
     hash = (hash * 31 + userId.charCodeAt(i)) >>> 0;
   }
-  const a = first[hash % first.length];
-  const b = second[Math.floor(hash / first.length) % second.length];
-  const suffix = String(hash % 100).padStart(2, '0');
-  return `${a}${b}-${suffix}`;
+  const label = labels[hash % labels.length];
+  const suffix = String(hash % 1000).padStart(3, '0');
+  return `${label}${suffix}`;
 }
 
 function anonymizeCandidateText(text: string, candidate: CandidateProfile, codeName: string): string {
