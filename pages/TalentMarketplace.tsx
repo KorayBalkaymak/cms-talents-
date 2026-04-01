@@ -17,7 +17,20 @@ interface TalentMarketplaceProps {
 
 type MatchItem = { candidate: CandidateProfile; score: number };
 
-const CandidateCard = memo(({ item, search, onSelect }: { item: MatchItem; search: string; onSelect: (c: CandidateProfile) => void }) => {
+function codeNameFromUserId(userId: string): string {
+  const first = ['Nova', 'Luna', 'Astra', 'Mika', 'Nuri', 'Elio', 'Kian', 'Riva', 'Sora', 'Tala'];
+  const second = ['Fox', 'Wave', 'Pine', 'Vale', 'Sky', 'Flare', 'Stone', 'Birch', 'River', 'Spark'];
+  let hash = 0;
+  for (let i = 0; i < userId.length; i += 1) {
+    hash = (hash * 31 + userId.charCodeAt(i)) >>> 0;
+  }
+  const a = first[hash % first.length];
+  const b = second[Math.floor(hash / first.length) % second.length];
+  const suffix = String(hash % 100).padStart(2, '0');
+  return `${a}${b}-${suffix}`;
+}
+
+const CandidateCard = memo(({ item, search, onSelect, codeName }: { item: MatchItem; search: string; onSelect: (c: CandidateProfile) => void; codeName: string }) => {
   const { candidate, score } = item;
   const skills = candidate.skills ?? [];
   const profession = useMemo(() => {
@@ -61,7 +74,7 @@ const CandidateCard = memo(({ item, search, onSelect }: { item: MatchItem; searc
         <Avatar seed={candidate.firstName + candidate.lastName} size="md" imageUrl={candidate.profileImageUrl} className="shrink-0 ring-4 ring-orange-50" />
         <div className="flex-1 min-w-0">
           <h3 className="text-lg font-black text-[#101B31] tracking-tight leading-tight group-hover:text-slate-900 transition-colors">
-            {highlightText(`${candidate.firstName} ${candidate.lastName}`, search)}
+            {highlightText(codeName, search)}
           </h3>
           <div className="text-xs font-bold text-slate-400 flex items-center gap-1 mt-1">
             <svg className="w-3 h-3 text-orange-600 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"></path></svg>
@@ -296,6 +309,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
           item={item}
           search={debouncedSearch}
           onSelect={handleSelectCandidate}
+          codeName={codeNameFromUserId(item.candidate.userId)}
         />
       )),
     [filteredAndRanked, debouncedSearch, handleSelectCandidate]
