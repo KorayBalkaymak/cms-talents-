@@ -576,6 +576,22 @@ class ApiClient {
       return items;
     }
 
+    const hasEditedColumns =
+      Object.prototype.hasOwnProperty.call(row as object, 'edited_cv_pdf') ||
+      Object.prototype.hasOwnProperty.call(row as object, 'edited_certificates') ||
+      Object.prototype.hasOwnProperty.call(row as object, 'edited_qualifications');
+    if (!hasEditedColumns) {
+      // DB ohne edited_* Spalten: für Marktplatz auf Standard-Dokumentspalten zurückfallen.
+      if (row.cv_pdf?.name) items.push({ type: 'cv', name: row.cv_pdf.name });
+      for (const cert of row.certificates || []) {
+        if (cert?.name) items.push({ type: 'certificate', name: cert.name });
+      }
+      for (const qual of row.qualifications || []) {
+        if (qual?.name) items.push({ type: 'qualification', name: qual.name });
+      }
+      return items;
+    }
+
     // edited docs for marktplatz
     if (row.edited_cv_pdf?.name) items.push({ type: 'cv', name: row.edited_cv_pdf.name });
     for (const cert of row.edited_certificates || []) {
@@ -1520,12 +1536,17 @@ class ApiClient {
     }
     const profile = await this.fetchProfileRow(userId);
     const row = await this.fetchDocumentRow(userId);
+    const hasEditedColumns =
+      !!row &&
+      (Object.prototype.hasOwnProperty.call(row as object, 'edited_cv_pdf') ||
+        Object.prototype.hasOwnProperty.call(row as object, 'edited_certificates') ||
+        Object.prototype.hasOwnProperty.call(row as object, 'edited_qualifications'));
     const hasEditedContent = !!(
       row?.edited_cv_pdf?.name ||
       (row?.edited_certificates?.length ?? 0) > 0 ||
       (row?.edited_qualifications?.length ?? 0) > 0
     );
-    const useEdited = hasEditedContent || !!profile?.is_published;
+    const useEdited = hasEditedColumns && (hasEditedContent || !!profile?.is_published);
     return row
       ? this.documentRowToDocuments(row, useEdited)
       : {
@@ -1639,6 +1660,19 @@ class ApiClient {
       const current = await this.getOriginalDocuments(userId);
       if (current) this.writeLocalOriginalDocumentsIfMissing(userId, current);
       this.writeLocalEditedDocuments(userId, data);
+
+      // Kompatibilitäts-Fallback:
+      // Wenn edited_* Spalten fehlen, persistieren wir die Marktplatz-Version in Standardspalten,
+      // damit sie öffentlich im Marktplatz sichtbar ist.
+      const fallbackPayload = {
+        user_id: userId,
+        cv_pdf: data.cvPdf || null,
+        certificates: data.certificates || [],
+        qualifications: data.qualifications || [],
+        updated_at: now,
+      };
+      const { error: baseErr } = await supabase.from('candidate_documents').upsert(fallbackPayload, { onConflict: 'user_id' });
+      if (baseErr) throw new Error(baseErr.message);
       return;
     }
 
