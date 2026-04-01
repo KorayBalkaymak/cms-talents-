@@ -461,7 +461,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     if (cand.isPublished && cand.status === CandidateStatus.ACTIVE) {
       return {
         text: 'Schon bearbeitet und freigegeben',
-        mobileText: 'Schon bearbeitet und freigegeben',
+        mobileText: '',
         className: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
       };
     }
@@ -1600,9 +1600,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               <p className="text-xs font-semibold text-slate-500">
                                 {[cand.city?.trim(), `${cand.experienceYears} J. Erfahrung`].filter(Boolean).join(' · ')}
                               </p>
-                              <p className={`mt-1 text-[10px] font-black uppercase tracking-wider ${candidateReviewHint(cand).className.includes('red-700') ? 'text-red-700' : candidateReviewHint(cand).className.includes('emerald-700') ? 'text-emerald-700' : 'text-amber-700'}`}>
-                                {candidateReviewHint(cand).mobileText}
-                              </p>
+                              {candidateReviewHint(cand).mobileText ? (
+                                <p className={`mt-1 text-[10px] font-black uppercase tracking-wider ${candidateReviewHint(cand).className.includes('red-700') ? 'text-red-700' : candidateReviewHint(cand).className.includes('emerald-700') ? 'text-emerald-700' : 'text-amber-700'}`}>
+                                  {candidateReviewHint(cand).mobileText}
+                                </p>
+                              ) : null}
                               <div className="mt-2 flex flex-wrap items-center gap-2">
                                 {statusBadgeBlock(cand)}
                                 <Badge variant={cand.isPublished ? 'green' : 'slate'}>
