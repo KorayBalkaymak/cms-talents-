@@ -419,6 +419,39 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     return industry || '-';
   }, []);
 
+  const displaySalaryWish = useCallback((cand: CandidateProfile): string => {
+    if (cand.salaryWishEur !== null && cand.salaryWishEur !== undefined && Number.isFinite(Number(cand.salaryWishEur))) {
+      return `${cand.salaryWishEur} EUR`;
+    }
+    const about = cand.about || '';
+    const legacyLine = about
+      .split('\n')
+      .find((line) => {
+        const t = line.trim().toLowerCase();
+        return t.startsWith('[salary]:') || t.startsWith('[salary_eur]:');
+      });
+    if (legacyLine) {
+      const raw = legacyLine.split(':').slice(1).join(':').trim();
+      const n = Number(raw);
+      if (Number.isFinite(n) && n >= 0) return `${Math.round(n)} EUR`;
+    }
+    return '-';
+  }, []);
+
+  const displayWorkRadius = useCallback((cand: CandidateProfile): string => {
+    if (cand.workRadiusKm !== null && cand.workRadiusKm !== undefined && Number.isFinite(Number(cand.workRadiusKm))) {
+      return `${cand.workRadiusKm} km`;
+    }
+    const about = cand.about || '';
+    const legacyLine = about.split('\n').find((line) => line.trim().startsWith('[radius]:'));
+    if (legacyLine) {
+      const raw = legacyLine.trim().slice('[radius]:'.length);
+      const n = Number(raw);
+      if (Number.isFinite(n) && n >= 0) return `${Math.round(n)} km`;
+    }
+    return '-';
+  }, []);
+
   const isCandidateStale = useCallback((cand: CandidateProfile) => {
     const updatedAtMs = new Date(cand.updatedAt).getTime();
     return Number.isFinite(updatedAtMs) && Date.now() - updatedAtMs >= STALE_CANDIDATE_MS;
@@ -1911,17 +1944,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         <div className="bg-slate-50 p-3 rounded-xl">
                           <p className="text-[10px] font-black text-slate-400 uppercase">Gehaltswunsch</p>
                           <p className="text-sm font-bold text-slate-900">
-                            {selectedCandidate.salaryWishEur !== null && selectedCandidate.salaryWishEur !== undefined
-                              ? `${selectedCandidate.salaryWishEur} EUR`
-                              : '-'}
+                            {displaySalaryWish(selectedCandidate)}
                           </p>
                         </div>
                         <div className="bg-slate-50 p-3 rounded-xl">
                           <p className="text-[10px] font-black text-slate-400 uppercase">Arbeitsradius</p>
                           <p className="text-sm font-bold text-slate-900">
-                            {selectedCandidate.workRadiusKm !== null && selectedCandidate.workRadiusKm !== undefined
-                              ? `${selectedCandidate.workRadiusKm} km`
-                              : '-'}
+                            {displayWorkRadius(selectedCandidate)}
                           </p>
                         </div>
                         <div className="bg-slate-50 p-3 rounded-xl">
