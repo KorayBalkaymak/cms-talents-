@@ -1483,27 +1483,8 @@ class ApiClient {
         throw new Error(error.message);
       }
 
-      // Marketplace soll ausschließlich „bearbeitete“ Dokumente sehen.
-      // Wenn der Recruiter noch nichts bearbeitet hat, kopieren wir die Originale als edited-Version hinein,
-      // damit der Marktplatz nicht leer ist.
-      if (docs) {
-        const copyCv = !docs.edited_cv_pdf?.name && docs.cv_pdf?.name;
-        const copyCerts = (!docs.edited_certificates || docs.edited_certificates.length === 0) && (docs.certificates || []).length > 0;
-        const copyQuals = (!docs.edited_qualifications || docs.edited_qualifications.length === 0) && (docs.qualifications || []).length > 0;
-
-        if (copyCv || copyCerts || copyQuals) {
-          await supabase.from('candidate_documents').upsert(
-            {
-              user_id: userId,
-              edited_cv_pdf: copyCv ? docs.cv_pdf : docs.edited_cv_pdf || null,
-              edited_certificates: copyCerts ? (docs.certificates || []) : (docs.edited_certificates || []),
-              edited_qualifications: copyQuals ? (docs.qualifications || []) : (docs.edited_qualifications || []),
-              updated_at: now,
-            },
-            { onConflict: 'user_id' }
-          );
-        }
-      }
+      // Marktplatz zeigt bewusst nur bearbeitete Dokumente.
+      // Kein automatisches Kopieren von Originalen in edited_* beim Freigeben.
 
       await supabase.from('audit_log').insert({
         id: crypto.randomUUID(),
@@ -1651,7 +1632,7 @@ class ApiClient {
     // Legacy fallback: edited_* Spalten fehlen.
     // In diesem Fall speichern wir separat lokal, damit Original-Dokumente unverändert bleiben.
     if (isEditedDocumentsSchemaMissing(error.message)) {
-      const current = await this.getDocuments(userId);
+      const current = await this.getOriginalDocuments(userId);
       if (current) this.writeLocalOriginalDocumentsIfMissing(userId, current);
       this.writeLocalEditedDocuments(userId, data);
       return;
