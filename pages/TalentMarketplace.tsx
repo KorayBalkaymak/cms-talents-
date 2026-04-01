@@ -73,6 +73,22 @@ const CandidateCard = memo(({ item, search, onSelect, codeName }: { item: MatchI
     }
     return null;
   }, [candidate.workRadiusKm, candidate.about]);
+  const salaryWishEur = useMemo(() => {
+    if (candidate.salaryWishEur !== null && candidate.salaryWishEur !== undefined) return candidate.salaryWishEur;
+    const about = candidate.about || '';
+    const legacyLine = about
+      .split('\n')
+      .find((line) => {
+        const t = line.trim().toLowerCase();
+        return t.startsWith('[salary]:') || t.startsWith('[salary_eur]:');
+      });
+    if (legacyLine) {
+      const raw = legacyLine.split(':').slice(1).join(':').trim();
+      const n = Number(raw);
+      if (Number.isFinite(n) && n >= 0) return Math.round(n);
+    }
+    return null;
+  }, [candidate.salaryWishEur, candidate.about]);
   const handleClick = useCallback(() => { onSelect(candidate); }, [candidate, onSelect]);
   return (
     <div
@@ -112,6 +128,11 @@ const CandidateCard = memo(({ item, search, onSelect, codeName }: { item: MatchI
           {workRadiusKm !== null && workRadiusKm !== undefined && (
             <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">
               {workRadiusKm} km Radius
+            </Badge>
+          )}
+          {salaryWishEur !== null && salaryWishEur !== undefined && (
+            <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">
+              {salaryWishEur} EUR Wunschgehalt
             </Badge>
           )}
           {candidate.availability && <Badge variant="green" className="px-3 py-1">{candidate.availability}</Badge>}
