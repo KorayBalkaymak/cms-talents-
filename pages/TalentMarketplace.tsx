@@ -202,7 +202,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const openDocument = async (userId: string, docType: string, docName: string) => {
     setDocumentLoading(docName);
     try {
-      const docs = await candidateService.getDocuments(userId);
+      const docs = await candidateService.getMarketplaceDocuments(userId);
       if (!docs) return;
       let data: string | undefined;
       if (docType === 'cv' && docs.cvPdf?.data) data = docs.cvPdf.data;
@@ -336,7 +336,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
     setLoadingSelectedDocs(true);
     (async () => {
       try {
-        const docs = await candidateService.getDocuments(selectedCandidate.userId);
+        const docs = await candidateService.getMarketplaceDocuments(selectedCandidate.userId);
         if (!cancelled) setSelectedCandidateDocs(docs || null);
       } finally {
         if (!cancelled) setLoadingSelectedDocs(false);

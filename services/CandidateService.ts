@@ -103,6 +103,15 @@ class CandidateService {
     }
   }
 
+  async getMarketplaceDocuments(userId: string): Promise<CandidateDocuments | undefined> {
+    try {
+      return await api.getMarketplaceDocuments(userId);
+    } catch (e) {
+      console.error('[CandidateService] Error fetching marketplace documents:', e);
+      return undefined;
+    }
+  }
+
   async getOriginalDocuments(userId: string): Promise<CandidateDocuments | undefined> {
     try {
       return await api.getOriginalDocuments(userId);

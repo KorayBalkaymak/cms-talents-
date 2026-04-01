@@ -1556,6 +1556,25 @@ class ApiClient {
         };
   }
 
+  async getMarketplaceDocuments(userId: string): Promise<CandidateDocuments | undefined> {
+    if (userId.startsWith('external:')) {
+      return this.getDocuments(userId);
+    }
+    const row = await this.fetchDocumentRow(userId);
+    if (!row) {
+      return { userId, certificates: [], qualifications: [] };
+    }
+    const hasEditedColumns =
+      Object.prototype.hasOwnProperty.call(row as object, 'edited_cv_pdf') ||
+      Object.prototype.hasOwnProperty.call(row as object, 'edited_certificates') ||
+      Object.prototype.hasOwnProperty.call(row as object, 'edited_qualifications');
+    if (hasEditedColumns) {
+      return this.documentRowToDocuments(row, true);
+    }
+    // Legacy fallback (ohne edited_* Spalten): Marktplatz-Version liegt in Basisspalten.
+    return this.documentRowToDocuments(row, false);
+  }
+
   /** Originaldokumente (für Kandidaten): unabhängig davon, ob der Nutzer bereits veröffentlicht ist. */
   async getOriginalDocuments(userId: string): Promise<CandidateDocuments | undefined> {
     if (userId.startsWith('external:')) {
