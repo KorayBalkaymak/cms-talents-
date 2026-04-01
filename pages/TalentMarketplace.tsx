@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useCallback, memo } from 'react';
-import { CandidateProfile, UserRole } from '../types';
+import { CandidateProfile, CandidateDocuments, UserRole } from '../types';
 import { rankCandidates, highlightText } from '../services/SearchService';
 import { candidateService } from '../services/CandidateService';
 import { authService } from '../services/AuthService';
@@ -156,6 +156,8 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const [filterExp, setFilterExp] = useState(0);
   const [sortBy, setSortBy] = useState<'relevance' | 'newest' | 'experience'>('relevance');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
+  const [selectedCandidateDocs, setSelectedCandidateDocs] = useState<CandidateDocuments | null>(null);
+  const [loadingSelectedDocs, setLoadingSelectedDocs] = useState(false);
   const [documentLoading, setDocumentLoading] = useState<string | null>(null);
   const [pdfViewerUrl, setPdfViewerUrl] = useState<string | null>(null);
   const [pdfViewerTitle, setPdfViewerTitle] = useState<string>('');
@@ -221,6 +223,14 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
     () => (selectedCandidate ? codeNameFromUserId(selectedCandidate.userId) : ''),
     [selectedCandidate]
   );
+  const selectedDocsList = useMemo(() => {
+    if (!selectedCandidateDocs) return [];
+    const items: { type: string; name: string }[] = [];
+    if (selectedCandidateDocs.cvPdf?.name) items.push({ type: 'cv', name: selectedCandidateDocs.cvPdf.name });
+    for (const doc of selectedCandidateDocs.certificates || []) if (doc?.name) items.push({ type: 'certificate', name: doc.name });
+    for (const doc of selectedCandidateDocs.qualifications || []) if (doc?.name) items.push({ type: 'qualification', name: doc.name });
+    return items;
+  }, [selectedCandidateDocs]);
 
   const submitInquiry = async () => {
     if (!selectedCandidate) return;
@@ -294,6 +304,27 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
       if (found && selectedCandidate?.userId !== found.userId) setSelectedCandidate(found);
     }
   }, [selectedId, candidates, selectedCandidate?.userId]);
+
+  useEffect(() => {
+    if (!selectedCandidate) {
+      setSelectedCandidateDocs(null);
+      setLoadingSelectedDocs(false);
+      return;
+    }
+    let cancelled = false;
+    setLoadingSelectedDocs(true);
+    (async () => {
+      try {
+        const docs = await candidateService.getDocuments(selectedCandidate.userId);
+        if (!cancelled) setSelectedCandidateDocs(docs || null);
+      } finally {
+        if (!cancelled) setLoadingSelectedDocs(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCandidate?.userId]);
 
   const filteredAndRanked = useMemo(() => {
     let list = rankCandidates(candidates, debouncedSearch);
@@ -584,11 +615,15 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
             {(selectedCandidate.skills?.length ?? 0) > 0 && <div><p className="text-xs font-black text-slate-400 uppercase mb-3">Skills</p><div className="flex flex-wrap gap-2">{selectedCandidate.skills.map(skill => <Badge key={skill} variant="orange">{highlightText(skill, debouncedSearch)}</Badge>)}</div></div>}
             {(selectedCandidate.boostedKeywords?.length ?? 0) > 0 && <div><p className="text-xs font-black text-slate-400 uppercase mb-3">Spezialisierungen</p><div className="flex flex-wrap gap-2">{selectedCandidate.boostedKeywords.map(kw => <Badge key={kw} variant="dark">{kw}</Badge>)}</div></div>}
 
-            {selectedCandidate.documents && selectedCandidate.documents.length > 0 && (
+            {loadingSelectedDocs ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs font-bold text-slate-600">
+                Dokumente werden geladen...
+              </div>
+            ) : selectedDocsList.length > 0 && (
               <div>
                 <p className="text-xs font-black text-slate-400 uppercase mb-3">Dokumente (anklicken zum Ansehen)</p>
                 <div className="space-y-2">
-                  {selectedCandidate.documents.map((doc, idx) => (
+                  {selectedDocsList.map((doc, idx) => (
                     <button key={idx} type="button" onClick={() => openDocument(selectedCandidate.userId, doc.type, doc.name)} disabled={!!documentLoading} className="flex items-center gap-2 w-full text-left p-3 rounded-xl bg-slate-50 hover:bg-orange-50 border border-slate-100 hover:border-orange-200 transition-colors group">
                       <span className="w-10 h-10 rounded-lg bg-slate-200 group-hover:bg-orange-100 flex items-center justify-center shrink-0"><svg className="w-5 h-5 text-slate-600 group-hover:text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg></span>
                       <div className="flex-1 min-w-0"><span className="text-slate-500 text-xs uppercase block">{doc.type === 'cv' ? 'Lebenslauf (CV)' : doc.type === 'certificate' ? 'Zertifikat' : 'Qualifikation'}</span><span className="font-bold text-slate-900 truncate block">{doc.name}</span></div>
