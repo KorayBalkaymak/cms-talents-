@@ -1519,9 +1519,13 @@ class ApiClient {
       }
     }
     const profile = await this.fetchProfileRow(userId);
-    const useEdited = !!profile?.is_published && profile?.status === CandidateStatus.ACTIVE;
-
     const row = await this.fetchDocumentRow(userId);
+    const hasEditedContent = !!(
+      row?.edited_cv_pdf?.name ||
+      (row?.edited_certificates?.length ?? 0) > 0 ||
+      (row?.edited_qualifications?.length ?? 0) > 0
+    );
+    const useEdited = hasEditedContent || !!profile?.is_published;
     return row
       ? this.documentRowToDocuments(row, useEdited)
       : {
