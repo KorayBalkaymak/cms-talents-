@@ -1767,8 +1767,8 @@ class ApiClient {
   }
 
   async getCandidateInquiries(): Promise<CandidateInquiry[]> {
-    const role = await this.getEffectiveSessionRole();
-    if (!role || !isRecruiterRole(role)) {
+    const authUser = await this.currentAuthUser();
+    if (!authUser) {
       return [];
     }
     const local = this.readLocalInquiries();
