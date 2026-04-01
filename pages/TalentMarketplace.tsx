@@ -30,6 +30,21 @@ function codeNameFromUserId(userId: string): string {
   return `${a}${b}-${suffix}`;
 }
 
+function anonymizeCandidateText(text: string, candidate: CandidateProfile, codeName: string): string {
+  const input = (text || '').trim();
+  if (!input) return '';
+  const first = (candidate.firstName || '').trim();
+  const last = (candidate.lastName || '').trim();
+  let output = input;
+  if (first && last) {
+    const full = new RegExp(`${first}\\s+${last}`, 'gi');
+    output = output.replace(full, codeName);
+  }
+  if (first) output = output.replace(new RegExp(first, 'gi'), codeName);
+  if (last) output = output.replace(new RegExp(last, 'gi'), codeName);
+  return output;
+}
+
 const CandidateCard = memo(({ item, search, onSelect, codeName }: { item: MatchItem; search: string; onSelect: (c: CandidateProfile) => void; codeName: string }) => {
   const { candidate, score } = item;
   const skills = candidate.skills ?? [];
@@ -71,7 +86,7 @@ const CandidateCard = memo(({ item, search, onSelect, codeName }: { item: MatchI
       style={{ contentVisibility: 'auto', contain: 'layout paint' }}
     >
       <div className="flex items-start gap-4 mb-5">
-        <Avatar seed={candidate.firstName + candidate.lastName} size="md" imageUrl={candidate.profileImageUrl} className="shrink-0 ring-4 ring-orange-50" />
+        <Avatar seed={codeName} size="md" imageUrl={candidate.profileImageUrl} className="shrink-0 ring-4 ring-orange-50" />
         <div className="flex-1 min-w-0">
           <h3 className="text-lg font-black text-[#101B31] tracking-tight leading-tight group-hover:text-slate-900 transition-colors">
             {highlightText(codeName, search)}
@@ -105,7 +120,7 @@ const CandidateCard = memo(({ item, search, onSelect, codeName }: { item: MatchI
         </div>
         {candidate.about && (
           <p className="text-slate-600 text-sm font-medium line-clamp-2 leading-relaxed">
-            "{highlightText(candidate.about, search)}"
+            "{highlightText(anonymizeCandidateText(candidate.about, candidate, codeName), search)}"
           </p>
         )}
       </div>
@@ -203,6 +218,11 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
     setInquirySuccess('');
     onNavigate('/talents');
   }, [onNavigate]);
+
+  const selectedCandidateCodeName = useMemo(
+    () => (selectedCandidate ? codeNameFromUserId(selectedCandidate.userId) : ''),
+    [selectedCandidate]
+  );
 
   const submitInquiry = async () => {
     if (!selectedCandidate) return;
@@ -542,7 +562,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
             setInquirySuccess('');
             onNavigate('/talents');
           }}
-          title="Kandidatenprofil"
+          title={selectedCandidateCodeName ? `Kandidatenprofil · ${selectedCandidateCodeName}` : 'Kandidatenprofil'}
         >
           <div className="space-y-5">
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -562,7 +582,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               </div>
             )}
 
-            {selectedCandidate.about && <div className="bg-slate-50 p-4 rounded-xl"><p className="text-xs font-black text-slate-400 uppercase mb-2">Über</p><p className="text-slate-700">{selectedCandidate.about}</p></div>}
+            {selectedCandidate.about && <div className="bg-slate-50 p-4 rounded-xl"><p className="text-xs font-black text-slate-400 uppercase mb-2">Über</p><p className="text-slate-700">{anonymizeCandidateText(selectedCandidate.about, selectedCandidate, selectedCandidateCodeName)}</p></div>}
             {(selectedCandidate.skills?.length ?? 0) > 0 && <div><p className="text-xs font-black text-slate-400 uppercase mb-3">Skills</p><div className="flex flex-wrap gap-2">{selectedCandidate.skills.map(skill => <Badge key={skill} variant="orange">{highlightText(skill, debouncedSearch)}</Badge>)}</div></div>}
             {(selectedCandidate.boostedKeywords?.length ?? 0) > 0 && <div><p className="text-xs font-black text-slate-400 uppercase mb-3">Spezialisierungen</p><div className="flex flex-wrap gap-2">{selectedCandidate.boostedKeywords.map(kw => <Badge key={kw} variant="dark">{kw}</Badge>)}</div></div>}
 
