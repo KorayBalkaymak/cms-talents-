@@ -231,6 +231,10 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
     for (const doc of selectedCandidateDocs.qualifications || []) if (doc?.name) items.push({ type: 'qualification', name: doc.name });
     return items;
   }, [selectedCandidateDocs]);
+  const visibleDocsList = useMemo(
+    () => (selectedDocsList.length > 0 ? selectedDocsList : (selectedCandidate?.documents || [])),
+    [selectedDocsList, selectedCandidate?.documents]
+  );
 
   const submitInquiry = async () => {
     if (!selectedCandidate) return;
@@ -619,11 +623,11 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs font-bold text-slate-600">
                 Dokumente werden geladen...
               </div>
-            ) : selectedDocsList.length > 0 && (
+            ) : visibleDocsList.length > 0 && (
               <div>
                 <p className="text-xs font-black text-slate-400 uppercase mb-3">Dokumente (anklicken zum Ansehen)</p>
                 <div className="space-y-2">
-                  {selectedDocsList.map((doc, idx) => (
+                  {visibleDocsList.map((doc, idx) => (
                     <button key={idx} type="button" onClick={() => openDocument(selectedCandidate.userId, doc.type, doc.name)} disabled={!!documentLoading} className="flex items-center gap-2 w-full text-left p-3 rounded-xl bg-slate-50 hover:bg-orange-50 border border-slate-100 hover:border-orange-200 transition-colors group">
                       <span className="w-10 h-10 rounded-lg bg-slate-200 group-hover:bg-orange-100 flex items-center justify-center shrink-0"><svg className="w-5 h-5 text-slate-600 group-hover:text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg></span>
                       <div className="flex-1 min-w-0"><span className="text-slate-500 text-xs uppercase block">{doc.type === 'cv' ? 'Lebenslauf (CV)' : doc.type === 'certificate' ? 'Zertifikat' : 'Qualifikation'}</span><span className="font-bold text-slate-900 truncate block">{doc.name}</span></div>
