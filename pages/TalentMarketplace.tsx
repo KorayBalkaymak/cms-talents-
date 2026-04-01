@@ -679,7 +679,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
                   {inquiryError && <p className="mt-2 text-xs font-bold text-red-600">{inquiryError}</p>}
                   {inquirySuccess && <p className="mt-2 text-xs font-bold text-emerald-700">{inquirySuccess}</p>}
                   <Button className="mt-3 w-full sm:w-auto" variant="primary" isLoading={inquiryLoading} onClick={submitInquiry}>
-                    Interesse senden
+                    Zum Recruiter absenden
                   </Button>
                 </>
               )}
