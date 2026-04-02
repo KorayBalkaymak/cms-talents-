@@ -1407,7 +1407,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-300">Nutzer gesamt</div>
                   </div>
                   <Badge variant="green">Aktuell sichtbar {filteredCandidateSubmittedCount}</Badge>
-                  <Badge variant="yellow">Kein Formular {filteredCandidateOpenCount}</Badge>
+                  <Badge variant="yellow">Formular offen {filteredCandidateOpenCount}</Badge>
                   {filteredOtherRolesCount > 0 && <Badge variant="slate">Sonstige {filteredOtherRolesCount}</Badge>}
                   {filteredRegisteredUsers.length !== registeredUsers.length && (
                     <span className="text-[10px] font-bold text-slate-400">
@@ -1466,7 +1466,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               ) : (
                                 <Badge variant="red">Nicht im Marktplatz</Badge>
                               )}
-                              {u.isSubmitted ? <Badge variant="slate">Formular eingereicht</Badge> : <Badge variant="yellow">Kein Formular</Badge>}
+                              {u.isSubmitted ? <Badge variant="slate">Formular eingereicht</Badge> : null}
                             </div>
                           )}
                           <p className="mt-2 text-xs font-semibold text-slate-200">
@@ -1519,7 +1519,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                     ) : (
                                       <Badge variant="red">Nicht im Marktplatz</Badge>
                                     )}
-                                    {u.isSubmitted ? <Badge variant="slate">Formular eingereicht</Badge> : <Badge variant="yellow">Kein Formular</Badge>}
+                                    {u.isSubmitted ? <Badge variant="slate">Formular eingereicht</Badge> : null}
                                   </div>
                                 )}
                               </td>
