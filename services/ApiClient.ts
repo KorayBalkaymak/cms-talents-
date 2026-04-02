@@ -1083,14 +1083,14 @@ class ApiClient {
 
   /** Client-Heartbeat: aktualisiert last_seen_at für das eingeloggte Profil. */
   async touchLastSeen(): Promise<void> {
-    const current = await this.getSessionUser();
-    if (!current) return;
+    const authUser = await this.currentAuthUser();
+    if (!authUser) return;
 
     const now = new Date().toISOString();
     const { error } = await supabase
       .from('profiles')
       .update({ last_seen_at: now })
-      .eq('id', current.id);
+      .eq('id', authUser.id);
 
     if (error) {
       // DB-Schema älter (Spalte noch nicht vorhanden) -> einfach ignorieren.
