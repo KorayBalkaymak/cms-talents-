@@ -1461,7 +1461,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           </p>
                           {effRole === UserRole.CANDIDATE && (
                             <div className="mt-2 flex flex-wrap items-center gap-2">
-                              {u.isPublished && <Badge variant="green">Marktplatz sichtbar</Badge>}
+                              {u.isPublished ? (
+                                <Badge variant="green">Marktplatz sichtbar</Badge>
+                              ) : (
+                                <Badge variant="red">Nicht im Marktplatz</Badge>
+                              )}
                               {u.isSubmitted ? <Badge variant="slate">Formular eingereicht</Badge> : <Badge variant="yellow">Kein Formular</Badge>}
                             </div>
                           )}
@@ -1510,7 +1514,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                 <div className="text-[11px] font-semibold text-slate-300">{u.email}</div>
                                 {effRole === UserRole.CANDIDATE && (
                                   <div className="mt-2 flex flex-wrap items-center gap-2">
-                                    {u.isPublished && <Badge variant="green">Marktplatz sichtbar</Badge>}
+                                    {u.isPublished ? (
+                                      <Badge variant="green">Marktplatz sichtbar</Badge>
+                                    ) : (
+                                      <Badge variant="red">Nicht im Marktplatz</Badge>
+                                    )}
                                     {u.isSubmitted ? <Badge variant="slate">Formular eingereicht</Badge> : <Badge variant="yellow">Kein Formular</Badge>}
                                   </div>
                                 )}
