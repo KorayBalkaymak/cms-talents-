@@ -188,7 +188,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   useEffect(() => {
     if (activeView !== 'users') return;
     let cancelled = false;
-    (async () => {
+    const loadUsers = async () => {
       setLoadingRegisteredUsers(true);
       setRegisteredUsersError(null);
       try {
@@ -201,9 +201,14 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       } finally {
         if (!cancelled) setLoadingRegisteredUsers(false);
       }
-    })();
+    };
+    void loadUsers();
+    const id = window.setInterval(() => {
+      void loadUsers();
+    }, 30000);
     return () => {
       cancelled = true;
+      window.clearInterval(id);
     };
   }, [activeView]);
 
