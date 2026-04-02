@@ -1452,13 +1452,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             <div className="min-w-0">
                               <p className="text-sm font-black text-slate-100">{displayName}</p>
                               <p className="truncate text-xs font-semibold text-slate-300">{u.email}</p>
-                            {isRecruiterAccount && (
-                              <div className="mt-1 flex flex-wrap gap-1.5">
-                                <Badge variant="orange" className="ring-2 ring-orange-400/40">
-                                  {effRole === UserRole.ADMIN ? 'Recruiter Admin' : 'Recruiter'}
-                                </Badge>
-                              </div>
-                            )}
                             </div>
                             <Badge variant={effRole === UserRole.CANDIDATE ? 'slate' : effRole === UserRole.ADMIN ? 'orange' : 'dark'}>
                               {roleLabelDe(effRole)}
@@ -1519,13 +1512,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               <td className={`px-4 py-3 ${isRecruiterAccount ? 'border-l-4 border-orange-500' : ''}`}>
                                 <div className="text-sm font-bold text-slate-100">{displayName}</div>
                                 <div className="text-[11px] font-semibold text-slate-300">{u.email}</div>
-                                {isRecruiterAccount && (
-                                  <div className="mt-2">
-                                    <Badge variant="orange" className="ring-2 ring-orange-400/40">
-                                      {effRole === UserRole.ADMIN ? 'Recruiter Admin' : 'Recruiter'}
-                                    </Badge>
-                                  </div>
-                                )}
                                 {effRole === UserRole.CANDIDATE && (
                                   <div className="mt-2">
                                     {u.isSubmitted ? (
