@@ -992,9 +992,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 </svg>
                 EXTERNE INTERESSEN
               </span>
-              <span className="rounded-full border border-orange-400/40 bg-orange-500/15 px-2 py-0.5 text-[10px] font-black text-orange-300">
-                {inquiries.length}
-              </span>
+              {activeView === 'inquiries' && (
+                <span className="rounded-full border border-orange-400/40 bg-orange-500/15 px-2 py-0.5 text-[10px] font-black text-orange-300">
+                  {inquiries.length}
+                </span>
+              )}
             </button>
             <button
               type="button"
@@ -1025,15 +1027,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 </svg>
                 ALLE NUTZER
               </span>
-              <span
-                className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${
-                  activeView === 'users'
-                    ? 'border-orange-400/40 bg-orange-500/15 text-orange-300'
-                    : 'border-orange-400/40 bg-orange-500/15 text-orange-300'
-                }`}
-              >
-                {registeredUsers.length}
-              </span>
+              {activeView === 'users' && (
+                <span className="rounded-full border border-orange-400/40 bg-orange-500/15 px-2 py-0.5 text-[10px] font-black text-orange-300">
+                  {registeredUsers.length}
+                </span>
+              )}
             </button>
           </nav>
         </div>
