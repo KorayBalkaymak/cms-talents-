@@ -60,7 +60,7 @@ function inactivityDurationDe(lastSeenAt?: string | null): string {
 }
 
 function roleLabelDe(role: UserRole): string {
-  if (role === UserRole.ADMIN) return 'Admin';
+  if (role === UserRole.ADMIN) return 'Recruiter';
   if (role === UserRole.RECRUITER) return 'Recruiter';
   return 'Kandidat';
 }
