@@ -5,6 +5,7 @@ import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea
 import { candidateService } from '../services/CandidateService';
 import { INDUSTRIES, AVAILABILITY_OPTIONS, BOOSTER_KEYWORD_CATEGORIES } from '../constants';
 import { documentService } from '../services/DocumentService';
+import { recruiterRoleFromEmail } from '../services/ApiClient';
 
 interface RecruiterDashboardProps {
   user: User;
@@ -18,6 +19,12 @@ interface RecruiterDashboardProps {
 
 const STALE_CANDIDATE_MS = 3 * 24 * 60 * 60 * 1000;
 const RECRUITER_EDITING_CLAIM_HEARTBEAT_MS = 60 * 60 * 1000; // 1h
+
+/** E-Mail-Allowlist hat Vorrang vor evtl. veralteter DB-Rolle (z. B. Recruiter noch als Kandidat gespeichert). */
+function effectiveRegisteredUserRole(u: RegisteredUserListItem): UserRole {
+  const fromAllowlist = recruiterRoleFromEmail(u.email);
+  return fromAllowlist !== UserRole.CANDIDATE ? fromAllowlist : u.role;
+}
 
 function membershipDurationDe(createdAt: string): string {
   const ms = Date.now() - new Date(createdAt).getTime();
@@ -345,18 +352,18 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
   const filteredCandidateSubmittedCount = useMemo(
     () =>
-      filteredRegisteredUsers.filter((u) => u.role === UserRole.CANDIDATE && u.isSubmitted).length,
+      filteredRegisteredUsers.filter((u) => effectiveRegisteredUserRole(u) === UserRole.CANDIDATE && u.isSubmitted).length,
     [filteredRegisteredUsers]
   );
 
   const filteredCandidateOpenCount = useMemo(
     () =>
-      filteredRegisteredUsers.filter((u) => u.role === UserRole.CANDIDATE && !u.isSubmitted).length,
+      filteredRegisteredUsers.filter((u) => effectiveRegisteredUserRole(u) === UserRole.CANDIDATE && !u.isSubmitted).length,
     [filteredRegisteredUsers]
   );
 
   const filteredOtherRolesCount = useMemo(
-    () => filteredRegisteredUsers.filter((u) => u.role !== UserRole.CANDIDATE).length,
+    () => filteredRegisteredUsers.filter((u) => effectiveRegisteredUserRole(u) !== UserRole.CANDIDATE).length,
     [filteredRegisteredUsers]
   );
 
@@ -1434,28 +1441,33 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     {filteredRegisteredUsers.map((u) => {
                       const displayName = `${u.firstName} ${u.lastName}`.trim() || u.email;
                       const isSelf = u.id === user.id;
+                      const effRole = effectiveRegisteredUserRole(u);
+                      const isRecruiterAccount = effRole === UserRole.RECRUITER || effRole === UserRole.ADMIN;
                       return (
-                        <div key={u.id} className="space-y-2 px-4 py-4">
+                        <div
+                          key={u.id}
+                          className={`space-y-2 px-4 py-4 ${isRecruiterAccount ? 'border-l-4 border-orange-500 bg-orange-500/10' : ''}`}
+                        >
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
                               <p className="text-sm font-black text-slate-100">{displayName}</p>
                               <p className="truncate text-xs font-semibold text-slate-300">{u.email}</p>
-                            {u.role !== UserRole.CANDIDATE && (
-                              <div className="mt-1">
-                                <Badge variant={u.role === UserRole.ADMIN ? 'orange' : 'dark'}>
-                                  {u.role === UserRole.ADMIN ? 'Recruiter Admin' : 'Recruiter Team'}
+                            {isRecruiterAccount && (
+                              <div className="mt-1 flex flex-wrap gap-1.5">
+                                <Badge variant="orange" className="ring-2 ring-orange-400/40">
+                                  {effRole === UserRole.ADMIN ? 'Recruiter Admin' : 'Recruiter'}
                                 </Badge>
                               </div>
                             )}
                             </div>
-                            <Badge variant={u.role === UserRole.CANDIDATE ? 'slate' : u.role === UserRole.ADMIN ? 'orange' : 'dark'}>
-                              {roleLabelDe(u.role)}
+                            <Badge variant={effRole === UserRole.CANDIDATE ? 'slate' : effRole === UserRole.ADMIN ? 'orange' : 'dark'}>
+                              {roleLabelDe(effRole)}
                             </Badge>
                           </div>
                           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
                             Registriert: {new Date(u.createdAt).toLocaleString('de-DE')}
                           </p>
-                          {u.role === UserRole.CANDIDATE && (
+                          {effRole === UserRole.CANDIDATE && (
                             <div className="mt-2 flex flex-wrap items-center gap-2">
                               {u.isSubmitted ? (
                                 <Badge variant="green">Aktuell sichtbar</Badge>
@@ -1497,19 +1509,24 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         {filteredRegisteredUsers.map((u) => {
                           const displayName = `${u.firstName} ${u.lastName}`.trim() || '—';
                           const isSelf = u.id === user.id;
+                          const effRole = effectiveRegisteredUserRole(u);
+                          const isRecruiterAccount = effRole === UserRole.RECRUITER || effRole === UserRole.ADMIN;
                           return (
-                            <tr key={u.id} className="transition-colors hover:bg-white/5">
-                              <td className="px-4 py-3">
+                            <tr
+                              key={u.id}
+                              className={`transition-colors hover:bg-white/5 ${isRecruiterAccount ? 'bg-orange-500/10' : ''}`}
+                            >
+                              <td className={`px-4 py-3 ${isRecruiterAccount ? 'border-l-4 border-orange-500' : ''}`}>
                                 <div className="text-sm font-bold text-slate-100">{displayName}</div>
                                 <div className="text-[11px] font-semibold text-slate-300">{u.email}</div>
-                                {u.role !== UserRole.CANDIDATE && (
+                                {isRecruiterAccount && (
                                   <div className="mt-2">
-                                    <Badge variant={u.role === UserRole.ADMIN ? 'orange' : 'dark'}>
-                                      {u.role === UserRole.ADMIN ? 'Recruiter Admin' : 'Recruiter Team'}
+                                    <Badge variant="orange" className="ring-2 ring-orange-400/40">
+                                      {effRole === UserRole.ADMIN ? 'Recruiter Admin' : 'Recruiter'}
                                     </Badge>
                                   </div>
                                 )}
-                                {u.role === UserRole.CANDIDATE && (
+                                {effRole === UserRole.CANDIDATE && (
                                   <div className="mt-2">
                                     {u.isSubmitted ? (
                                   <Badge variant="green">Aktuell sichtbar</Badge>
@@ -1520,8 +1537,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                 )}
                               </td>
                               <td className="px-4 py-3">
-                                <Badge variant={u.role === UserRole.CANDIDATE ? 'slate' : u.role === UserRole.ADMIN ? 'orange' : 'dark'}>
-                                  {roleLabelDe(u.role)}
+                                <Badge variant={effRole === UserRole.CANDIDATE ? 'slate' : effRole === UserRole.ADMIN ? 'orange' : 'dark'}>
+                                  {roleLabelDe(effRole)}
                                 </Badge>
                               </td>
                               <td className="px-4 py-3 text-xs font-semibold text-slate-200">
@@ -2454,7 +2471,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 Das Konto <strong className="text-slate-900">{userDeleteTarget.email}</strong> wird dauerhaft aus der Verwaltung entfernt (Profil und Dokumente werden wie beim Kandidaten-Löschen
                 gesperrt). Diese Aktion kann nicht rückgängig gemacht werden.
               </p>
-              {userDeleteTarget.role !== UserRole.CANDIDATE && (
+              {effectiveRegisteredUserRole(userDeleteTarget) !== UserRole.CANDIDATE && (
                 <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900">
                   Hinweis: Recruiter- oder Admin-Konten sollten nur bei Bedarf gelöscht werden. Der Auth-Zugang in Supabase bleibt ggf. bestehen, bis er dort separat entfernt wird.
                 </p>

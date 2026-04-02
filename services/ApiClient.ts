@@ -23,6 +23,7 @@ const EDITING_CLAIM_CLEAR = 'editing_claim:clear';
 
 const RECRUITER_ROLE_BY_EMAIL: Record<string, UserRole> = {
   'haagen@industries-cms.com': UserRole.ADMIN,
+  'hagen@industries-cms.com': UserRole.RECRUITER,
   'candau@industries-cms.com': UserRole.RECRUITER,
   'fuhrmann@industries-cms.com': UserRole.RECRUITER,
 };
@@ -134,7 +135,7 @@ function isRecruiterRole(role?: string | null): boolean {
   return role === UserRole.RECRUITER || role === UserRole.ADMIN;
 }
 
-function recruiterRoleFromEmail(email?: string | null): UserRole {
+export function recruiterRoleFromEmail(email?: string | null): UserRole {
   if (!email) return UserRole.CANDIDATE;
   return RECRUITER_ROLE_BY_EMAIL[normalizeEmail(email)] || UserRole.CANDIDATE;
 }
