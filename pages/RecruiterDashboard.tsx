@@ -1652,6 +1652,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Name</th>
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Beruf</th>
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Exp</th>
+                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Gehalt</th>
                             <th className="min-w-[150px] px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">
                               Team
                               <span className="mt-0.5 block font-bold normal-case tracking-normal text-[9px] text-slate-300">Wer bearbeitet?</span>
@@ -1677,6 +1678,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                 {displayProfession(cand)}
                               </td>
                               <td className="px-5 py-3 text-xs font-semibold text-slate-600">{cand.experienceYears}J</td>
+                              <td className="px-5 py-3 text-xs font-semibold text-slate-700">{displaySalaryWish(cand)}</td>
                               <td className="align-top px-5 py-3">{renderTeamControls(cand, false)}</td>
                               <td className="px-5 py-3 text-right">{renderPublishAndManage(cand, false)}</td>
                             </tr>
