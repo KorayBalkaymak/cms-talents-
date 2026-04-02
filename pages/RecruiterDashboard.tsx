@@ -1658,7 +1658,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Name</th>
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Beruf</th>
                             <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Exp</th>
-                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Gehalt</th>
+                            <th className="px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">Wunsch Gehalt</th>
                             <th className="min-w-[150px] px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white">
                               Team
                               <span className="mt-0.5 block font-bold normal-case tracking-normal text-[9px] text-slate-300">Wer bearbeitet?</span>
