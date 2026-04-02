@@ -1618,7 +1618,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                 {`${cand.firstName || ''} ${cand.lastName || ''}`.trim() || cand.candidateNumber || 'Unbekannter Kandidat'}
                               </p>
                               <p className="text-xs font-semibold text-slate-500">
-                                {[cand.city?.trim(), `${cand.experienceYears} J. Erfahrung`].filter(Boolean).join(' · ')}
+                                {[
+                                  cand.city?.trim(),
+                                  `${cand.experienceYears} J. Erfahrung`,
+                                  displaySalaryWish(cand) !== '-' ? displaySalaryWish(cand) : null,
+                                ]
+                                  .filter(Boolean)
+                                  .join(' · ')}
                               </p>
                               {candidateReviewHint(cand).mobileText ? (
                                 <p className={`mt-1 text-[10px] font-black uppercase tracking-wider ${candidateReviewHint(cand).className.includes('red-700') ? 'text-red-700' : candidateReviewHint(cand).className.includes('emerald-700') ? 'text-emerald-700' : 'text-amber-700'}`}>
