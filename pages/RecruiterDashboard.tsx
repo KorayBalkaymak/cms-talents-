@@ -43,20 +43,21 @@ function membershipDurationDe(createdAt: string): string {
 }
 
 function inactivityDurationDe(lastSeenAt?: string | null): string {
-  if (!lastSeenAt) return 'noch nie online';
+  if (!lastSeenAt) return 'Noch nie online';
   const ms = Date.now() - new Date(lastSeenAt).getTime();
   if (!Number.isFinite(ms) || ms < 0) return '—';
-  if (ms < 60000) return 'weniger als 1 Minute';
+  if (ms < 5 * 60 * 1000) return 'Gerade online';
+  if (ms < 60000) return 'Vor weniger als 1 Minute';
   const minutes = Math.floor(ms / 60000);
-  if (minutes < 60) return `${minutes} Minute${minutes === 1 ? '' : 'n'}`;
+  if (minutes < 60) return `Vor ${minutes} Minute${minutes === 1 ? '' : 'n'}`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 48) return `${hours} Stunde${hours === 1 ? '' : 'n'}`;
+  if (hours < 48) return `Vor ${hours} Stunde${hours === 1 ? '' : 'n'}`;
   const days = Math.floor(ms / (24 * 60 * 60 * 1000));
-  if (days < 30) return `${days} Tag${days === 1 ? '' : 'e'}`;
+  if (days < 30) return `Vor ${days} Tag${days === 1 ? '' : 'en'}`;
   const months = Math.floor(days / 30);
-  if (months < 24) return `${months} Monat${months === 1 ? '' : 'e'}`;
+  if (months < 24) return `Vor ${months} Monat${months === 1 ? '' : 'en'}`;
   const years = Math.floor(days / 365);
-  return `${years} Jahr${years === 1 ? '' : 'e'}`;
+  return `Vor ${years} Jahr${years === 1 ? '' : 'en'}`;
 }
 
 function roleLabelDe(role: UserRole): string {
@@ -352,7 +353,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
   const filteredCandidateSubmittedCount = useMemo(
     () =>
-      filteredRegisteredUsers.filter((u) => effectiveRegisteredUserRole(u) === UserRole.CANDIDATE && u.isSubmitted).length,
+      filteredRegisteredUsers.filter((u) => effectiveRegisteredUserRole(u) === UserRole.CANDIDATE && u.isPublished).length,
     [filteredRegisteredUsers]
   );
 
@@ -1402,7 +1403,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 <div>
                   <h3 className="text-sm font-black uppercase tracking-widest text-white">Alle Nutzer</h3>
                   <p className="mt-0.5 text-xs font-medium text-slate-200">
-                    Kandidaten: „Aktuell sichtbar“ vs. „Kein Formular“ und „Inaktiv seit“.
+                    Kandidaten: Marktplatz sichtbar, Formularstatus und zuletzt online.
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -1467,15 +1468,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           </p>
                           {effRole === UserRole.CANDIDATE && (
                             <div className="mt-2 flex flex-wrap items-center gap-2">
-                              {u.isSubmitted ? (
-                                <Badge variant="green">Aktuell sichtbar</Badge>
-                              ) : (
-                                <Badge variant="yellow">Kein Formular</Badge>
-                              )}
+                              {u.isPublished && <Badge variant="green">Marktplatz sichtbar</Badge>}
+                              {u.isSubmitted ? <Badge variant="slate">Formular eingereicht</Badge> : <Badge variant="yellow">Kein Formular</Badge>}
                             </div>
                           )}
                           <p className="mt-2 text-xs font-semibold text-slate-200">
-                            Inaktiv seit: {inactivityDurationDe(u.lastSeenAt)}
+                            Zuletzt online: {inactivityDurationDe(u.lastSeenAt)}
                           </p>
                           <Button
                             type="button"
@@ -1499,7 +1497,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-300">Name / E-Mail</th>
                           <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-300">Rolle</th>
                           <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-300">Registriert am</th>
-                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-300">Inaktiv seit</th>
+                          <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-300">Zuletzt online</th>
                           <th className="px-4 py-3 text-right text-[10px] font-black uppercase tracking-widest text-slate-300">Aktion</th>
                         </tr>
                       </thead>
@@ -1518,12 +1516,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                 <div className="text-sm font-bold text-slate-100">{displayName}</div>
                                 <div className="text-[11px] font-semibold text-slate-300">{u.email}</div>
                                 {effRole === UserRole.CANDIDATE && (
-                                  <div className="mt-2">
-                                    {u.isSubmitted ? (
-                                  <Badge variant="green">Aktuell sichtbar</Badge>
-                                    ) : (
-                                      <Badge variant="yellow">Kein Formular</Badge>
-                                    )}
+                                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                                    {u.isPublished && <Badge variant="green">Marktplatz sichtbar</Badge>}
+                                    {u.isSubmitted ? <Badge variant="slate">Formular eingereicht</Badge> : <Badge variant="yellow">Kein Formular</Badge>}
                                   </div>
                                 )}
                               </td>

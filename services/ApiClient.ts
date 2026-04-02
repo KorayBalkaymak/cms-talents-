@@ -1026,8 +1026,8 @@ class ApiClient {
     // Backward-compat: last_seen_at kann fehlen, wenn Migrationen noch nicht ausgeführt wurden.
     const load = async (includeLastSeen: boolean) => {
       const select = includeLastSeen
-        ? 'id,email,role,first_name,last_name,is_submitted,created_at,last_seen_at'
-        : 'id,email,role,first_name,last_name,is_submitted,created_at';
+        ? 'id,email,role,first_name,last_name,is_submitted,is_published,created_at,last_seen_at'
+        : 'id,email,role,first_name,last_name,is_submitted,is_published,created_at';
       return await supabase
         .from('profiles')
         .select(select)
@@ -1058,6 +1058,7 @@ class ApiClient {
       first_name: string;
       last_name: string;
       is_submitted: boolean;
+      is_published: boolean;
       created_at: string;
       last_seen_at?: string | null;
     };
@@ -1074,6 +1075,7 @@ class ApiClient {
       firstName: r.first_name || '',
       lastName: r.last_name || '',
       isSubmitted: !!r.is_submitted,
+      isPublished: !!r.is_published,
       createdAt: r.created_at,
       lastSeenAt: (r.last_seen_at ?? null) as any,
     }));

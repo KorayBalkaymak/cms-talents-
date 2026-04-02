@@ -41,8 +41,9 @@ export interface RegisteredUserListItem {
   firstName: string;
   lastName: string;
   isSubmitted: boolean;
+  isPublished: boolean;
   createdAt: string;
-  /** Client-Heartbeat: wann der Nutzer das letzte Mal aktiv war (für „Inaktiv seit“). */
+  /** Client-Heartbeat: wann der Nutzer zuletzt online war. */
   lastSeenAt: string | null;
 }
 
