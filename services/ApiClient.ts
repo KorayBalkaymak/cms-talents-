@@ -1026,8 +1026,8 @@ class ApiClient {
     // Backward-compat: last_seen_at kann fehlen, wenn Migrationen noch nicht ausgeführt wurden.
     const load = async (includeLastSeen: boolean) => {
       const select = includeLastSeen
-        ? 'id,email,role,first_name,last_name,is_submitted,is_published,created_at,last_seen_at'
-        : 'id,email,role,first_name,last_name,is_submitted,is_published,created_at';
+        ? 'id,email,role,first_name,last_name,is_submitted,is_published,created_at,updated_at,last_seen_at'
+        : 'id,email,role,first_name,last_name,is_submitted,is_published,created_at,updated_at';
       return await supabase
         .from('profiles')
         .select(select)
@@ -1060,6 +1060,7 @@ class ApiClient {
       is_submitted: boolean;
       is_published: boolean;
       created_at: string;
+      updated_at: string;
       last_seen_at?: string | null;
     };
 
@@ -1077,7 +1078,8 @@ class ApiClient {
       isSubmitted: !!r.is_submitted,
       isPublished: !!r.is_published,
       createdAt: r.created_at,
-      lastSeenAt: (r.last_seen_at ?? null) as any,
+      // Primär last_seen_at, robustes Fallback auf updated_at (wird beim Heartbeat ebenfalls aktualisiert).
+      lastSeenAt: (r.last_seen_at ?? r.updated_at ?? null) as any,
     }));
   }
 
@@ -1089,13 +1091,20 @@ class ApiClient {
     const now = new Date().toISOString();
     const { error } = await supabase
       .from('profiles')
-      .update({ last_seen_at: now })
+      .update({ last_seen_at: now, updated_at: now })
       .eq('id', authUser.id);
 
     if (error) {
-      // DB-Schema älter (Spalte noch nicht vorhanden) -> einfach ignorieren.
+      // DB-Schema älter: last_seen_at evtl. nicht vorhanden -> dann nur updated_at schreiben.
       const msg = (error.message || '').toLowerCase();
-      if (msg.includes('last_seen_at') || msg.includes('column')) return;
+      if (msg.includes('last_seen_at') || msg.includes('column')) {
+        const { error: fallbackError } = await supabase
+          .from('profiles')
+          .update({ updated_at: now })
+          .eq('id', authUser.id);
+        if (!fallbackError) return;
+        throw new Error(fallbackError.message);
+      }
       throw new Error(error.message);
     }
   }
