@@ -166,6 +166,8 @@ const App: React.FC = () => {
 
   const handleAuthSuccess = async (loggedInUser: User) => {
     setUser(loggedInUser);
+    // Aktivität sofort nach Login erfassen, damit "Zuletzt online" zeitnah korrekt ist.
+    void candidateService.touchLastSeen();
 
     if (loggedInUser.role === UserRole.CANDIDATE) {
       let profile = await candidateService.getById(loggedInUser.id);

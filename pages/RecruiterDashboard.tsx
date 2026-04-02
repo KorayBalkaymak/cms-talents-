@@ -43,7 +43,7 @@ function membershipDurationDe(createdAt: string): string {
 }
 
 function inactivityDurationDe(lastSeenAt?: string | null): string {
-  if (!lastSeenAt) return 'Noch nie online';
+  if (!lastSeenAt) return 'Keine Aktivität erfasst';
   const ms = Date.now() - new Date(lastSeenAt).getTime();
   if (!Number.isFinite(ms) || ms < 0) return '—';
   if (ms < 5 * 60 * 1000) return 'Gerade online';

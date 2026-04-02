@@ -1077,8 +1077,7 @@ class ApiClient {
       isSubmitted: !!r.is_submitted,
       isPublished: !!r.is_published,
       createdAt: r.created_at,
-      // Fallback: wenn last_seen_at fehlt, nutzen wir created_at statt "nie online".
-      lastSeenAt: (r.last_seen_at ?? r.created_at) as any,
+      lastSeenAt: (r.last_seen_at ?? null) as any,
     }));
   }
 
