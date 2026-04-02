@@ -1452,10 +1452,15 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             <div className="min-w-0">
                               <p className="text-sm font-black text-slate-100">{displayName}</p>
                               <p className="truncate text-xs font-semibold text-slate-300">{u.email}</p>
+                              {isRecruiterAccount && (
+                                <p className="mt-1 text-[11px] font-black uppercase tracking-wider text-orange-300">
+                                  {roleLabelDe(effRole)}
+                                </p>
+                              )}
                             </div>
-                            <Badge variant={effRole === UserRole.CANDIDATE ? 'slate' : effRole === UserRole.ADMIN ? 'orange' : 'dark'}>
-                              {roleLabelDe(effRole)}
-                            </Badge>
+                            {effRole === UserRole.CANDIDATE && (
+                              <Badge variant="slate">{roleLabelDe(effRole)}</Badge>
+                            )}
                           </div>
                           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
                             Registriert: {new Date(u.createdAt).toLocaleString('de-DE')}
