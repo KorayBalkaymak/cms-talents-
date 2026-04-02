@@ -1440,6 +1440,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             <div className="min-w-0">
                               <p className="text-sm font-black text-slate-100">{displayName}</p>
                               <p className="truncate text-xs font-semibold text-slate-300">{u.email}</p>
+                            {u.role !== UserRole.CANDIDATE && (
+                              <div className="mt-1">
+                                <Badge variant={u.role === UserRole.ADMIN ? 'orange' : 'dark'}>
+                                  {u.role === UserRole.ADMIN ? 'Recruiter Admin' : 'Recruiter Team'}
+                                </Badge>
+                              </div>
+                            )}
                             </div>
                             <Badge variant={u.role === UserRole.CANDIDATE ? 'slate' : u.role === UserRole.ADMIN ? 'orange' : 'dark'}>
                               {roleLabelDe(u.role)}
@@ -1495,6 +1502,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               <td className="px-4 py-3">
                                 <div className="text-sm font-bold text-slate-100">{displayName}</div>
                                 <div className="text-[11px] font-semibold text-slate-300">{u.email}</div>
+                                {u.role !== UserRole.CANDIDATE && (
+                                  <div className="mt-2">
+                                    <Badge variant={u.role === UserRole.ADMIN ? 'orange' : 'dark'}>
+                                      {u.role === UserRole.ADMIN ? 'Recruiter Admin' : 'Recruiter Team'}
+                                    </Badge>
+                                  </div>
+                                )}
                                 {u.role === UserRole.CANDIDATE && (
                                   <div className="mt-2">
                                     {u.isSubmitted ? (
