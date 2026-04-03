@@ -7,6 +7,7 @@ import { candidateService } from '../services/CandidateService';
 import { INDUSTRIES, AVAILABILITY_OPTIONS, BOOSTER_KEYWORD_CATEGORIES } from '../constants';
 import { documentService } from '../services/DocumentService';
 import { recruiterRoleFromEmail } from '../services/ApiClient';
+import { COPPER_PANEL } from '../constants/copperTheme';
 
 interface RecruiterDashboardProps {
   user: User;
@@ -1434,25 +1435,27 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </div>
           ) : activeView === 'users' ? (
             <div className="overflow-hidden rounded-2xl border border-orange-200/40 bg-[#101B31] shadow-sm">
-              <div className="relative flex flex-col gap-2 overflow-hidden border-b border-orange-400/40 bg-gradient-to-br from-amber-300/95 via-orange-600 to-orange-950 px-4 py-3.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2),0_10px_32px_-10px_rgba(234,88,12,0.55)] before:pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-t before:from-black/25 before:to-transparent sm:flex-row sm:items-center sm:justify-between">
-                <div className="relative z-10">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white drop-shadow-sm">Alle Nutzer</h3>
-                  <p className="mt-0.5 text-xs font-medium text-white/95">
+              <div
+                className={`relative flex flex-col gap-2 border-b border-orange-500/25 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between ${COPPER_PANEL}`}
+              >
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Alle Nutzer</h3>
+                  <p className="mt-0.5 text-xs font-medium text-white/65">
                     Kandidaten: Marktplatz sichtbar, Formularstatus und zuletzt online.
                   </p>
                 </div>
-                <div className="relative z-10 flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <div className="flex flex-col leading-tight">
                     <div className="text-3xl font-black text-white">
                       {loadingRegisteredUsers ? '…' : registeredUsers.length}
                     </div>
-                    <div className="text-[10px] font-black uppercase tracking-widest text-orange-100/85">Nutzer gesamt</div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-white/45">Nutzer gesamt</div>
                   </div>
                   <Badge variant="green">Aktuell sichtbar {filteredCandidateSubmittedCount}</Badge>
                   <Badge variant="yellow">Formular offen {filteredCandidateOpenCount}</Badge>
                   {filteredOtherRolesCount > 0 && <Badge variant="slate">Sonstige {filteredOtherRolesCount}</Badge>}
                   {filteredRegisteredUsers.length !== registeredUsers.length && (
-                    <span className="text-[10px] font-bold text-orange-100/75">
+                    <span className="text-[10px] font-bold text-white/50">
                       {filteredRegisteredUsers.length} nach Filter
                     </span>
                   )}
