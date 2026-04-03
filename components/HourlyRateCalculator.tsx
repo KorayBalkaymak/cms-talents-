@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { COPPER_PANEL, COPPER_PANEL_ACTIVE } from '../constants/copperTheme';
 
 const FACTORS = [2.0, 2.2, 2.3, 2.4] as const;
 type Factor = (typeof FACTORS)[number];
@@ -7,14 +8,6 @@ function parseNum(raw: string): number {
   const n = parseFloat(String(raw).replace(',', '.').trim());
   return Number.isFinite(n) ? n : 0;
 }
-
-/** Oberfläche wie aktiver 2.2-Faktor: Kupfer-/Orange-Verlauf auf dunkler Basis */
-const COPPER_PANEL =
-  'border-orange-500/50 bg-[#0a0a0c] bg-gradient-to-b from-orange-500/25 to-orange-600/10 shadow-[0_0_28px_-2px_rgba(234,88,12,0.5),0_25px_60px_-20px_rgba(0,0,0,0.75)] ring-1 ring-orange-400/30';
-
-/** Stärkerer Verlauf, damit der gewählte Faktor auf gleichem Kartenhintergrund lesbar bleibt */
-const COPPER_PANEL_ACTIVE =
-  'border-orange-400/70 bg-[#0a0a0c] bg-gradient-to-b from-orange-500/45 to-orange-600/25 shadow-[0_0_32px_-2px_rgba(234,88,12,0.65)] ring-2 ring-orange-300/50';
 
 /** Stundenlohn-Rechner: rate × (1 + %/100) × Faktor — Premium Dark UI */
 const HourlyRateCalculator: React.FC = () => {
