@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '../components/UI';
-import { COPPER_PANEL } from '../constants/copperTheme';
+import { COPPER_BUTTON, COPPER_PANEL, COPPER_TEXT } from '../constants/copperTheme';
 import { User, UserRole } from '../types';
 
 interface LandingPageProps {
@@ -170,7 +170,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                 <h1 className="text-4xl md:text-5xl lg:text-[3.25rem] font-bold text-white tracking-tight leading-[1.1] mb-6 animate-fade-in-up-1">
                   Die besten Talente.
                   <br />
-                  <span className="text-orange-400">Die besten Partner.</span>
+                  <span className={COPPER_TEXT}>Die besten Partner.</span>
                 </h1>
                 <p className="text-lg text-white/80 leading-relaxed mb-10 animate-fade-in-up-2">
                   CMS Talents verbindet qualifizierte Fachkräfte mit führenden Arbeitgebern. Qualität, Vertrauen und passgenaues Matching – ohne Kompromisse.
@@ -178,14 +178,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in-up-3">
                   <Button
                     size="md"
-                    className="w-full rounded-xl px-7 py-3.5 text-sm font-semibold bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/30 transition-all duration-200 justify-center"
+                    variant="primary"
+                    className={`w-full justify-center rounded-xl px-7 py-3.5 text-sm font-semibold transition-all duration-200 ${COPPER_BUTTON}`}
                     onClick={() => onNavigate('/candidate/auth')}
                   >
                     Profil erstellen
                   </Button>
                   <Button
                     size="md"
-                    className="w-full rounded-xl px-7 py-3.5 text-sm font-semibold bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/30 transition-all duration-200 justify-center"
+                    variant="primary"
+                    className={`w-full justify-center rounded-xl px-7 py-3.5 text-sm font-semibold transition-all duration-200 ${COPPER_BUTTON}`}
                     onClick={() => onNavigate('/talents')}
                   >
                     Talente finden
@@ -211,7 +213,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                           {
                             key: 'work',
                             bg: 'bg-orange-500',
-                            fg: 'text-white',
+                            fg: 'text-orange-100',
                             icon: (
                               <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
                                 <path d="M9 7V6a3 3 0 0 1 3-3h0a3 3 0 0 1 3 3v1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -252,7 +254,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                           {
                             key: 'search',
                             bg: 'bg-orange-500',
-                            fg: 'text-white',
+                            fg: 'text-orange-100',
                             icon: (
                               <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
                                 <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" strokeWidth="2" />
@@ -288,7 +290,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                         ].map((item) => (
                           <div
                             key={item.key}
-                            className={`aspect-square rounded-lg flex items-center justify-center ${item.bg}`}
+                            className={`flex aspect-square items-center justify-center rounded-lg ${
+                              item.key === 'work' || item.key === 'search'
+                                ? `overflow-hidden ${COPPER_PANEL}`
+                                : item.bg
+                            }`}
                           >
                             <div className={`${item.fg}`}>
                               {item.icon}
@@ -311,13 +317,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
             <div className={`overflow-hidden rounded-3xl ${COPPER_PANEL}`}>
               <div className="p-10 md:p-14">
                 <div className="mb-10 flex flex-col items-center text-center">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/90 bg-white px-4 py-2 text-xs font-semibold tracking-wide text-slate-800 shadow-sm">
-                    <span className="h-2 w-2 rounded-full bg-orange-500" />
-                    Warum es CMS Talents gibt
-                  </span>
-                  <h2 className="mt-5 text-3xl font-bold tracking-tight text-white md:text-4xl">
-                    Der Zweck von <span className="text-orange-400">CMS Talents</span>
+                  <h2 className="mb-4 text-3xl font-bold tracking-tight text-white md:text-4xl">
+                    Warum es CMS <span className={COPPER_TEXT}>Talents</span> gibt
                   </h2>
+                  <p className="text-lg font-semibold text-white/90">Der Zweck von CMS Talents</p>
                   <p className="mt-4 max-w-3xl text-lg leading-relaxed text-white/85">
                     CMS Talents ist eine Recruiting-Plattform, die{' '}
                     <span className="font-semibold text-orange-300">qualifizierte Fachkräfte</span> mit{' '}
@@ -338,7 +341,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
           <div className="mx-auto max-w-6xl px-6">
             <div className="mx-auto mb-16 max-w-2xl text-center">
               <h2 className="mb-4 text-3xl font-bold tracking-tight text-white md:text-4xl">
-                Was CMS <span className="text-orange-400">Talents</span> auszeichnet
+                Was CMS <span className={COPPER_TEXT}>Talents</span> auszeichnet
               </h2>
               <p className="text-lg leading-relaxed text-white/75">
                 Qualität und Vertrauen stehen im Mittelpunkt – für Kandidaten und Arbeitgeber.
