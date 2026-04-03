@@ -1434,10 +1434,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </div>
           ) : activeView === 'users' ? (
             <div className="overflow-hidden rounded-2xl border border-orange-200/40 bg-[#101B31] shadow-sm">
-              <div className="flex flex-col gap-2 border-b border-orange-500/30 bg-orange-600 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-2 border-b border-orange-400/35 bg-gradient-to-br from-orange-500 via-orange-600 to-orange-900 px-4 py-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.14),0_8px_24px_-12px_rgba(234,88,12,0.45)] sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-sm font-black uppercase tracking-widest text-white">Alle Nutzer</h3>
-                  <p className="mt-0.5 text-xs font-medium text-slate-200">
+                  <p className="mt-0.5 text-xs font-medium text-orange-50/95">
                     Kandidaten: Marktplatz sichtbar, Formularstatus und zuletzt online.
                   </p>
                 </div>
@@ -1446,13 +1446,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     <div className="text-3xl font-black text-white">
                       {loadingRegisteredUsers ? '…' : registeredUsers.length}
                     </div>
-                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-300">Nutzer gesamt</div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-orange-100/85">Nutzer gesamt</div>
                   </div>
                   <Badge variant="green">Aktuell sichtbar {filteredCandidateSubmittedCount}</Badge>
                   <Badge variant="yellow">Formular offen {filteredCandidateOpenCount}</Badge>
                   {filteredOtherRolesCount > 0 && <Badge variant="slate">Sonstige {filteredOtherRolesCount}</Badge>}
                   {filteredRegisteredUsers.length !== registeredUsers.length && (
-                    <span className="text-[10px] font-bold text-slate-400">
+                    <span className="text-[10px] font-bold text-orange-100/75">
                       {filteredRegisteredUsers.length} nach Filter
                     </span>
                   )}
