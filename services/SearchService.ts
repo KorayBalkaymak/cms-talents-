@@ -21,8 +21,9 @@ export const calculateMatchScore = (candidate: CandidateProfile, query: string):
     // Industry (Medium weight)
     if (normalize(candidate.industry).includes(term)) score += 2;
     
-    // About / Location (Low weight)
+    // About / Languages / Location (Low weight)
     if (normalize(candidate.about).includes(term)) score += 1;
+    if (candidate.languages && normalize(candidate.languages).includes(term)) score += 1;
     if (normalize(candidate.city).includes(term)) score += 1;
   });
 

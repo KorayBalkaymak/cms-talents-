@@ -51,6 +51,7 @@ type ProfileRow = {
   availability: string;
   birth_year: string | null;
   about: string | null;
+  languages: string | null;
   profile_image_url: string | null;
   avatar_seed: string;
   salary_wish_eur: number | null;
@@ -170,6 +171,10 @@ function isProfileSalaryWorkSchemaMissing(message?: string): boolean {
     text.includes("could not find the 'work_area' column") ||
     text.includes("could not find the 'profession' column")
   );
+}
+
+function isProfileLanguagesSchemaMissing(message?: string): boolean {
+  return (message || '').toLowerCase().includes("could not find the 'languages' column");
 }
 
 function isCandidateInquiriesSchemaMissing(message?: string): boolean {
@@ -677,6 +682,7 @@ class ApiClient {
       workArea: row.work_area ?? null,
       birthYear: row.birth_year || undefined,
       about: normalized.about || undefined,
+      languages: row.languages?.trim() || null,
       skills: row.skills || [],
       boostedKeywords: row.boosted_keywords || [],
       socialLinks: row.social_links || [],
@@ -739,6 +745,7 @@ class ApiClient {
       work_area: null,
       birth_year: null,
       about: null,
+      languages: null,
       profile_image_url: null,
       avatar_seed: userId.substring(0, 8),
       status: CandidateStatus.REVIEW,
@@ -1234,6 +1241,8 @@ class ApiClient {
       work_area: data.workArea ?? current?.work_area ?? null,
       birth_year: data.birthYear ?? current?.birth_year ?? null,
       about: data.about ?? current?.about ?? null,
+      languages:
+        data.languages !== undefined ? (String(data.languages ?? '').trim() || null) : (current?.languages ?? null),
       profile_image_url: data.profileImageUrl ?? current?.profile_image_url ?? null,
       avatar_seed: current?.avatar_seed || userId.substring(0, 8),
       status: nextStatus,
@@ -1259,7 +1268,8 @@ class ApiClient {
       if (
         isRecruiterEditingSchemaMissing(error.message) ||
         isCandidateNumberSchemaMissing(error.message) ||
-        isProfileSalaryWorkSchemaMissing(error.message)
+        isProfileSalaryWorkSchemaMissing(error.message) ||
+        isProfileLanguagesSchemaMissing(error.message)
       ) {
         const {
           salary_wish_eur: _dropSalaryWish,
@@ -1270,6 +1280,7 @@ class ApiClient {
           recruiter_editing_user_id: _dropUser,
           recruiter_editing_label: _dropLabel,
           recruiter_editing_at: _dropAt,
+          languages: _dropLanguages,
           ...legacyPayload
         } = payload as any;
         // Legacy-Fallback: wenn neue Spalten fehlen, Felder kompatibel in about mit Marker mitschreiben.

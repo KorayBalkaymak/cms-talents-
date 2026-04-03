@@ -650,6 +650,21 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                 className="min-h-[120px] rounded-xl text-sm"
               />
             </div>
+
+            <div className="relative mt-4">
+              <Textarea
+                label="Sprachen (optional)"
+                name="languages"
+                placeholder="z. B. Deutsch (Muttersprache), Englisch (C1), Französisch (Grundkenntnisse)"
+                value={formData.languages ?? ''}
+                onChange={handleChange}
+                labelClassName="text-slate-900 font-bold"
+                className="min-h-[100px] rounded-xl text-sm"
+              />
+              <p className="mt-1.5 text-xs font-medium text-slate-500">
+                Welche Sprachen du beherrschst – frei formuliert, inkl. Niveau wenn du möchtest.
+              </p>
+            </div>
           </section>
 
           {/* Skills & Matching-Boost */}
