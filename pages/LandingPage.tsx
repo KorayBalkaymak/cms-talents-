@@ -333,18 +333,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
           </div>
         </section>
 
-        {/* ─── Value props: weißer Hintergrund, Karten in Blau ─── */}
-        <section className="py-24 md:py-32 bg-white">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="text-center max-w-2xl mx-auto mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-4">
-                Was CMS <span className="text-orange-500">Talents</span> auszeichnet
+        {/* ─── Value props: dunkelblau, Karten wie Gehaltsrechner (Kupfer) ─── */}
+        <section className="bg-[#101B31] py-24 md:py-32">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="mx-auto mb-16 max-w-2xl text-center">
+              <h2 className="mb-4 text-3xl font-bold tracking-tight text-white md:text-4xl">
+                Was CMS <span className="text-orange-400">Talents</span> auszeichnet
               </h2>
-              <p className="text-lg text-slate-600 leading-relaxed">
+              <p className="text-lg leading-relaxed text-white/75">
                 Qualität und Vertrauen stehen im Mittelpunkt – für Kandidaten und Arbeitgeber.
               </p>
             </div>
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid gap-8 md:grid-cols-3">
               {[
                 {
                   title: 'Besseres Matching',
@@ -386,13 +386,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
               ].map((item, idx) => (
                 <div
                   key={idx}
-                  className="group relative p-8 rounded-2xl bg-[#101B31] border border-[#101B31] hover:shadow-xl hover:shadow-slate-900/20 transition-all duration-300"
+                  className={`group relative overflow-hidden rounded-2xl p-8 ${COPPER_PANEL} transition-all duration-300 hover:ring-orange-300/45`}
                 >
-                  <div className="w-12 h-12 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center mb-6 group-hover:bg-orange-500 group-hover:text-white transition-colors duration-300">
+                  <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/20 text-orange-300 transition-colors duration-300 group-hover:bg-orange-500 group-hover:text-white">
                     {item.icon}
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3 tracking-tight">{item.title}</h3>
-                  <p className="text-white/80 leading-relaxed">{item.description}</p>
+                  <h3 className="mb-3 text-xl font-semibold tracking-tight text-white">{item.title}</h3>
+                  <p className="leading-relaxed text-white/80">{item.description}</p>
                 </div>
               ))}
             </div>
@@ -400,15 +400,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
         </section>
       </main>
 
-      {/* ─── Footer: minimal, high-end ─── */}
-      <footer className="bg-[#101B31] border-t border-white/10 py-12">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+      {/* ─── Footer: weiß ─── */}
+      <footer className="border-t border-slate-200 bg-white py-12">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-6 sm:flex-row">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-white/70">CMS Talents © 2026</span>
+            <span className="text-sm font-medium text-slate-600">CMS Talents © 2026</span>
           </div>
           <div className="flex gap-10 text-sm">
-            <a href="#" className="text-white/70 hover:text-orange-400 transition-colors duration-200">Impressum</a>
-            <a href="#" className="text-white/70 hover:text-orange-400 transition-colors duration-200">Datenschutz</a>
+            <a href="#" className="text-slate-600 transition-colors duration-200 hover:text-orange-600">
+              Impressum
+            </a>
+            <a href="#" className="text-slate-600 transition-colors duration-200 hover:text-orange-600">
+              Datenschutz
+            </a>
           </div>
         </div>
       </footer>
