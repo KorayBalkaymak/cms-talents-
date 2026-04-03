@@ -1,6 +1,5 @@
 import React from 'react';
 import { Button } from '../components/UI';
-import { COPPER_PANEL } from '../constants/copperTheme';
 import { User, UserRole } from '../types';
 
 interface LandingPageProps {
@@ -305,24 +304,26 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
           </div>
         </section>
 
-        {/* ─── Zweck der App: gleiche Kupfer-Oberfläche wie Gehaltsrechner ─── */}
-        <section className="py-20 md:py-28 bg-[#0a0a0c]">
-          <div className="relative max-w-6xl mx-auto px-6">
-            <div className={`rounded-3xl overflow-hidden ${COPPER_PANEL}`}>
+        {/* ─── Zweck der App: heller Kasten (weiß), gut lesbar ─── */}
+        <section className="bg-white py-20 md:py-28">
+          <div className="relative mx-auto max-w-6xl px-6">
+            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
               <div className="p-10 md:p-14">
-                <div className="flex flex-col items-center text-center mb-10">
-                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200/90 text-slate-800 shadow-sm text-xs font-semibold tracking-wide">
-                    <span className="w-2 h-2 rounded-full bg-orange-500" />
+                <div className="mb-10 flex flex-col items-center text-center">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold tracking-wide text-slate-800 shadow-sm">
+                    <span className="h-2 w-2 rounded-full bg-orange-500" />
                     Warum es CMS Talents gibt
                   </span>
-                  <h2 className="mt-5 text-3xl md:text-4xl font-bold text-white tracking-tight">
-                    Der Zweck von <span className="text-orange-400">CMS Talents</span>
+                  <h2 className="mt-5 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
+                    Der Zweck von <span className="text-orange-600">CMS Talents</span>
                   </h2>
-                  <p className="mt-4 max-w-3xl text-lg text-white/85 leading-relaxed">
-                    CMS Talents ist eine Recruiting-Plattform, die <span className="text-orange-300 font-semibold">qualifizierte Fachkräfte</span> mit <span className="text-orange-300 font-semibold">passenden Arbeitgebern</span> zusammenbringt.
-                    Kandidaten erstellen ihr Profil, werden sichtbar und können von Recruitern gezielt gefunden werden.
+                  <p className="mt-4 max-w-3xl text-lg leading-relaxed text-slate-600">
+                    CMS Talents ist eine Recruiting-Plattform, die{' '}
+                    <span className="font-semibold text-orange-600">qualifizierte Fachkräfte</span> mit{' '}
+                    <span className="font-semibold text-orange-600">passenden Arbeitgebern</span> zusammenbringt. Kandidaten erstellen ihr Profil, werden sichtbar und können von
+                    Recruitern gezielt gefunden werden.
                   </p>
-                  <p className="mt-4 max-w-3xl text-base text-white/70 leading-relaxed">
+                  <p className="mt-4 max-w-3xl text-base leading-relaxed text-slate-600">
                     Im Mittelpunkt stehen Qualität, Vertrauen und ein transparentes Matching – damit beide Seiten schneller die richtige Verbindung finden.
                   </p>
                 </div>
