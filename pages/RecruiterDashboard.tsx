@@ -90,6 +90,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [registeredUsers, setRegisteredUsers] = useState<RegisteredUserListItem[]>([]);
   const [loadingRegisteredUsers, setLoadingRegisteredUsers] = useState(false);
   const [registeredUsersError, setRegisteredUsersError] = useState<string | null>(null);
+  const [registeredUsersSuccess, setRegisteredUsersSuccess] = useState<string | null>(null);
   const [userDeleteTarget, setUserDeleteTarget] = useState<RegisteredUserListItem | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [unpublishingUserId, setUnpublishingUserId] = useState<string | null>(null);
@@ -754,14 +755,17 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const handleUnpublishRegisteredCandidate = async (target: RegisteredUserListItem) => {
     if (target.id === user.id) return;
     setRegisteredUsersError(null);
+    setRegisteredUsersSuccess(null);
     setUnpublishingUserId(target.id);
     try {
-      await Promise.resolve(onAdminAction(target.id, 'unpublish', undefined, user.id));
+      await candidateService.adminAction(target.id, 'unpublish', undefined, user.id);
+      await onRefreshCandidates?.();
       const list = await candidateService.listRegisteredUsers();
       setRegisteredUsers(list);
-      await onRefreshCandidates?.();
+      setRegisteredUsersSuccess('Kandidat ist nicht mehr im Marktplatz sichtbar.');
     } catch (e) {
-      setRegisteredUsersError(e instanceof Error ? e.message : 'Vom Marktplatz entfernen fehlgeschlagen.');
+      const msg = e instanceof Error ? e.message : 'Vom Marktplatz entfernen fehlgeschlagen.';
+      setRegisteredUsersError(msg);
     } finally {
       setUnpublishingUserId(null);
     }
@@ -1492,6 +1496,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   {registeredUsersError}
                 </div>
               )}
+              {registeredUsersSuccess && (
+                <div className="mx-4 mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800">
+                  {registeredUsersSuccess}
+                </div>
+              )}
               {loadingRegisteredUsers && registeredUsers.length === 0 ? (
                 <div className="flex h-40 items-center justify-center">
                   <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-orange-500" />
@@ -1547,12 +1556,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             <Button
                               type="button"
                               size="sm"
-                              variant="outline"
-                              className="h-9 w-full border-orange-400/60 text-[11px] font-black text-orange-200 hover:bg-orange-500/20"
+                              variant="primary"
+                              className="h-9 w-full !bg-amber-600 !text-[11px] font-black !text-white hover:!bg-amber-500"
+                              isLoading={unpublishingUserId === u.id}
                               disabled={unpublishingUserId === u.id}
                               onClick={() => void handleUnpublishRegisteredCandidate(u)}
                             >
-                              {unpublishingUserId === u.id ? 'Wird entfernt…' : 'Vom Marktplatz entfernen'}
+                              Vom Marktplatz entfernen
                             </Button>
                           )}
                           <Button
@@ -1621,12 +1631,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                     <Button
                                       type="button"
                                       size="sm"
-                                      variant="outline"
-                                      className="h-9 text-[10px] font-black border-orange-400/60 text-orange-200 hover:bg-orange-500/20"
+                                      variant="primary"
+                                      className="h-9 !text-[10px] font-black !bg-amber-600 hover:!bg-amber-500"
+                                      isLoading={unpublishingUserId === u.id}
                                       disabled={unpublishingUserId === u.id}
                                       onClick={() => void handleUnpublishRegisteredCandidate(u)}
                                     >
-                                      {unpublishingUserId === u.id ? '…' : 'Vom Marktplatz entfernen'}
+                                      Vom Marktplatz entfernen
                                     </Button>
                                   )}
                                   <Button
