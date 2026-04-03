@@ -5,7 +5,6 @@ import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea
 import HourlyRateCalculator from '../components/HourlyRateCalculator';
 import { candidateService } from '../services/CandidateService';
 import { INDUSTRIES, AVAILABILITY_OPTIONS, BOOSTER_KEYWORD_CATEGORIES } from '../constants';
-import { COPPER_PANEL } from '../constants/copperTheme';
 import { documentService } from '../services/DocumentService';
 import { recruiterRoleFromEmail } from '../services/ApiClient';
 
@@ -1301,8 +1300,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               )}
             </div>
           ) : activeView === 'external' ? (
-            <div className={`overflow-hidden rounded-2xl ${COPPER_PANEL}`}>
-              <div className="border-b border-orange-500/25 bg-black/20 px-4 py-3 backdrop-blur-[2px]">
+            <div className="overflow-hidden rounded-2xl border border-[#1b2a47] bg-[#101B31] shadow-sm">
+              <div className="border-b border-[#1b2a47] bg-[#101B31] px-4 py-3">
                 <h3 className="text-sm font-black uppercase tracking-widest text-white">Kandidaten hinzufügen</h3>
                 <p className="mt-1 text-xs font-medium text-white/90">Manuell Daten erfassen und optional direkt im Marktplatz freigeben.</p>
               </div>
@@ -1428,12 +1427,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     helperText="Optional"
                   />
                 </div>
-                <Button
-                  variant="primary"
-                  className="h-10 text-xs font-black !border !border-orange-500/40 !bg-[#0a0a0c] !text-white shadow-[0_0_20px_-4px_rgba(234,88,12,0.35)] !ring-1 !ring-orange-400/30 hover:!bg-black/80 hover:!ring-orange-400/50"
-                  isLoading={isCreatingExternal}
-                  onClick={handleCreateExternalCandidate}
-                >
+                <Button variant="primary" className="h-10 text-xs font-black !bg-slate-900 !text-white hover:!bg-slate-800" isLoading={isCreatingExternal} onClick={handleCreateExternalCandidate}>
                   Kandidat freigeben
                 </Button>
               </div>
