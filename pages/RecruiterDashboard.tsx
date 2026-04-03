@@ -1591,7 +1591,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           ) : null}
 
           {activeView === 'calculator' && (
-            <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#050506] shadow-[0_24px_80px_-32px_rgba(0,0,0,0.6)]">
+            <div className="overflow-hidden rounded-2xl border border-[#1b2a47] bg-[#101B31] shadow-[0_24px_80px_-32px_rgba(8,15,28,0.65)]">
               <HourlyRateCalculator />
             </div>
           )}
