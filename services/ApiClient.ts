@@ -107,6 +107,7 @@ type ExternalCandidateRow = {
   availability: string;
   salary_wish_eur: number | null;
   about: string | null;
+  languages?: string | null;
   skills: string[] | null;
   boosted_keywords: string[] | null;
   cv_pdf: { name: string; data: string } | null;
@@ -287,6 +288,7 @@ class ApiClient {
       availability: row.availability || '',
       salaryWishEur: row.salary_wish_eur ?? null,
       about: row.about || undefined,
+      languages: row.languages?.trim() || null,
       skills: row.skills || [],
       boostedKeywords: row.boosted_keywords || [],
       socialLinks: [],
@@ -1990,6 +1992,7 @@ class ApiClient {
     availability: string;
     salaryWishEur?: number;
     about?: string;
+    languages?: string;
     skills?: string[];
     boostedKeywords?: string[];
     cvPdf?: { name: string; data: string };
@@ -2010,6 +2013,7 @@ class ApiClient {
       salary_wish_eur:
         input.salaryWishEur && input.salaryWishEur > 0 ? Math.round(input.salaryWishEur) : null,
       about: input.about?.trim() || null,
+      languages: input.languages?.trim() || null,
       skills: (input.skills || []).filter(Boolean),
       boosted_keywords: (input.boostedKeywords || []).filter(Boolean),
       cv_pdf: input.cvPdf || null,
@@ -2030,6 +2034,7 @@ class ApiClient {
       availability: row.availability,
       salary_wish_eur: row.salary_wish_eur,
       about: row.about,
+      languages: row.languages,
       skills: row.skills,
       boosted_keywords: row.boosted_keywords,
       cv_pdf: row.cv_pdf,

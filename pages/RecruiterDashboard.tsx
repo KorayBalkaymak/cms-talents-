@@ -103,6 +103,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     availability: AVAILABILITY_OPTIONS[0] || '',
     salaryWishEur: '',
     about: '',
+    languagesRaw: '',
     skillsRaw: '',
   });
   const [externalBoostedKeywords, setExternalBoostedKeywords] = useState<string[]>([]);
@@ -778,19 +779,21 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         availability: externalForm.availability,
         salaryWishEur: Number(externalForm.salaryWishEur || 0) > 0 ? Number(externalForm.salaryWishEur) : undefined,
         about: externalForm.about.trim() || undefined,
+        languages: externalForm.languagesRaw.trim() || undefined,
         skills,
         boostedKeywords: externalBoostedKeywords,
         cvPdf: externalDocs.cvPdf,
         certificates: externalDocs.certificates,
         qualifications: externalDocs.qualifications,
         isPublished: true,
-      } as any);
+      });
       if (onRefreshCandidates) await onRefreshCandidates();
       setExternalSuccess('Kandidat wurde erstellt und für den Marktplatz freigegeben.');
       setExternalForm((prev) => ({
         ...prev,
         city: '',
         about: '',
+        languagesRaw: '',
         skillsRaw: '',
         experienceYears: '',
         salaryWishEur: '',
@@ -1347,6 +1350,16 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   <Select label="Verfügbarkeit" labelClassName="text-white" value={externalForm.availability} onChange={(e) => setExternalForm((p) => ({ ...p, availability: e.target.value }))}>
                     {AVAILABILITY_OPTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
                   </Select>
+                  <div className="md:col-span-2">
+                    <Input
+                      label="Sprachen"
+                      labelClassName="text-white"
+                      className="!bg-white !text-black placeholder:!text-slate-500"
+                      value={externalForm.languagesRaw}
+                      onChange={(e) => setExternalForm((p) => ({ ...p, languagesRaw: e.target.value }))}
+                      placeholder="z. B. Deutsch (Muttersprache), Englisch (C1), Türkisch …"
+                    />
+                  </div>
                 </div>
                 <Input
                   label="Skills"
@@ -2039,6 +2052,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       </div>
 
                       {selectedCandidate.about && <div className="bg-slate-50 p-3 rounded-xl"><p className="text-[10px] font-black text-slate-400 uppercase mb-1">Über</p><p className="text-sm text-slate-700 leading-relaxed">{selectedCandidate.about}</p></div>}
+                      {selectedCandidate.languages?.trim() && (
+                        <div className="bg-slate-50 p-3 rounded-xl">
+                          <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Sprachen</p>
+                          <p className="text-sm text-slate-700 leading-relaxed">{selectedCandidate.languages}</p>
+                        </div>
+                      )}
                       {selectedCandidate.skills.length > 0 && <div className="flex flex-wrap gap-1">{selectedCandidate.skills.map(s => <Badge key={s} variant="orange">{s}</Badge>)}</div>}
 
                       {selectedCandidate.socialLinks?.length > 0 && (

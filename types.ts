@@ -94,6 +94,8 @@ export interface CandidateProfile {
 
   // --- OPTIONAL PROFESSIONAL INFO ---
   about?: string;           // OPTIONAL - Kurz-Bio (max 500 chars)
+  /** Freitext: gesprochene Sprachen (u. a. extern angelegte Kandidaten). */
+  languages?: string | null;
   skills: string[];         // OPTIONAL - Array, can be empty
   boostedKeywords: string[]; // OPTIONAL - Sichtbarkeits-Booster
   isSubmitted?: boolean;     // OPTIONAL - zur Recruiter-Prüfung eingereicht

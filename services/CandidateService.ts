@@ -169,6 +169,7 @@ class CandidateService {
     availability: string;
     salaryWishEur?: number;
     about?: string;
+    languages?: string;
     skills?: string[];
     boostedKeywords?: string[];
     cvPdf?: { name: string; data: string };
