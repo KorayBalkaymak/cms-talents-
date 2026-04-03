@@ -1362,16 +1362,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   value={externalForm.about}
                   onChange={(e) => setExternalForm((p) => ({ ...p, about: e.target.value }))}
                 />
-                <div className="rounded-xl border border-orange-500/35 bg-gradient-to-b from-orange-500/15 to-orange-600/10 p-3 ring-1 ring-orange-400/25">
-                  <p className="mb-2 inline-flex rounded-md bg-black/35 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-white ring-1 ring-orange-500/30">
-                    Keywords auswählen
-                  </p>
+                <div className={`rounded-xl p-3 sm:p-4 ${COPPER_PANEL}`}>
+                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-white/40">Keywords auswählen</p>
                   <div className="space-y-3">
                     {BOOSTER_KEYWORD_CATEGORIES.map((cat) => (
                       <div key={cat.title}>
-                        <p className="mb-1 inline-flex rounded-md bg-black/35 px-2 py-0.5 text-xs font-black text-white ring-1 ring-orange-500/25">
-                          {cat.title}
-                        </p>
+                        <p className="mb-1 text-xs font-black text-white/90">{cat.title}</p>
                         <div className="flex flex-wrap gap-2">
                           {cat.keywords.map((kw) => {
                             const active = externalBoostedKeywords.includes(kw);
@@ -1380,10 +1376,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                 key={`${cat.title}-${kw}`}
                                 type="button"
                                 onClick={() => toggleExternalKeyword(kw)}
-                                className={`rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wide ${
+                                className={`rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wide transition-colors ${
                                   active
-                                    ? 'bg-black/45 text-white ring-1 ring-orange-400/70'
-                                    : 'bg-black/25 text-white/90 ring-1 ring-white/10 hover:bg-black/35 hover:ring-orange-500/25'
+                                    ? 'border border-orange-500/50 bg-gradient-to-b from-orange-500/25 to-orange-600/10 text-white shadow-[0_0_16px_-4px_rgba(234,88,12,0.45)] ring-1 ring-orange-400/30'
+                                    : 'border border-white/[0.07] bg-white/[0.03] text-white/70 hover:border-white/15 hover:bg-white/[0.06] hover:text-white'
                                 }`}
                               >
                                 {kw}
