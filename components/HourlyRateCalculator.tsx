@@ -8,6 +8,14 @@ function parseNum(raw: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/** Oberfläche wie aktiver 2.2-Faktor: Kupfer-/Orange-Verlauf auf dunkler Basis */
+const COPPER_PANEL =
+  'border-orange-500/50 bg-[#0a0a0c] bg-gradient-to-b from-orange-500/25 to-orange-600/10 shadow-[0_0_28px_-2px_rgba(234,88,12,0.5),0_25px_60px_-20px_rgba(0,0,0,0.75)] ring-1 ring-orange-400/30';
+
+/** Stärkerer Verlauf, damit der gewählte Faktor auf gleichem Kartenhintergrund lesbar bleibt */
+const COPPER_PANEL_ACTIVE =
+  'border-orange-400/70 bg-[#0a0a0c] bg-gradient-to-b from-orange-500/45 to-orange-600/25 shadow-[0_0_32px_-2px_rgba(234,88,12,0.65)] ring-2 ring-orange-300/50';
+
 /** Stundenlohn-Rechner: rate × (1 + %/100) × Faktor — Premium Dark UI */
 const HourlyRateCalculator: React.FC = () => {
   const [rateInput, setRateInput] = useState('30');
@@ -33,7 +41,7 @@ const HourlyRateCalculator: React.FC = () => {
   return (
     <div className="flex min-h-[min(70vh,720px)] w-full items-center justify-center px-2 py-6 sm:px-4">
       <div
-        className="relative w-full max-w-md overflow-hidden rounded-[1.75rem] border border-white/[0.08] bg-gradient-to-b from-[#0c0c0e] via-[#0a0a0c] to-[#050506] p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_25px_80px_-20px_rgba(0,0,0,0.85),0_0_120px_-40px_rgba(234,88,12,0.15)] sm:p-10"
+        className={`relative w-full max-w-md overflow-hidden rounded-[1.75rem] p-8 sm:p-10 ${COPPER_PANEL}`}
         style={{ fontFamily: "'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif" }}
       >
         <div
@@ -100,7 +108,7 @@ const HourlyRateCalculator: React.FC = () => {
                     onClick={() => setFactor(f)}
                     className={`relative rounded-xl border py-3 text-sm font-light tracking-wide transition-all duration-300 ease-out active:scale-[0.97] ${
                       active
-                        ? 'border-orange-500/50 bg-gradient-to-b from-orange-500/25 to-orange-600/10 text-white shadow-[0_0_24px_-4px_rgba(234,88,12,0.45)] ring-1 ring-orange-400/30'
+                        ? `${COPPER_PANEL_ACTIVE} text-white`
                         : 'border-white/[0.07] bg-white/[0.03] text-white/70 hover:border-white/15 hover:bg-white/[0.06] hover:text-white'
                     }`}
                   >
