@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button } from '../components/UI';
+import { COPPER_PANEL } from '../constants/copperTheme';
 import { User, UserRole } from '../types';
 
 interface LandingPageProps {
@@ -304,10 +305,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
           </div>
         </section>
 
-        {/* ─── Zweck der App: dunkelblaue Box auf orangem Hintergrund ─── */}
-        <section className="py-20 md:py-28 bg-orange-500">
+        {/* ─── Zweck der App: gleiche Kupfer-Oberfläche wie Gehaltsrechner ─── */}
+        <section className="py-20 md:py-28 bg-[#0a0a0c]">
           <div className="relative max-w-6xl mx-auto px-6">
-            <div className="rounded-3xl bg-[#0a1428] border border-white/10 shadow-2xl overflow-hidden">
+            <div className={`rounded-3xl overflow-hidden ${COPPER_PANEL}`}>
               <div className="p-10 md:p-14">
                 <div className="flex flex-col items-center text-center mb-10">
                   <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/10 text-white/90 text-xs font-semibold tracking-wide">
