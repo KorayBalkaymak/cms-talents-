@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo, useDeferredValue, useCallback } from 'react';
 import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, CandidateDocumentsForRecruiter, CandidateInquiry, RegisteredUserListItem, getActiveInquiryEditing, getActiveRecruiterEditing } from '../types';
 import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea, FileUpload } from '../components/UI';
+import HourlyRateCalculator from '../components/HourlyRateCalculator';
 import { candidateService } from '../services/CandidateService';
 import { INDUSTRIES, AVAILABILITY_OPTIONS, BOOSTER_KEYWORD_CATEGORIES } from '../constants';
 import { documentService } from '../services/DocumentService';
@@ -68,7 +69,7 @@ function roleLabelDe(role: UserRole): string {
 
 const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidates, isInitialLoading = false, onAdminAction, onUpdateCandidate, onRefreshCandidates, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeView, setActiveView] = useState<'talents' | 'inquiries' | 'external' | 'users'>('talents');
+  const [activeView, setActiveView] = useState<'talents' | 'inquiries' | 'external' | 'users' | 'calculator'>('talents');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
   const [candidateDocs, setCandidateDocs] = useState<CandidateDocumentsForRecruiter | null>(null);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
@@ -1023,6 +1024,20 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 ALLE NUTZER
               </span>
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('calculator')}
+              className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-xs font-bold transition-colors ${
+                activeView === 'calculator'
+                  ? 'border-slate-700 bg-slate-800 text-orange-500'
+                  : 'border-transparent text-slate-300 hover:bg-slate-800/60'
+              }`}
+            >
+              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              GEHALTSRECHNER
+            </button>
           </nav>
         </div>
         <div className="mt-auto p-6 border-t border-slate-800 bg-slate-900/50">
@@ -1108,9 +1123,20 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               >
                 Nutzer
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveView('calculator')}
+                className={`rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wide transition-colors ${
+                  activeView === 'calculator' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Gehaltsrechner
+              </button>
             </div>
           </div>
-          <div className="relative w-full min-w-0 md:max-w-sm md:flex-1 lg:max-w-md">
+          <div
+            className={`relative w-full min-w-0 md:max-w-sm md:flex-1 lg:max-w-md ${activeView === 'calculator' ? 'hidden' : ''}`}
+          >
             <input
               type="search"
               enterKeyHint="search"
@@ -1171,6 +1197,14 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               onClick={() => setActiveView('users')}
             >
               Alle Nutzer
+            </Button>
+            <Button
+              type="button"
+              variant={activeView === 'calculator' ? 'primary' : 'outline'}
+              className="col-span-2 h-10 text-[11px] font-black"
+              onClick={() => setActiveView('calculator')}
+            >
+              Gehaltsrechner
             </Button>
           </div>
 
@@ -1555,6 +1589,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               )}
             </div>
           ) : null}
+
+          {activeView === 'calculator' && (
+            <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#050506] shadow-[0_24px_80px_-32px_rgba(0,0,0,0.6)]">
+              <HourlyRateCalculator />
+            </div>
+          )}
 
           {activeView === 'talents' && (
             <>
