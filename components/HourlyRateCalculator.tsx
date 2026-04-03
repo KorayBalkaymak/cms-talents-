@@ -4,8 +4,30 @@ import { COPPER_PANEL, COPPER_PANEL_ACTIVE } from '../constants/copperTheme';
 const FACTORS = [2.0, 2.2, 2.3, 2.4] as const;
 type Factor = (typeof FACTORS)[number];
 
-function parseNum(raw: string): number {
-  const n = parseFloat(String(raw).replace(',', '.').trim());
+/** Deutsche Eingaben: Komma als Dezimaltrenner, optional %, Leerzeichen */
+function parseLocaleDecimal(raw: string): number {
+  let s = String(raw)
+    .trim()
+    .replace(/\s/g, '')
+    .replace(/%/g, '')
+    .replace(/\u202f/g, '');
+  if (!s) return 0;
+
+  const hasComma = s.includes(',');
+  const hasDot = s.includes('.');
+  if (hasComma && hasDot) {
+    const lastComma = s.lastIndexOf(',');
+    const lastDot = s.lastIndexOf('.');
+    if (lastComma > lastDot) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      s = s.replace(/,/g, '');
+    }
+  } else if (hasComma) {
+    s = s.replace(',', '.');
+  }
+
+  const n = parseFloat(s);
   return Number.isFinite(n) ? n : 0;
 }
 
@@ -16,14 +38,16 @@ const HourlyRateCalculator: React.FC = () => {
   const [factor, setFactor] = useState<Factor>(2.2);
   const [resultPulse, setResultPulse] = useState(0);
 
-  const rate = parseNum(rateInput);
-  const pct = parseNum(pctInput);
+  const rate = parseLocaleDecimal(rateInput);
+  const pct = parseLocaleDecimal(pctInput);
 
-  const { intermediate, final } = useMemo(() => {
-    const afterPct = rate * (1 + pct / 100);
+  const { surchargeAmount, intermediate, final } = useMemo(() => {
+    const sur = rate * (pct / 100);
+    const after = rate + sur;
     return {
-      intermediate: afterPct,
-      final: afterPct * factor,
+      surchargeAmount: sur,
+      intermediate: after,
+      final: after * factor,
     };
   }, [rate, pct, factor]);
 
@@ -113,11 +137,27 @@ const HourlyRateCalculator: React.FC = () => {
           </div>
 
           <div className="space-y-4 rounded-2xl border border-white/[0.06] bg-black/35 px-5 py-5 backdrop-blur-sm">
-            <div className="flex items-baseline justify-between gap-3 border-b border-white/[0.06] pb-3">
-              <span className="text-[11px] font-medium uppercase tracking-wider text-white/38">Nach Aufschlag</span>
-              <span className="text-right text-sm font-extralight tabular-nums text-white/80">
-                {intermediate.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-              </span>
+            <div className="space-y-2 border-b border-white/[0.06] pb-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-[11px] font-medium uppercase tracking-wider text-white/38">Basis</span>
+                <span className="text-right text-sm font-extralight tabular-nums text-white/80">
+                  {rate.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-[11px] font-medium uppercase tracking-wider text-white/38">
+                  + Zuschlag ({pct.toLocaleString('de-DE', { maximumFractionDigits: 2 })} %)
+                </span>
+                <span className="text-right text-sm font-extralight tabular-nums text-emerald-400/90">
+                  {surchargeAmount.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-3 pt-1">
+                <span className="text-[11px] font-medium uppercase tracking-wider text-white/45">Nach Aufschlag</span>
+                <span className="text-right text-sm font-light tabular-nums text-white">
+                  {intermediate.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                </span>
+              </div>
             </div>
 
             <div className="text-center">
