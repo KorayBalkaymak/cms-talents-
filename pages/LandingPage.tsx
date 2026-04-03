@@ -179,7 +179,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                   <Button
                     size="md"
                     variant="primary"
-                    className={`w-full justify-center px-8 py-3.5 !font-black text-xs uppercase tracking-[0.2em] transition-all duration-150 sm:text-sm sm:tracking-[0.18em] ${COPPER_BUTTON}`}
+                    className={`w-full justify-center px-7 py-3.5 text-sm !font-semibold tracking-tight transition-[transform,box-shadow,background-color] duration-200 ${COPPER_BUTTON}`}
                     onClick={() => onNavigate('/candidate/auth')}
                   >
                     Profil erstellen
@@ -187,7 +187,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                   <Button
                     size="md"
                     variant="primary"
-                    className={`w-full justify-center px-8 py-3.5 !font-black text-xs uppercase tracking-[0.2em] transition-all duration-150 sm:text-sm sm:tracking-[0.18em] ${COPPER_BUTTON}`}
+                    className={`w-full justify-center px-7 py-3.5 text-sm !font-semibold tracking-tight transition-[transform,box-shadow,background-color] duration-200 ${COPPER_BUTTON}`}
                     onClick={() => onNavigate('/talents')}
                   >
                     Talente finden
