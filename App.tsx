@@ -226,7 +226,7 @@ const App: React.FC = () => {
 
   const handleAdminAction = async (
     userId: string,
-    action: 'delete' | 'status' | 'publish' | 'cv_reviewed',
+    action: 'delete' | 'status' | 'publish' | 'unpublish' | 'cv_reviewed',
     newStatus?: CandidateStatus,
     performerId?: string
   ) => {
@@ -238,9 +238,11 @@ const App: React.FC = () => {
         ? 'Konto wurde entfernt.'
         : action === 'publish'
           ? 'Profil wurde veröffentlicht.'
-          : action === 'cv_reviewed'
-            ? 'Lebenslauf als geprüft markiert.'
-            : `Status auf "${newStatus}" aktualisiert.`
+          : action === 'unpublish'
+            ? 'Kandidat ist nicht mehr im Marktplatz sichtbar.'
+            : action === 'cv_reviewed'
+              ? 'Lebenslauf als geprüft markiert.'
+              : `Status auf "${newStatus}" aktualisiert.`
     );
   };
 

@@ -1387,7 +1387,7 @@ class ApiClient {
 
   async adminAction(
     userId: string,
-    action: 'delete' | 'status' | 'publish' | 'cv_reviewed',
+    action: 'delete' | 'status' | 'publish' | 'unpublish' | 'cv_reviewed',
     newStatus?: CandidateStatus,
     performerId?: string
   ): Promise<void> {
@@ -1523,6 +1523,35 @@ class ApiClient {
         target_id: userId,
         timestamp: now,
       });
+      return;
+    }
+
+    if (action === 'unpublish') {
+      const profile = await this.fetchProfileRow(userId);
+      if (!profile || profile.deleted_at) {
+        throw new Error('Kandidat nicht gefunden.');
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          is_published: false,
+          updated_at: now,
+        })
+        .eq('id', userId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      await supabase.from('audit_log').insert({
+        id: crypto.randomUUID(),
+        action: 'Vom Marktplatz entfernt',
+        performer_id: effectivePerformerId,
+        target_id: userId,
+        timestamp: now,
+      });
+      return;
     }
   }
 

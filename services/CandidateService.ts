@@ -85,7 +85,7 @@ class CandidateService {
     return await api.updateCandidate(profile.userId, profile);
   }
 
-  async adminAction(userId: string, action: 'delete' | 'status' | 'publish' | 'cv_reviewed', newStatus?: CandidateStatus, performerId?: string): Promise<void> {
+  async adminAction(userId: string, action: 'delete' | 'status' | 'publish' | 'unpublish' | 'cv_reviewed', newStatus?: CandidateStatus, performerId?: string): Promise<void> {
     await api.adminAction(userId, action, newStatus, performerId);
   }
 

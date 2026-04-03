@@ -13,7 +13,7 @@ interface RecruiterDashboardProps {
   user: User;
   candidates: CandidateProfile[];
   isInitialLoading?: boolean;
-  onAdminAction: (userUuid: string, action: 'delete' | 'status' | 'publish' | 'cv_reviewed', newStatus?: CandidateStatus, performerId?: string) => Promise<void> | void;
+  onAdminAction: (userUuid: string, action: 'delete' | 'status' | 'publish' | 'unpublish' | 'cv_reviewed', newStatus?: CandidateStatus, performerId?: string) => Promise<void> | void;
   onUpdateCandidate?: (candidate: CandidateProfile) => void;
   onRefreshCandidates?: () => Promise<void> | void;
   onLogout: () => void;
@@ -92,6 +92,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [registeredUsersError, setRegisteredUsersError] = useState<string | null>(null);
   const [userDeleteTarget, setUserDeleteTarget] = useState<RegisteredUserListItem | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [unpublishingUserId, setUnpublishingUserId] = useState<string | null>(null);
   const [isCreatingExternal, setIsCreatingExternal] = useState(false);
   const [externalError, setExternalError] = useState<string | null>(null);
   const [externalSuccess, setExternalSuccess] = useState<string | null>(null);
@@ -747,6 +748,22 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       setRegisteredUsersError(e instanceof Error ? e.message : 'Löschen fehlgeschlagen.');
     } finally {
       setDeletingUserId(null);
+    }
+  };
+
+  const handleUnpublishRegisteredCandidate = async (target: RegisteredUserListItem) => {
+    if (target.id === user.id) return;
+    setRegisteredUsersError(null);
+    setUnpublishingUserId(target.id);
+    try {
+      await Promise.resolve(onAdminAction(target.id, 'unpublish', undefined, user.id));
+      const list = await candidateService.listRegisteredUsers();
+      setRegisteredUsers(list);
+      await onRefreshCandidates?.();
+    } catch (e) {
+      setRegisteredUsersError(e instanceof Error ? e.message : 'Vom Marktplatz entfernen fehlgeschlagen.');
+    } finally {
+      setUnpublishingUserId(null);
     }
   };
 
@@ -1526,6 +1543,18 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           <p className="mt-2 text-xs font-semibold text-slate-200">
                             Zuletzt online: {inactivityDurationDe(u.lastSeenAt)}
                           </p>
+                          {effRole === UserRole.CANDIDATE && u.isPublished && !isSelf && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-9 w-full border-orange-400/60 text-[11px] font-black text-orange-200 hover:bg-orange-500/20"
+                              disabled={unpublishingUserId === u.id}
+                              onClick={() => void handleUnpublishRegisteredCandidate(u)}
+                            >
+                              {unpublishingUserId === u.id ? 'Wird entfernt…' : 'Vom Marktplatz entfernen'}
+                            </Button>
+                          )}
                           <Button
                             type="button"
                             size="sm"
@@ -1587,17 +1616,31 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               </td>
                               <td className="px-4 py-3 text-xs font-semibold text-slate-200">{inactivityDurationDe(u.lastSeenAt)}</td>
                               <td className="px-4 py-3 text-right">
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="danger"
-                                  className="h-9 text-[10px] font-black"
-                                  disabled={isSelf || deletingUserId === u.id}
-                                  title={isSelf ? 'Eigenes Konto nicht löschbar' : undefined}
-                                  onClick={() => setUserDeleteTarget(u)}
-                                >
-                                  Löschen
-                                </Button>
+                                <div className="flex flex-col items-end gap-2 sm:flex-row sm:justify-end">
+                                  {effRole === UserRole.CANDIDATE && u.isPublished && !isSelf && (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-9 text-[10px] font-black border-orange-400/60 text-orange-200 hover:bg-orange-500/20"
+                                      disabled={unpublishingUserId === u.id}
+                                      onClick={() => void handleUnpublishRegisteredCandidate(u)}
+                                    >
+                                      {unpublishingUserId === u.id ? '…' : 'Vom Marktplatz entfernen'}
+                                    </Button>
+                                  )}
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="danger"
+                                    className="h-9 text-[10px] font-black"
+                                    disabled={isSelf || deletingUserId === u.id}
+                                    title={isSelf ? 'Eigenes Konto nicht löschbar' : undefined}
+                                    onClick={() => setUserDeleteTarget(u)}
+                                  >
+                                    Löschen
+                                  </Button>
+                                </div>
                               </td>
                             </tr>
                           );
