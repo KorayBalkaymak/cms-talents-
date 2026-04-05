@@ -162,6 +162,8 @@ class CandidateService {
 
   async createExternalCandidate(input: {
     candidateNumber?: string;
+    firstName?: string;
+    lastName?: string;
     city: string;
     country: string;
     industry: string;

@@ -101,6 +101,8 @@ type InquiryRow = {
 type ExternalCandidateRow = {
   id: string;
   candidate_number: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
   city: string;
   country: string;
   industry: string;
@@ -175,6 +177,11 @@ function isProfileSalaryWorkSchemaMissing(message?: string): boolean {
 
 function isProfileLanguagesSchemaMissing(message?: string): boolean {
   return (message || '').toLowerCase().includes("could not find the 'languages' column");
+}
+
+function isExternalCandidatesNamesSchemaMissing(message?: string): boolean {
+  const t = (message || '').toLowerCase();
+  return t.includes("could not find the 'first_name' column") || t.includes("could not find the 'last_name' column");
 }
 
 function isCandidateInquiriesSchemaMissing(message?: string): boolean {
@@ -274,6 +281,8 @@ class ApiClient {
 
   private externalRowToCandidate(row: ExternalCandidateRow): CandidateProfile {
     const number = row.candidate_number || `EXT-${row.id.slice(0, 8).toUpperCase()}`;
+    const fn = (row.first_name || '').trim();
+    const ln = (row.last_name || '').trim();
     return {
       userId: `external:${row.id}`,
       avatarSeed: number,
@@ -283,8 +292,8 @@ class ApiClient {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       candidateNumber: number,
-      firstName: 'Extern',
-      lastName: number,
+      firstName: fn || 'Extern',
+      lastName: ln || number,
       city: row.city || '',
       country: row.country || '',
       industry: row.industry || '',
@@ -2025,6 +2034,8 @@ class ApiClient {
 
   async createExternalCandidate(input: {
     candidateNumber?: string;
+    firstName?: string;
+    lastName?: string;
     city: string;
     country: string;
     industry: string;
@@ -2045,6 +2056,8 @@ class ApiClient {
     const row: ExternalCandidateRow = {
       id,
       candidate_number: input.candidateNumber?.trim() || `EXT-${id.slice(0, 8).toUpperCase()}`,
+      first_name: input.firstName?.trim() || null,
+      last_name: input.lastName?.trim() || null,
       city: input.city.trim(),
       country: input.country.trim(),
       industry: input.industry.trim(),
@@ -2067,6 +2080,8 @@ class ApiClient {
     const payload = {
       id: row.id,
       candidate_number: row.candidate_number,
+      first_name: row.first_name,
+      last_name: row.last_name,
       city: row.city,
       country: row.country,
       industry: row.industry,
@@ -2085,8 +2100,16 @@ class ApiClient {
       updated_at: row.updated_at,
     };
 
-    const { error } = await supabase.from('external_candidates').insert(payload);
-    if (error) {
+    let insertError = (await supabase.from('external_candidates').insert(payload)).error;
+    if (insertError && isExternalCandidatesNamesSchemaMissing(insertError.message)) {
+      const { first_name: _fn, last_name: _ln, ...payloadNoNames } = payload as Record<string, unknown>;
+      const retry = await supabase.from('external_candidates').insert(payloadNoNames);
+      if (!retry.error) {
+        return this.externalRowToCandidate(row);
+      }
+      insertError = retry.error;
+    }
+    if (insertError) {
       // Fallback: lokal speichern, falls Tabelle noch nicht in DB existiert.
       const local = this.readLocalExternalCandidates();
       const candidate = this.externalRowToCandidate(row);

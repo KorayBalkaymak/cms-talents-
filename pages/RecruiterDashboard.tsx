@@ -98,6 +98,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [externalError, setExternalError] = useState<string | null>(null);
   const [externalSuccess, setExternalSuccess] = useState<string | null>(null);
   const [externalForm, setExternalForm] = useState({
+    firstName: '',
+    lastName: '',
     city: '',
     country: 'Deutschland',
     industry: INDUSTRIES[0] || '',
@@ -793,6 +795,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         .map((s) => s.trim())
         .filter(Boolean);
       await candidateService.createExternalCandidate({
+        firstName: externalForm.firstName.trim() || undefined,
+        lastName: externalForm.lastName.trim() || undefined,
         city: externalForm.city,
         country: externalForm.country,
         industry: externalForm.industry,
@@ -812,6 +816,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       setExternalSuccess('Kandidat wurde erstellt und für den Marktplatz freigegeben.');
       setExternalForm((prev) => ({
         ...prev,
+        firstName: '',
+        lastName: '',
         city: '',
         about: '',
         languagesRaw: '',
@@ -1328,12 +1334,31 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             <div className="overflow-hidden rounded-2xl border border-[#1b2a47] bg-[#101B31] shadow-sm">
               <div className="border-b border-[#1b2a47] bg-[#101B31] px-4 py-3">
                 <h3 className="text-sm font-black uppercase tracking-widest text-white">Kandidaten hinzufügen</h3>
-                <p className="mt-1 text-xs font-medium text-white/90">Manuell Daten erfassen und optional direkt im Marktplatz freigeben.</p>
+                <p className="mt-1 text-xs font-medium text-white/90">
+                  Manuell Daten erfassen und optional direkt im Marktplatz freigeben. Vor- und Nachname sind nur intern sichtbar – Kunden sehen auf dem Marktplatz einen{' '}
+                  <span className="font-bold text-orange-200">Codenamen</span> (z. B. TX042), nie den echten Namen.
+                </p>
               </div>
               <div className="space-y-4 px-4 py-4">
                 {externalError && <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">{externalError}</div>}
                 {externalSuccess && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">{externalSuccess}</div>}
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <Input
+                    label="Vorname (intern)"
+                    labelClassName="text-white"
+                    className="!bg-white !text-black placeholder:!text-slate-500"
+                    value={externalForm.firstName}
+                    onChange={(e) => setExternalForm((p) => ({ ...p, firstName: e.target.value }))}
+                    placeholder="z. B. Max"
+                  />
+                  <Input
+                    label="Nachname (intern)"
+                    labelClassName="text-white"
+                    className="!bg-white !text-black placeholder:!text-slate-500"
+                    value={externalForm.lastName}
+                    onChange={(e) => setExternalForm((p) => ({ ...p, lastName: e.target.value }))}
+                    placeholder="z. B. Mustermann"
+                  />
                   <Input label="Stadt" labelClassName="text-white" value={externalForm.city} onChange={(e) => setExternalForm((p) => ({ ...p, city: e.target.value }))} placeholder="Berlin" />
                   <Input label="Land" labelClassName="text-white" value={externalForm.country} onChange={(e) => setExternalForm((p) => ({ ...p, country: e.target.value }))} placeholder="Deutschland" />
                   <Select label="Branche" labelClassName="text-white" value={externalForm.industry} onChange={(e) => setExternalForm((p) => ({ ...p, industry: e.target.value }))}>
