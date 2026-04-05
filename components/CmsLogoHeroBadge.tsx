@@ -11,7 +11,7 @@ export interface CmsLogoHeroBadgeProps {
 
 /**
  * CMS-Talents-Logo wie auf der Landingpage: Spotlights, Aura, äußerer Ring, weißer Innenkreis.
- * `hero`: w-56 / sm:w-64 · `compact`: ~72px / sm:~80px Außenring
+ * `hero`: w-56 / sm:w-64 · `compact`: w-24 / sm:w-28 (lesbar, Dashboard)
  */
 export const CmsLogoHeroBadge: React.FC<CmsLogoHeroBadgeProps> = ({
   className = '',
@@ -60,7 +60,7 @@ export const CmsLogoHeroBadge: React.FC<CmsLogoHeroBadgeProps> = ({
         }
         .cms-lhb-aura-compact {
           position: absolute;
-          inset: -7px;
+          inset: -10px;
           border-radius: 9999px;
           background: radial-gradient(circle at 50% 50%,
             rgba(255,255,255,0.2) 0%,
@@ -87,11 +87,11 @@ export const CmsLogoHeroBadge: React.FC<CmsLogoHeroBadgeProps> = ({
         }
         .cms-lhb-spotlight-compact {
           position: absolute;
-          top: -72px;
+          top: -92px;
           left: 50%;
           transform: translateX(-50%);
-          width: 72px;
-          height: 92px;
+          width: 88px;
+          height: 112px;
           clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
           background: linear-gradient(to bottom, rgba(255,255,255,0.32), rgba(255,255,255,0));
           filter: blur(0.2px);
@@ -105,9 +105,9 @@ export const CmsLogoHeroBadge: React.FC<CmsLogoHeroBadgeProps> = ({
         <div className="relative inline-flex shrink-0">
           {compact ? (
             <>
-              <div className="cms-lhb-spotlight-compact" style={{ width: 88, opacity: 0.22 }} />
-              <div className="cms-lhb-spotlight-compact" style={{ width: 64, opacity: 0.32 }} />
-              <div className="cms-lhb-spotlight-compact" style={{ width: 46, opacity: 0.42 }} />
+              <div className="cms-lhb-spotlight-compact" style={{ width: 108, opacity: 0.22 }} />
+              <div className="cms-lhb-spotlight-compact" style={{ width: 80, opacity: 0.32 }} />
+              <div className="cms-lhb-spotlight-compact" style={{ width: 56, opacity: 0.42 }} />
             </>
           ) : (
             <>
@@ -118,14 +118,14 @@ export const CmsLogoHeroBadge: React.FC<CmsLogoHeroBadgeProps> = ({
           )}
 
           <div
-            className={`absolute rounded-full bg-orange-500/20 blur-3xl ${compact ? '-inset-3' : '-inset-10'}`}
+            className={`absolute rounded-full bg-orange-500/20 blur-3xl ${compact ? '-inset-4' : '-inset-10'}`}
           />
           <div className={compact ? 'cms-lhb-aura-compact' : 'cms-lhb-aura'} />
 
           <div
             className={`relative flex shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/10 backdrop-blur-sm ${
               compact
-                ? 'h-[4.5rem] w-[4.5rem] shadow-[0_12px_32px_-20px_rgba(0,0,0,0.75)] sm:h-20 sm:w-20 sm:shadow-[0_14px_36px_-22px_rgba(0,0,0,0.8)]'
+                ? 'h-24 w-24 shadow-[0_14px_38px_-22px_rgba(0,0,0,0.76)] sm:h-28 sm:w-28 sm:shadow-[0_16px_42px_-24px_rgba(0,0,0,0.82)]'
                 : 'h-56 w-56 shadow-[0_28px_90px_-60px_rgba(0,0,0,0.85)] sm:h-64 sm:w-64'
             }`}
           >
@@ -136,7 +136,7 @@ export const CmsLogoHeroBadge: React.FC<CmsLogoHeroBadgeProps> = ({
             <div
               className={`relative flex shrink-0 items-center justify-center rounded-full bg-white ${
                 compact
-                  ? 'h-[4.15rem] w-[4.15rem] shadow-[0_8px_22px_-16px_rgba(0,0,0,0.5)] sm:h-[4.65rem] sm:w-[4.65rem] sm:shadow-[0_10px_26px_-18px_rgba(0,0,0,0.52)]'
+                  ? 'h-[5.5rem] w-[5.5rem] shadow-[0_10px_28px_-18px_rgba(0,0,0,0.52)] sm:h-[6.5rem] sm:w-[6.5rem] sm:shadow-[0_12px_32px_-20px_rgba(0,0,0,0.54)]'
                   : 'h-52 w-52 shadow-[0_20px_50px_-35px_rgba(0,0,0,0.55)] sm:h-60 sm:w-60'
               }`}
             >
@@ -145,7 +145,7 @@ export const CmsLogoHeroBadge: React.FC<CmsLogoHeroBadgeProps> = ({
                 src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
                 alt="CMS Talents"
                 className={`relative object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.18)] ${
-                  compact ? 'h-[82%] w-[82%]' : 'h-[85%] w-[85%]'
+                  compact ? 'h-[84%] w-[84%]' : 'h-[85%] w-[85%]'
                 }`}
                 loading="lazy"
                 decoding="async"
