@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CmsLogoHeroBadge } from '../components/CmsLogoHeroBadge';
 import { Button, Input } from '../components/UI';
 import { User, UserRole } from '../types';
 import { authService } from '../services/AuthService';
@@ -46,19 +47,8 @@ const RecruiterAuth: React.FC<RecruiterAuthProps> = ({ onAuthSuccess }) => {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zz4+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-20"></div>
 
         <div className="relative z-10 max-w-md text-center">
-          <div className="mb-6 inline-flex items-center justify-center">
-            <div className="relative inline-flex">
-              <div className="pointer-events-none absolute -inset-4 rounded-full bg-orange-500/25 blur-xl" aria-hidden />
-              <div className="relative flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-white/10 shadow-[0_14px_36px_-24px_rgba(0,0,0,0.9)]">
-                <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-[0_8px_20px_-14px_rgba(0,0,0,0.5)]">
-                  <img
-                    src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
-                    alt="CMS Talents"
-                    className="h-[85%] w-[85%] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.2)]"
-                  />
-                </div>
-              </div>
-            </div>
+          <div className="mb-8 flex w-full justify-center">
+            <CmsLogoHeroBadge variant="compact" className="!justify-center w-full" />
           </div>
           <h1 className="text-3xl font-black text-white tracking-tight mb-4 leading-tight">
             Willkommen im <br />
