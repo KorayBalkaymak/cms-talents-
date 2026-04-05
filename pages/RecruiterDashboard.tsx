@@ -485,8 +485,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     }
     if (isCandidateStale(cand)) {
       return {
-        text: 'Bearbeiten noetig',
-        mobileText: 'Bearbeiten noetig: seit 3+ Tagen offen',
+        text: 'Bearbeiten nötig',
+        mobileText: 'Bearbeiten nötig: seit 3+ Tagen offen',
         className: 'bg-red-50 text-red-700 ring-1 ring-red-200',
       };
     }
@@ -1789,6 +1789,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                       {`${cand.firstName || ''} ${cand.lastName || ''}`.trim() || cand.candidateNumber || 'Unbekannter Kandidat'}
                                     </div>
                                     <div className="text-[10px] font-bold uppercase text-slate-400">{cand.city}</div>
+                                    {candidateReviewHint(cand).mobileText ? (
+                                      <p
+                                        className={`mt-1 max-w-[min(100%,280px)] text-[9px] font-black uppercase leading-snug tracking-wide ${candidateReviewHint(cand).className.includes('red-700') ? 'text-red-700' : candidateReviewHint(cand).className.includes('emerald-700') ? 'text-emerald-700' : 'text-amber-700'}`}
+                                      >
+                                        {candidateReviewHint(cand).mobileText}
+                                      </p>
+                                    ) : null}
                                   </div>
                                 </div>
                               </td>
