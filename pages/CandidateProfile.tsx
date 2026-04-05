@@ -328,10 +328,8 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
       <header className="relative border-b border-slate-200/80 bg-white shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="shrink-0 overflow-visible rounded-2xl bg-[#101B31] px-3 py-2.5 shadow-sm ring-1 ring-slate-200/80 sm:px-4 sm:py-3">
-              <div className="flex w-full justify-center overflow-visible">
-                <CmsLogoHeroBadge variant="compact" className="!justify-center" />
-              </div>
+            <div className="flex shrink-0 justify-center overflow-visible sm:justify-start">
+              <CmsLogoHeroBadge variant="compact" className="!justify-center sm:!justify-start" />
             </div>
           </div>
 
