@@ -1174,22 +1174,26 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         </div>
 
         <header className="relative z-10 flex flex-col gap-3 border-b border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_1px_0_rgba(15,23,42,0.04)] backdrop-blur-sm sm:px-6 md:h-[4.25rem] md:flex-row md:items-center md:justify-between md:gap-4 md:py-0">
-          <div className="hidden min-w-0 flex-1 items-center gap-4 md:flex">
-            <div>
+          <div className="hidden min-w-0 flex-1 items-center gap-3 md:flex md:gap-5">
+            <div className="shrink-0">
               <h1 className="text-lg font-semibold tracking-tight text-slate-900">Dashboard</h1>
               <p className="text-xs font-medium text-slate-500">Recruiting · CMS Talents</p>
             </div>
+            <div
+              className="hidden h-9 w-px shrink-0 bg-gradient-to-b from-transparent via-slate-300/90 to-transparent sm:block"
+              aria-hidden
+            />
             <nav
-              className="ml-auto inline-flex max-w-full flex-wrap items-center gap-0.5 rounded-2xl border border-slate-200/90 bg-slate-100/80 p-1 shadow-inner"
+              className="flex min-w-0 flex-1 flex-wrap items-center gap-1 rounded-2xl border border-slate-200/70 bg-gradient-to-b from-white to-slate-50/90 p-1 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.1)] ring-1 ring-slate-900/[0.04]"
               aria-label="Hauptnavigation"
             >
               <button
                 type="button"
                 onClick={() => setActiveView('talents')}
-                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all ${
+                className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'talents'
-                    ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200/80'
-                    : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
+                    ? 'border border-orange-400/25 bg-gradient-to-b from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/20'
+                    : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
                 }`}
               >
                 Talents
@@ -1197,10 +1201,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               <button
                 type="button"
                 onClick={() => setActiveView('inquiries')}
-                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all ${
+                className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'inquiries'
-                    ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200/80'
-                    : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
+                    ? 'border border-orange-400/25 bg-gradient-to-b from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/20'
+                    : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
                 }`}
               >
                 Externe Interessen
@@ -1208,10 +1212,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               <button
                 type="button"
                 onClick={() => setActiveView('external')}
-                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all ${
+                className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'external'
-                    ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200/80'
-                    : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
+                    ? 'border border-orange-400/25 bg-gradient-to-b from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/20'
+                    : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
                 }`}
               >
                 Kandidat hinzufügen
@@ -1219,10 +1223,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               <button
                 type="button"
                 onClick={() => setActiveView('users')}
-                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all ${
+                className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'users'
-                    ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200/80'
-                    : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
+                    ? 'border border-orange-400/25 bg-gradient-to-b from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/20'
+                    : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
                 }`}
               >
                 Nutzer
@@ -1230,10 +1234,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               <button
                 type="button"
                 onClick={() => setActiveView('calculator')}
-                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all ${
+                className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'calculator'
-                    ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200/80'
-                    : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
+                    ? 'border border-orange-400/25 bg-gradient-to-b from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/20'
+                    : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
                 }`}
               >
                 Gehaltsrechner
