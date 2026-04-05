@@ -150,14 +150,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                         <div className="cms-logo-shine" />
                       </div>
 
-                      {/* Inner white fill */}
-                      <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-full bg-white shadow-[0_20px_50px_-35px_rgba(0,0,0,0.55)] flex items-center justify-center">
+                      {/* Inner white fill — größerer Anteil im gleichen äußeren Ring */}
+                      <div className="relative flex h-52 w-52 shrink-0 items-center justify-center rounded-full bg-white shadow-[0_20px_50px_-35px_rgba(0,0,0,0.55)] sm:h-60 sm:w-60">
                         {/* subtle inner highlight */}
                         <div className="absolute inset-0 rounded-full pointer-events-none bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,1),rgba(255,255,255,0.75)_45%,rgba(255,255,255,1)_100%)]" />
                         <img
                           src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
                           alt="CMS Talents"
-                          className="relative w-[92%] h-[92%] object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.18)]"
+                          className="relative h-[98%] w-[98%] object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.18)]"
                           loading="lazy"
                           decoding="async"
                         />
