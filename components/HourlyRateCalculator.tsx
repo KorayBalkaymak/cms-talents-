@@ -161,9 +161,6 @@ const HourlyRateCalculator: React.FC = () => {
             </div>
 
             <div className="text-center">
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-orange-400/80">
-                Final hourly rate
-              </p>
               <p
                 key={resultPulse}
                 className="inline-block text-4xl font-extralight tabular-nums tracking-tight text-white transition-transform duration-500 ease-out motion-reduce:transition-none sm:text-[2.75rem]"
