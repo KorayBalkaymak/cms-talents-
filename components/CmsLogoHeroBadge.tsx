@@ -11,7 +11,7 @@ export interface CmsLogoHeroBadgeProps {
 
 /**
  * CMS-Talents-Logo wie auf der Landingpage: Spotlights, Aura, äußerer Ring, weißer Innenkreis.
- * `hero`: w-56 / sm:w-64 · `compact`: w-24 / sm:w-28 (lesbar, Dashboard)
+ * `hero`: w-56 / sm:w-64 · `compact`: w-24 / sm:w-28, Innenkreis 94 %, Bild 92 % (Dashboard)
  */
 export const CmsLogoHeroBadge: React.FC<CmsLogoHeroBadgeProps> = ({
   className = '',
