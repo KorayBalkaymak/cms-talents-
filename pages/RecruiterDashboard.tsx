@@ -1192,7 +1192,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 onClick={() => setActiveView('talents')}
                 className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'talents'
-                    ? 'border border-orange-400/25 bg-gradient-to-b from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/20'
+                    ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
                     : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
                 }`}
               >
@@ -1203,7 +1203,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 onClick={() => setActiveView('inquiries')}
                 className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'inquiries'
-                    ? 'border border-orange-400/25 bg-gradient-to-b from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/20'
+                    ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
                     : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
                 }`}
               >
@@ -1214,7 +1214,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 onClick={() => setActiveView('external')}
                 className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'external'
-                    ? 'border border-orange-400/25 bg-gradient-to-b from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/20'
+                    ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
                     : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
                 }`}
               >
@@ -1225,7 +1225,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 onClick={() => setActiveView('users')}
                 className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'users'
-                    ? 'border border-orange-400/25 bg-gradient-to-b from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/20'
+                    ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
                     : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
                 }`}
               >
@@ -1236,7 +1236,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 onClick={() => setActiveView('calculator')}
                 className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'calculator'
-                    ? 'border border-orange-400/25 bg-gradient-to-b from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/20'
+                    ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
                     : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
                 }`}
               >
@@ -1283,7 +1283,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 onClick={() => setActiveView('talents')}
                 className={`shrink-0 rounded-xl border px-3.5 py-2.5 text-xs font-medium transition-all ${
                   activeView === 'talents'
-                    ? 'border-orange-200 bg-orange-50 text-orange-800 shadow-sm'
+                    ? 'border-slate-700 bg-slate-900 text-white shadow-sm'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
                 }`}
               >
@@ -1294,7 +1294,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 onClick={() => setActiveView('inquiries')}
                 className={`shrink-0 rounded-xl border px-3.5 py-2.5 text-xs font-medium transition-all ${
                   activeView === 'inquiries'
-                    ? 'border-orange-200 bg-orange-50 text-orange-800 shadow-sm'
+                    ? 'border-slate-700 bg-slate-900 text-white shadow-sm'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
                 }`}
               >
@@ -1305,7 +1305,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 onClick={() => setActiveView('external')}
                 className={`shrink-0 rounded-xl border px-3.5 py-2.5 text-xs font-medium transition-all ${
                   activeView === 'external'
-                    ? 'border-orange-200 bg-orange-50 text-orange-800 shadow-sm'
+                    ? 'border-slate-700 bg-slate-900 text-white shadow-sm'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
                 }`}
               >
@@ -1316,7 +1316,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 onClick={() => setActiveView('users')}
                 className={`shrink-0 rounded-xl border px-3.5 py-2.5 text-xs font-medium transition-all ${
                   activeView === 'users'
-                    ? 'border-orange-200 bg-orange-50 text-orange-800 shadow-sm'
+                    ? 'border-slate-700 bg-slate-900 text-white shadow-sm'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
                 }`}
               >
@@ -1327,7 +1327,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 onClick={() => setActiveView('calculator')}
                 className={`shrink-0 rounded-xl border px-3.5 py-2.5 text-xs font-medium transition-all ${
                   activeView === 'calculator'
-                    ? 'border-orange-200 bg-orange-50 text-orange-800 shadow-sm'
+                    ? 'border-slate-700 bg-slate-900 text-white shadow-sm'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
                 }`}
               >
