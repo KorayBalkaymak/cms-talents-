@@ -139,13 +139,13 @@ const HourlyRateCalculator: React.FC = () => {
           <div className="space-y-4 rounded-2xl border border-white/[0.06] bg-black/35 px-5 py-5 backdrop-blur-sm">
             <div className="space-y-2 border-b border-white/[0.06] pb-3">
               <div className="flex items-baseline justify-between gap-3">
-                <span className="text-[11px] font-medium uppercase tracking-wider text-white/38">Basis</span>
+                <span className="text-[11px] font-medium uppercase tracking-wider text-white">Basis</span>
                 <span className="text-right text-sm font-extralight tabular-nums text-white/80">
                   {rate.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                 </span>
               </div>
               <div className="flex items-baseline justify-between gap-3">
-                <span className="text-[11px] font-medium uppercase tracking-wider text-white/38">
+                <span className="text-[11px] font-medium uppercase tracking-wider text-white">
                   + Zuschlag ({pct.toLocaleString('de-DE', { maximumFractionDigits: 2 })} %)
                 </span>
                 <span className="text-right text-sm font-extralight tabular-nums text-emerald-400/90">
