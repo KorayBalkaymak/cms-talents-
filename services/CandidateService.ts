@@ -167,6 +167,7 @@ class CandidateService {
     city: string;
     country: string;
     industry: string;
+    profession?: string;
     experienceYears: number;
     availability: string;
     salaryWishEur?: number;

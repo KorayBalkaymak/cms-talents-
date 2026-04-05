@@ -103,6 +103,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     city: '',
     country: 'Deutschland',
     industry: INDUSTRIES[0] || '',
+    profession: '',
     experienceYears: '',
     availability: AVAILABILITY_OPTIONS[0] || '',
     salaryWishEur: '',
@@ -800,6 +801,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         city: externalForm.city,
         country: externalForm.country,
         industry: externalForm.industry,
+        profession: externalForm.profession.trim() || undefined,
         experienceYears: Number(externalForm.experienceYears || 0),
         availability: externalForm.availability,
         salaryWishEur: Number(externalForm.salaryWishEur || 0) > 0 ? Number(externalForm.salaryWishEur) : undefined,
@@ -820,6 +822,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         lastName: '',
         city: '',
         about: '',
+        profession: '',
         languagesRaw: '',
         skillsRaw: '',
         experienceYears: '',
@@ -1405,6 +1408,14 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   <Select label="Branche" labelClassName="text-white" value={externalForm.industry} onChange={(e) => setExternalForm((p) => ({ ...p, industry: e.target.value }))}>
                     {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
                   </Select>
+                  <Input
+                    label="Beruf"
+                    labelClassName="text-white"
+                    className="!bg-white !text-black placeholder:!text-slate-500"
+                    value={externalForm.profession}
+                    onChange={(e) => setExternalForm((p) => ({ ...p, profession: e.target.value }))}
+                    placeholder="z. B. Elektroniker, Projektleiter …"
+                  />
                   <Input
                     label="Erfahrung (Jahre)"
                     labelClassName="text-white"

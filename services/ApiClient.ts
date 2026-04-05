@@ -106,6 +106,7 @@ type ExternalCandidateRow = {
   city: string;
   country: string;
   industry: string;
+  profession?: string | null;
   experience_years: number;
   availability: string;
   salary_wish_eur: number | null;
@@ -182,6 +183,10 @@ function isProfileLanguagesSchemaMissing(message?: string): boolean {
 function isExternalCandidatesNamesSchemaMissing(message?: string): boolean {
   const t = (message || '').toLowerCase();
   return t.includes("could not find the 'first_name' column") || t.includes("could not find the 'last_name' column");
+}
+
+function isExternalCandidatesProfessionSchemaMissing(message?: string): boolean {
+  return (message || '').toLowerCase().includes("could not find the 'profession' column");
 }
 
 function isCandidateInquiriesSchemaMissing(message?: string): boolean {
@@ -2039,6 +2044,7 @@ class ApiClient {
     city: string;
     country: string;
     industry: string;
+    profession?: string;
     experienceYears: number;
     availability: string;
     salaryWishEur?: number;
@@ -2061,6 +2067,7 @@ class ApiClient {
       city: input.city.trim(),
       country: input.country.trim(),
       industry: input.industry.trim(),
+      profession: input.profession?.trim() || null,
       experience_years: Number(input.experienceYears || 0),
       availability: input.availability.trim(),
       salary_wish_eur:
@@ -2085,6 +2092,7 @@ class ApiClient {
       city: row.city,
       country: row.country,
       industry: row.industry,
+      profession: row.profession,
       experience_years: row.experience_years,
       availability: row.availability,
       salary_wish_eur: row.salary_wish_eur,
@@ -2100,9 +2108,19 @@ class ApiClient {
       updated_at: row.updated_at,
     };
 
-    let insertError = (await supabase.from('external_candidates').insert(payload)).error;
+    let insertPayload: Record<string, unknown> = { ...payload };
+    let insertError = (await supabase.from('external_candidates').insert(insertPayload)).error;
+    if (insertError && isExternalCandidatesProfessionSchemaMissing(insertError.message)) {
+      const { profession: _prof, ...noProfession } = insertPayload;
+      insertPayload = noProfession;
+      const retryProf = await supabase.from('external_candidates').insert(insertPayload);
+      if (!retryProf.error) {
+        return this.externalRowToCandidate(row);
+      }
+      insertError = retryProf.error;
+    }
     if (insertError && isExternalCandidatesNamesSchemaMissing(insertError.message)) {
-      const { first_name: _fn, last_name: _ln, ...payloadNoNames } = payload as Record<string, unknown>;
+      const { first_name: _fn, last_name: _ln, ...payloadNoNames } = insertPayload;
       const retry = await supabase.from('external_candidates').insert(payloadNoNames);
       if (!retry.error) {
         return this.externalRowToCandidate(row);
