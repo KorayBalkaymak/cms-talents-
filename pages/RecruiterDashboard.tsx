@@ -1033,8 +1033,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       {/* Sidebar - SCALED DOWN */}
       <aside className="hidden w-[17.5rem] shrink-0 flex-col border-r border-slate-800/80 bg-slate-900 text-slate-300 md:flex">
         <div className="p-6">
-          <div className="mb-8 flex w-full items-center">
-            <CmsLogoHeroBadge className="w-full !justify-start" />
+          <div className="mb-6 flex w-full items-center">
+            <CmsLogoHeroBadge variant="compact" className="w-full !justify-start" />
           </div>
           <p className="mb-3 px-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Navigation</p>
           <nav className="space-y-1">
@@ -1139,8 +1139,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-800 bg-slate-900 px-3 py-2.5 md:hidden"
           style={{ paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))' }}
         >
-          <div className="relative shrink-0 origin-left scale-[0.26]">
-            <CmsLogoHeroBadge className="!justify-start" />
+          <div className="shrink-0">
+            <CmsLogoHeroBadge variant="compact" className="!justify-start" />
           </div>
           <h1 className="min-w-0 flex-1 truncate text-center text-xs font-black uppercase tracking-tight text-white">
             Dashboard

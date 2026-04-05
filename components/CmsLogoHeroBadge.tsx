@@ -5,13 +5,21 @@ export interface CmsLogoHeroBadgeProps {
   className?: string;
   /** Landing: sanftes Einblenden */
   animate?: boolean;
+  /** `compact`: deutlich kleiner (z. B. Recruiter-Sidebar), gleiche Optik */
+  variant?: 'hero' | 'compact';
 }
 
 /**
  * CMS-Talents-Logo wie auf der Landingpage: Spotlights, Aura, äußerer Ring, weißer Innenkreis.
- * Feste Größe w-56 / sm:w-64 (identisch zur Landingpage).
+ * `hero`: w-56 / sm:w-64 · `compact`: ~72px / sm:~80px Außenring
  */
-export const CmsLogoHeroBadge: React.FC<CmsLogoHeroBadgeProps> = ({ className = '', animate = false }) => {
+export const CmsLogoHeroBadge: React.FC<CmsLogoHeroBadgeProps> = ({
+  className = '',
+  animate = false,
+  variant = 'hero',
+}) => {
+  const compact = variant === 'compact';
+
   return (
     <>
       <style>{`
@@ -50,6 +58,20 @@ export const CmsLogoHeroBadge: React.FC<CmsLogoHeroBadgeProps> = ({ className = 
           animation: cmsLhbAuraPulse 2.8s ease-in-out infinite;
           pointer-events: none;
         }
+        .cms-lhb-aura-compact {
+          position: absolute;
+          inset: -7px;
+          border-radius: 9999px;
+          background: radial-gradient(circle at 50% 50%,
+            rgba(255,255,255,0.2) 0%,
+            rgba(255,255,255,0.08) 35%,
+            rgba(249,115,22,0.32) 55%,
+            rgba(249,115,22,0.08) 70%,
+            transparent 78%);
+          filter: blur(5px);
+          animation: cmsLhbAuraPulse 2.8s ease-in-out infinite;
+          pointer-events: none;
+        }
         .cms-lhb-spotlight {
           position: absolute;
           top: -260px;
@@ -63,29 +85,68 @@ export const CmsLogoHeroBadge: React.FC<CmsLogoHeroBadgeProps> = ({ className = 
           opacity: 0.45;
           pointer-events: none;
         }
+        .cms-lhb-spotlight-compact {
+          position: absolute;
+          top: -72px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 72px;
+          height: 92px;
+          clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+          background: linear-gradient(to bottom, rgba(255,255,255,0.32), rgba(255,255,255,0));
+          filter: blur(0.2px);
+          opacity: 0.4;
+          pointer-events: none;
+        }
       `}</style>
       <div
         className={`flex max-w-full shrink-0 justify-center lg:justify-start ${animate ? 'animate-fade-in-up' : ''} ${className}`.trim()}
       >
         <div className="relative inline-flex shrink-0">
-          <div className="cms-lhb-spotlight" style={{ width: 320, opacity: 0.26 }} />
-          <div className="cms-lhb-spotlight" style={{ width: 240, opacity: 0.38 }} />
-          <div className="cms-lhb-spotlight" style={{ width: 170, opacity: 0.55 }} />
+          {compact ? (
+            <>
+              <div className="cms-lhb-spotlight-compact" style={{ width: 88, opacity: 0.22 }} />
+              <div className="cms-lhb-spotlight-compact" style={{ width: 64, opacity: 0.32 }} />
+              <div className="cms-lhb-spotlight-compact" style={{ width: 46, opacity: 0.42 }} />
+            </>
+          ) : (
+            <>
+              <div className="cms-lhb-spotlight" style={{ width: 320, opacity: 0.26 }} />
+              <div className="cms-lhb-spotlight" style={{ width: 240, opacity: 0.38 }} />
+              <div className="cms-lhb-spotlight" style={{ width: 170, opacity: 0.55 }} />
+            </>
+          )}
 
-          <div className="absolute -inset-10 rounded-full bg-orange-500/20 blur-3xl" />
-          <div className="cms-lhb-aura" />
+          <div
+            className={`absolute rounded-full bg-orange-500/20 blur-3xl ${compact ? '-inset-3' : '-inset-10'}`}
+          />
+          <div className={compact ? 'cms-lhb-aura-compact' : 'cms-lhb-aura'} />
 
-          <div className="relative flex h-56 w-56 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/10 shadow-[0_28px_90px_-60px_rgba(0,0,0,0.85)] backdrop-blur-sm sm:h-64 sm:w-64">
+          <div
+            className={`relative flex shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/10 backdrop-blur-sm ${
+              compact
+                ? 'h-[4.5rem] w-[4.5rem] shadow-[0_12px_32px_-20px_rgba(0,0,0,0.75)] sm:h-20 sm:w-20 sm:shadow-[0_14px_36px_-22px_rgba(0,0,0,0.8)]'
+                : 'h-56 w-56 shadow-[0_28px_90px_-60px_rgba(0,0,0,0.85)] sm:h-64 sm:w-64'
+            }`}
+          >
             <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
               <div className="cms-lhb-shine" />
             </div>
 
-            <div className="relative flex h-52 w-52 shrink-0 items-center justify-center rounded-full bg-white shadow-[0_20px_50px_-35px_rgba(0,0,0,0.55)] sm:h-60 sm:w-60">
+            <div
+              className={`relative flex shrink-0 items-center justify-center rounded-full bg-white ${
+                compact
+                  ? 'h-[4.15rem] w-[4.15rem] shadow-[0_8px_22px_-16px_rgba(0,0,0,0.5)] sm:h-[4.65rem] sm:w-[4.65rem] sm:shadow-[0_10px_26px_-18px_rgba(0,0,0,0.52)]'
+                  : 'h-52 w-52 shadow-[0_20px_50px_-35px_rgba(0,0,0,0.55)] sm:h-60 sm:w-60'
+              }`}
+            >
               <div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,1),rgba(255,255,255,0.75)_45%,rgba(255,255,255,1)_100%)]" />
               <img
                 src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
                 alt="CMS Talents"
-                className="relative h-[85%] w-[85%] object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.18)]"
+                className={`relative object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.18)] ${
+                  compact ? 'h-[82%] w-[82%]' : 'h-[85%] w-[85%]'
+                }`}
                 loading="lazy"
                 decoding="async"
               />
