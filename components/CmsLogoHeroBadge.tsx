@@ -136,7 +136,7 @@ export const CmsLogoHeroBadge: React.FC<CmsLogoHeroBadgeProps> = ({
             <div
               className={`relative flex shrink-0 items-center justify-center rounded-full bg-white ${
                 compact
-                  ? 'h-[5.5rem] w-[5.5rem] shadow-[0_10px_28px_-18px_rgba(0,0,0,0.52)] sm:h-[6.5rem] sm:w-[6.5rem] sm:shadow-[0_12px_32px_-20px_rgba(0,0,0,0.54)]'
+                  ? 'aspect-square w-[94%] max-h-[94%] shadow-[0_10px_28px_-18px_rgba(0,0,0,0.52)] sm:shadow-[0_12px_32px_-20px_rgba(0,0,0,0.54)]'
                   : 'h-52 w-52 shadow-[0_20px_50px_-35px_rgba(0,0,0,0.55)] sm:h-60 sm:w-60'
               }`}
             >
@@ -145,7 +145,7 @@ export const CmsLogoHeroBadge: React.FC<CmsLogoHeroBadgeProps> = ({
                 src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
                 alt="CMS Talents"
                 className={`relative object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.18)] ${
-                  compact ? 'h-[84%] w-[84%]' : 'h-[85%] w-[85%]'
+                  compact ? 'h-[92%] w-[92%]' : 'h-[85%] w-[85%]'
                 }`}
                 loading="lazy"
                 decoding="async"
