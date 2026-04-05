@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useDeferredValue, useCallback } from 'react';
 import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, CandidateDocumentsForRecruiter, CandidateInquiry, RegisteredUserListItem, getActiveInquiryEditing, getActiveRecruiterEditing } from '../types';
+import { CmsLogoHeroBadge } from '../components/CmsLogoHeroBadge';
 import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea, FileUpload } from '../components/UI';
 import HourlyRateCalculator from '../components/HourlyRateCalculator';
 import { candidateService } from '../services/CandidateService';
@@ -1032,19 +1033,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       {/* Sidebar - SCALED DOWN */}
       <aside className="hidden w-[17.5rem] shrink-0 flex-col border-r border-slate-800/80 bg-slate-900 text-slate-300 md:flex">
         <div className="p-6">
-          <div className="mb-8 flex items-center">
-            <div className="relative inline-flex">
-              <div className="pointer-events-none absolute -inset-10 rounded-full bg-orange-500/30 blur-xl" aria-hidden />
-              <div className="relative flex h-40 w-40 items-center justify-center rounded-full border border-white/20 bg-white/10 shadow-[0_14px_36px_-24px_rgba(0,0,0,0.9)]">
-                <div className="relative flex h-28 w-28 items-center justify-center rounded-full bg-white shadow-[0_8px_20px_-14px_rgba(0,0,0,0.5)]">
-                  <img
-                    src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
-                    alt="CMS Talents"
-                    className="h-[85%] w-[85%] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.2)]"
-                  />
-                </div>
-              </div>
-            </div>
+          <div className="mb-8 flex w-full items-center">
+            <CmsLogoHeroBadge className="w-full !justify-start" />
           </div>
           <p className="mb-3 px-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Navigation</p>
           <nav className="space-y-1">
@@ -1149,17 +1139,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-800 bg-slate-900 px-3 py-2.5 md:hidden"
           style={{ paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))' }}
         >
-          <div className="relative inline-flex shrink-0">
-            <div className="pointer-events-none absolute -inset-4 rounded-full bg-orange-500/25 blur-md" aria-hidden />
-            <div className="relative flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-white/10 shadow-[0_10px_24px_-18px_rgba(0,0,0,0.9)]">
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-[0_6px_14px_-10px_rgba(0,0,0,0.5)]">
-                <img
-                  src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
-                  alt="CMS Talents"
-                  className="h-[85%] w-[85%] object-contain drop-shadow-[0_3px_6px_rgba(0,0,0,0.2)]"
-                />
-              </div>
-            </div>
+          <div className="relative shrink-0 origin-left scale-[0.26]">
+            <CmsLogoHeroBadge className="!justify-start" />
           </div>
           <h1 className="min-w-0 flex-1 truncate text-center text-xs font-black uppercase tracking-tight text-white">
             Dashboard

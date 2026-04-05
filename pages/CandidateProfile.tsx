@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { CandidateProfile, CandidateStatus, CandidateDocuments, validateProfileForPublishing, validateDocumentsForRecruiterSubmit, canPublishProfile } from '../types';
+import { CmsLogoHeroBadge } from '../components/CmsLogoHeroBadge';
 import { Button, Input, Select, Avatar, Textarea, FileUpload } from '../components/UI';
 import { INDUSTRIES, AVAILABILITY_OPTIONS, BOOSTER_KEYWORD_CATEGORIES } from '../constants';
 import { documentService } from '../services/DocumentService';
@@ -327,16 +328,9 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
       <header className="relative border-b border-slate-200/80 bg-white shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="relative inline-flex shrink-0">
-              <div className="pointer-events-none absolute -inset-4 rounded-full bg-orange-500/30 blur-lg md:-inset-10 md:blur-xl" aria-hidden />
-              <div className="relative flex h-16 w-16 items-center justify-center rounded-full border border-slate-200/90 bg-white/90 shadow-[0_14px_34px_-24px_rgba(0,0,0,0.7)] md:h-40 md:w-40">
-                <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-[0_8px_18px_-14px_rgba(0,0,0,0.55)] md:h-28 md:w-28">
-                  <img
-                    src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
-                    alt="CMS Talents"
-                    className="h-[85%] w-[85%] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.18)]"
-                  />
-                </div>
+            <div className="shrink-0 rounded-2xl bg-[#101B31] p-2 shadow-sm ring-1 ring-slate-200/80 sm:p-3">
+              <div className="origin-left scale-[0.42] sm:scale-[0.55] md:scale-[0.72] lg:scale-90">
+                <CmsLogoHeroBadge className="!justify-start" />
               </div>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { CmsLogoHeroBadge } from '../components/CmsLogoHeroBadge';
 import { Button } from '../components/UI';
 import { User, UserRole } from '../types';
 
@@ -80,85 +81,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
           <div className="relative mx-auto max-w-6xl px-6 pt-24 pb-28 md:pt-32 md:pb-36">
             <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16 xl:gap-20">
               <div className="w-full min-w-[16rem]">
-                <style>{`
-                  @keyframes cmsLogoShineSweep {
-                    0% { transform: translateX(-160%) rotate(25deg); opacity: 0; }
-                    8% { opacity: 1; }
-                    35% { transform: translateX(160%) rotate(25deg); opacity: 1; }
-                    100% { transform: translateX(160%) rotate(25deg); opacity: 0; }
-                  }
-                  @keyframes cmsLogoAuraPulse {
-                    0%, 100% { transform: scale(0.98); opacity: 0.35; }
-                    50% { transform: scale(1.06); opacity: 0.75; }
-                  }
-                  .cms-logo-shine {
-                    position: absolute;
-                    top: -70%;
-                    left: -70%;
-                    width: 55%;
-                    height: 240%;
-                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.95), transparent);
-                    filter: blur(0.5px);
-                    animation: cmsLogoShineSweep 2.8s ease-in-out infinite;
-                    opacity: 0;
-                  }
-                  .cms-logo-aura {
-                    position: absolute;
-                    inset: -22px;
-                    border-radius: 9999px;
-                    background: radial-gradient(circle at 50% 50%,
-                      rgba(255,255,255,0.22) 0%,
-                      rgba(255,255,255,0.10) 35%,
-                      rgba(249,115,22,0.38) 55%,
-                      rgba(249,115,22,0.10) 70%,
-                      transparent 78%);
-                    filter: blur(10px);
-                    animation: cmsLogoAuraPulse 2.8s ease-in-out infinite;
-                    pointer-events: none;
-                  }
-                  .cms-spotlight-beam {
-                    position: absolute;
-                    top: -260px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    width: 260px;
-                    height: 340px;
-                    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-                    background: linear-gradient(to bottom, rgba(255,255,255,0.35), rgba(255,255,255,0.0));
-                    filter: blur(0.2px);
-                    opacity: 0.45;
-                    pointer-events: none;
-                  }
-                `}</style>
-
-                {/* Logo-Badge: feste Größen (w-56/sm:w-64), damit die Spalte nicht auf ~0px kollabiert */}
-                <div className="animate-fade-in-up mb-8 flex w-full justify-center lg:justify-start">
-                  <div className="relative inline-flex shrink-0">
-                    <div className="cms-spotlight-beam" style={{ width: 320, opacity: 0.26 }} />
-                    <div className="cms-spotlight-beam" style={{ width: 240, opacity: 0.38 }} />
-                    <div className="cms-spotlight-beam" style={{ width: 170, opacity: 0.55 }} />
-
-                    <div className="absolute -inset-10 rounded-full bg-orange-500/20 blur-3xl" />
-                    <div className="cms-logo-aura" />
-
-                    <div className="relative flex h-56 w-56 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/10 shadow-[0_28px_90px_-60px_rgba(0,0,0,0.85)] backdrop-blur-sm sm:h-64 sm:w-64">
-                      <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
-                        <div className="cms-logo-shine" />
-                      </div>
-
-                      <div className="relative flex h-52 w-52 shrink-0 items-center justify-center rounded-full bg-white shadow-[0_20px_50px_-35px_rgba(0,0,0,0.55)] sm:h-60 sm:w-60">
-                        <div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,1),rgba(255,255,255,0.75)_45%,rgba(255,255,255,1)_100%)]" />
-                        <img
-                          src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
-                          alt="CMS Talents"
-                          className="relative h-[85%] w-[85%] object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.18)]"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <CmsLogoHeroBadge animate className="mb-8 flex w-full" />
 
                 <div className="mx-auto max-w-xl lg:mx-0">
                 <h1 className="text-4xl md:text-5xl lg:text-[3.25rem] font-bold text-white tracking-tight leading-[1.1] mb-6 animate-fade-in-up-1">

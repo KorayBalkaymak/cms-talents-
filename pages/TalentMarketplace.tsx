@@ -4,6 +4,7 @@ import { CandidateProfile, CandidateDocuments, UserRole } from '../types';
 import { rankCandidates, highlightText } from '../services/SearchService';
 import { candidateService } from '../services/CandidateService';
 import { authService } from '../services/AuthService';
+import { CmsLogoHeroBadge } from '../components/CmsLogoHeroBadge';
 import { Input, Avatar, Badge, Button, Modal, EmptyState } from '../components/UI';
 import { INDUSTRIES, AVAILABILITY_OPTIONS } from '../constants';
 import { User } from '../types';
@@ -395,20 +396,22 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
     <div className="min-h-screen bg-white">
       {/* Navigation Bar */}
       <header className="bg-[#101B31] border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 cursor-pointer shrink-0" onClick={() => onNavigate('/')}>
-              <div className="relative inline-flex shrink-0">
-                <div className="pointer-events-none absolute -inset-4 rounded-full bg-orange-500/25 blur-lg md:-inset-10 md:blur-xl" aria-hidden />
-                <div className="relative flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-white/95 shadow-[0_14px_34px_-24px_rgba(0,0,0,0.55)] md:h-40 md:w-40">
-                  <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-[0_8px_18px_-14px_rgba(0,0,0,0.45)] md:h-28 md:w-28">
-                    <img
-                      src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
-                      alt="CMS Talents"
-                      className="h-[85%] w-[85%] object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.18)]"
-                    />
-                  </div>
-                </div>
+            <div
+              className="flex min-w-0 cursor-pointer items-center gap-3 shrink-0"
+              onClick={() => onNavigate('/')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onNavigate('/');
+                }
+              }}
+            >
+              <div className="shrink-0 origin-left scale-[0.42] sm:scale-50 md:scale-[0.62] lg:scale-90 xl:scale-100">
+                <CmsLogoHeroBadge className="!justify-start" />
               </div>
             </div>
 
