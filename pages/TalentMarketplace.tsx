@@ -410,7 +410,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
                 }
               }}
             >
-              <div className="shrink-0 origin-left scale-[0.42] sm:scale-50 md:scale-[0.62] lg:scale-90 xl:scale-100">
+              <div className="shrink-0 origin-left scale-[0.22] sm:scale-[0.26] md:scale-[0.30] lg:scale-[0.34] xl:scale-[0.38]">
                 <CmsLogoHeroBadge className="!justify-start" />
               </div>
             </div>
