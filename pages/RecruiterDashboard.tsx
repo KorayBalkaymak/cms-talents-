@@ -78,6 +78,45 @@ function contactInitialsFromName(name: string): string {
   return (parts[0]?.slice(0, 2) || '?').toUpperCase();
 }
 
+/** Erkennt die strukturierte Marktplatz-Anfrage (TalentMarketplace.submitInquiry), ein- oder mehrzeilig. */
+const MARKETPLACE_INQUIRY_FIELDS: { prefix: string; label: string }[] = [
+  { prefix: 'Firma:', label: 'Firma' },
+  { prefix: 'Position (Kunde):', label: 'Position (Kunde)' },
+  { prefix: 'Projektlaufzeit:', label: 'Projektlaufzeit' },
+  { prefix: 'Projektstandort:', label: 'Projektstandort' },
+  { prefix: 'Budget (EUR):', label: 'Budget (EUR)' },
+];
+
+function parseMarketplaceInquiryDetails(message: string | undefined): { label: string; value: string }[] | null {
+  if (!message?.trim()) return null;
+  const text = message.trim();
+
+  const hits = MARKETPLACE_INQUIRY_FIELDS.map(({ prefix, label }) => {
+    const index = text.indexOf(prefix);
+    return index >= 0 ? { prefix, label, index } : null;
+  }).filter((x): x is { prefix: string; label: string; index: number } => x !== null);
+
+  if (hits.length >= 2) {
+    hits.sort((a, b) => a.index - b.index);
+    const rows: { label: string; value: string }[] = [];
+    for (let i = 0; i < hits.length; i++) {
+      const start = hits[i].index + hits[i].prefix.length;
+      const end = i + 1 < hits.length ? hits[i + 1].index : text.length;
+      rows.push({ label: hits[i].label, value: text.slice(start, end).trim() });
+    }
+    return rows;
+  }
+
+  const lines = text.split(/\n/).map((l) => l.trim()).filter(Boolean);
+  const byLongestPrefix = [...MARKETPLACE_INQUIRY_FIELDS].sort((a, b) => b.prefix.length - a.prefix.length);
+  const fromLines: { label: string; value: string }[] = [];
+  for (const line of lines) {
+    const hit = byLongestPrefix.find((f) => line.startsWith(f.prefix));
+    if (hit) fromLines.push({ label: hit.label, value: line.slice(hit.prefix.length).trim() });
+  }
+  return fromLines.length >= 2 ? fromLines : null;
+}
+
 const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidates, isInitialLoading = false, onAdminAction, onUpdateCandidate, onRefreshCandidates, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeView, setActiveView] = useState<'talents' | 'inquiries' | 'external' | 'users' | 'calculator'>('talents');
@@ -1362,6 +1401,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       const candidateLabel = candidateNameById.get(inq.candidateUserId) || inq.candidateUserId;
                       const created = new Date(inq.createdAt);
                       const initials = contactInitialsFromName(inq.contactName);
+                      const inquiryDetailRows = parseMarketplaceInquiryDetails(inq.message);
                       return (
                         <li key={inq.id}>
                           <article className="group relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm transition-all duration-200 hover:border-slate-300/90 hover:shadow-md sm:p-5">
@@ -1408,9 +1448,29 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                     <p className="mt-0.5 font-semibold text-slate-800">{candidateLabel}</p>
                                   </div>
                                   {inq.message ? (
-                                    <div className="rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-600 ring-1 ring-slate-100">
-                                      {inq.message}
-                                    </div>
+                                    inquiryDetailRows ? (
+                                      <div className="rounded-xl border border-orange-100/90 bg-gradient-to-br from-orange-50/50 via-white to-slate-50/80 px-3 py-3 shadow-sm ring-1 ring-orange-100/50">
+                                        <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-900/70">
+                                          Projektdetails
+                                        </p>
+                                        <dl className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                                          {inquiryDetailRows.map((row) => (
+                                            <div
+                                              key={`${inq.id}-${row.label}`}
+                                              className="rounded-lg border border-white/80 bg-white/90 px-3 py-2.5 shadow-sm backdrop-blur-[2px]"
+                                            >
+                                              <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{row.label}</dt>
+                                              <dd className="mt-1 break-words text-sm font-medium leading-snug text-slate-900">{row.value}</dd>
+                                            </div>
+                                          ))}
+                                        </dl>
+                                      </div>
+                                    ) : (
+                                      <div className="rounded-xl border border-slate-100 bg-white px-3 py-2.5 ring-1 ring-slate-100">
+                                        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Nachricht</p>
+                                        <p className="text-sm leading-relaxed text-slate-600">{inq.message}</p>
+                                      </div>
+                                    )
                                   ) : null}
                                   {editing ? (
                                     <p
