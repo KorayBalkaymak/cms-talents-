@@ -978,7 +978,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   return (
     <div className="flex min-h-screen min-h-[100dvh] bg-slate-50 font-inter">
       {/* Sidebar - SCALED DOWN */}
-      <aside className="w-64 bg-slate-900 text-slate-300 hidden md:flex flex-col">
+      <aside className="hidden w-[17.5rem] shrink-0 flex-col border-r border-slate-800/80 bg-slate-900 text-slate-300 md:flex">
         <div className="p-6">
           <div className="mb-8 flex items-center">
             <div className="relative inline-flex">
@@ -994,80 +994,87 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               </div>
             </div>
           </div>
-          <nav className="space-y-2">
+          <p className="mb-3 px-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Navigation</p>
+          <nav className="space-y-1">
             <button
               type="button"
               onClick={() => setActiveView('talents')}
-              className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-xs font-bold transition-colors ${
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
                 activeView === 'talents'
-                  ? 'border-slate-700 bg-slate-800 text-orange-500'
-                  : 'border-transparent text-slate-300 hover:bg-slate-800/60'
+                  ? 'border-l-[3px] border-orange-500 bg-white/[0.07] pl-[9px] text-white ring-1 ring-white/10'
+                  : 'border-l-[3px] border-transparent pl-3 text-slate-400 hover:bg-white/[0.04] hover:text-slate-100'
               }`}
             >
-              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                <path strokeWidth="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              TALENTS
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${activeView === 'talents' ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-800 text-slate-500'}`}>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </span>
+              <span className="leading-snug">Talents</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveView('inquiries')}
-              className={`flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-xs font-bold transition-colors ${
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
                 activeView === 'inquiries'
-                  ? 'border-slate-700 bg-slate-800 text-orange-500'
-                  : 'border-transparent text-slate-300 hover:bg-slate-800/60'
+                  ? 'border-l-[3px] border-orange-500 bg-white/[0.07] pl-[9px] text-white ring-1 ring-white/10'
+                  : 'border-l-[3px] border-transparent pl-3 text-slate-400 hover:bg-white/[0.04] hover:text-slate-100'
               }`}
             >
-              <span className="flex items-center gap-3">
-                <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                  <path strokeWidth="2.2" d="M8 10h8M8 14h5m-7 7h12a2 2 0 002-2V7l-4-4H6a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${activeView === 'inquiries' ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-800 text-slate-500'}`}>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M8 10h8M8 14h5m-7 7h12a2 2 0 002-2V7l-4-4H6a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
-                EXTERNE INTERESSEN
               </span>
+              <span className="leading-snug">Externe Interessen</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveView('external')}
-              className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-xs font-bold transition-colors ${
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
                 activeView === 'external'
-                  ? 'border-slate-700 bg-slate-800 text-orange-500'
-                  : 'border-transparent text-slate-300 hover:bg-slate-800/60'
+                  ? 'border-l-[3px] border-orange-500 bg-white/[0.07] pl-[9px] text-white ring-1 ring-white/10'
+                  : 'border-l-[3px] border-transparent pl-3 text-slate-400 hover:bg-white/[0.04] hover:text-slate-100'
               }`}
             >
-              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                <path strokeWidth="2.2" d="M12 4v16m8-8H4" />
-              </svg>
-              KANDIDAT HINZUFÜGEN
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${activeView === 'external' ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-800 text-slate-500'}`}>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+              </span>
+              <span className="leading-snug">Kandidat hinzufügen</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveView('users')}
-              className={`flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-xs font-bold transition-colors ${
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
                 activeView === 'users'
-                  ? 'border-slate-700 bg-slate-800 text-orange-500'
-                  : 'border-transparent text-slate-300 hover:bg-slate-800/60'
+                  ? 'border-l-[3px] border-orange-500 bg-white/[0.07] pl-[9px] text-white ring-1 ring-white/10'
+                  : 'border-l-[3px] border-transparent pl-3 text-slate-400 hover:bg-white/[0.04] hover:text-slate-100'
               }`}
             >
-              <span className="flex items-center gap-3">
-                <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                  <path strokeWidth="2.2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${activeView === 'users' ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-800 text-slate-500'}`}>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
-                ALLE NUTZER
               </span>
+              <span className="leading-snug">Nutzer</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveView('calculator')}
-              className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-xs font-bold transition-colors ${
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
                 activeView === 'calculator'
-                  ? 'border-slate-700 bg-slate-800 text-orange-500'
-                  : 'border-transparent text-slate-300 hover:bg-slate-800/60'
+                  ? 'border-l-[3px] border-orange-500 bg-white/[0.07] pl-[9px] text-white ring-1 ring-white/10'
+                  : 'border-l-[3px] border-transparent pl-3 text-slate-400 hover:bg-white/[0.04] hover:text-slate-100'
               }`}
             >
-              <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                <path strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-              GEHALTSRECHNER
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${activeView === 'calculator' ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-800 text-slate-500'}`}>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </span>
+              <span className="leading-snug">Gehaltsrechner</span>
             </button>
           </nav>
         </div>
@@ -1114,15 +1121,23 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           </button>
         </div>
 
-        <header className="relative z-10 flex flex-col gap-3 border-b border-slate-100 bg-white px-4 py-3 shadow-sm sm:px-6 md:h-16 md:flex-row md:items-center md:justify-between md:gap-4 md:py-0">
-          <div className="hidden items-center gap-2 md:flex">
-            <h1 className="text-xl font-black uppercase tracking-tight text-slate-900">Dashboard</h1>
-            <div className="ml-4 inline-flex max-w-full flex-wrap gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
+        <header className="relative z-10 flex flex-col gap-3 border-b border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_1px_0_rgba(15,23,42,0.04)] backdrop-blur-sm sm:px-6 md:h-[4.25rem] md:flex-row md:items-center md:justify-between md:gap-4 md:py-0">
+          <div className="hidden min-w-0 flex-1 items-center gap-4 md:flex">
+            <div>
+              <h1 className="text-lg font-semibold tracking-tight text-slate-900">Dashboard</h1>
+              <p className="text-xs font-medium text-slate-500">Recruiting · CMS Talents</p>
+            </div>
+            <nav
+              className="ml-auto inline-flex max-w-full flex-wrap items-center gap-0.5 rounded-2xl border border-slate-200/90 bg-slate-100/80 p-1 shadow-inner"
+              aria-label="Hauptnavigation"
+            >
               <button
                 type="button"
                 onClick={() => setActiveView('talents')}
-                className={`rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wide transition-colors ${
-                  activeView === 'talents' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all ${
+                  activeView === 'talents'
+                    ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200/80'
+                    : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
                 }`}
               >
                 Talents
@@ -1130,8 +1145,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               <button
                 type="button"
                 onClick={() => setActiveView('inquiries')}
-                className={`rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wide transition-colors ${
-                  activeView === 'inquiries' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all ${
+                  activeView === 'inquiries'
+                    ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200/80'
+                    : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
                 }`}
               >
                 Externe Interessen
@@ -1139,8 +1156,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               <button
                 type="button"
                 onClick={() => setActiveView('external')}
-                className={`rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wide transition-colors ${
-                  activeView === 'external' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all ${
+                  activeView === 'external'
+                    ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200/80'
+                    : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
                 }`}
               >
                 Kandidat hinzufügen
@@ -1148,8 +1167,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               <button
                 type="button"
                 onClick={() => setActiveView('users')}
-                className={`rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wide transition-colors ${
-                  activeView === 'users' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all ${
+                  activeView === 'users'
+                    ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200/80'
+                    : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
                 }`}
               >
                 Nutzer
@@ -1157,13 +1178,15 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               <button
                 type="button"
                 onClick={() => setActiveView('calculator')}
-                className={`rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wide transition-colors ${
-                  activeView === 'calculator' ? 'bg-white text-orange-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all ${
+                  activeView === 'calculator'
+                    ? 'bg-white text-orange-600 shadow-sm ring-1 ring-slate-200/80'
+                    : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
                 }`}
               >
                 Gehaltsrechner
               </button>
-            </div>
+            </nav>
           </div>
           <div
             className={`relative w-full min-w-0 md:max-w-sm md:flex-1 lg:max-w-md ${activeView === 'calculator' ? 'hidden' : ''}`}
@@ -1196,47 +1219,65 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         <div
           className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-slate-50/50 p-3 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:p-6 sm:pb-8"
         >
-          <div className="mb-4 grid grid-cols-2 gap-2 md:hidden">
-            <Button
-              type="button"
-              variant={activeView === 'talents' ? 'primary' : 'outline'}
-              className="h-10 text-[11px] font-black"
-              onClick={() => setActiveView('talents')}
-            >
-              Talents
-            </Button>
-            <Button
-              type="button"
-              variant={activeView === 'inquiries' ? 'primary' : 'outline'}
-              className="h-10 text-[11px] font-black"
-              onClick={() => setActiveView('inquiries')}
-            >
-              Externe Interessen
-            </Button>
-            <Button
-              type="button"
-              variant={activeView === 'external' ? 'primary' : 'outline'}
-              className="h-10 text-[11px] font-black"
-              onClick={() => setActiveView('external')}
-            >
-              Kandidat hinzufügen
-            </Button>
-            <Button
-              type="button"
-              variant={activeView === 'users' ? 'primary' : 'outline'}
-              className="h-10 text-[11px] font-black"
-              onClick={() => setActiveView('users')}
-            >
-              Alle Nutzer
-            </Button>
-            <Button
-              type="button"
-              variant={activeView === 'calculator' ? 'primary' : 'outline'}
-              className="col-span-2 h-10 text-[11px] font-black"
-              onClick={() => setActiveView('calculator')}
-            >
-              Gehaltsrechner
-            </Button>
+          <div className="mb-4 md:hidden">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Bereiche</p>
+            <div className="-mx-1 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
+              <button
+                type="button"
+                onClick={() => setActiveView('talents')}
+                className={`shrink-0 rounded-xl border px-3.5 py-2.5 text-xs font-medium transition-all ${
+                  activeView === 'talents'
+                    ? 'border-orange-200 bg-orange-50 text-orange-800 shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                Talents
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView('inquiries')}
+                className={`shrink-0 rounded-xl border px-3.5 py-2.5 text-xs font-medium transition-all ${
+                  activeView === 'inquiries'
+                    ? 'border-orange-200 bg-orange-50 text-orange-800 shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                Interessen
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView('external')}
+                className={`shrink-0 rounded-xl border px-3.5 py-2.5 text-xs font-medium transition-all ${
+                  activeView === 'external'
+                    ? 'border-orange-200 bg-orange-50 text-orange-800 shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                Hinzufügen
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView('users')}
+                className={`shrink-0 rounded-xl border px-3.5 py-2.5 text-xs font-medium transition-all ${
+                  activeView === 'users'
+                    ? 'border-orange-200 bg-orange-50 text-orange-800 shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                Nutzer
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView('calculator')}
+                className={`shrink-0 rounded-xl border px-3.5 py-2.5 text-xs font-medium transition-all ${
+                  activeView === 'calculator'
+                    ? 'border-orange-200 bg-orange-50 text-orange-800 shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                Rechner
+              </button>
+            </div>
           </div>
 
           {activeView === 'inquiries' ? (
