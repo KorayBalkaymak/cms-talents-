@@ -68,6 +68,16 @@ function roleLabelDe(role: UserRole): string {
   return 'Kandidat';
 }
 
+function contactInitialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    const a = parts[0][0] ?? '';
+    const b = parts[parts.length - 1][0] ?? '';
+    return `${a}${b}`.toUpperCase();
+  }
+  return (parts[0]?.slice(0, 2) || '?').toUpperCase();
+}
+
 const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidates, isInitialLoading = false, onAdminAction, onUpdateCandidate, onRefreshCandidates, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeView, setActiveView] = useState<'talents' | 'inquiries' | 'external' | 'users' | 'calculator'>('talents');
@@ -1284,95 +1294,180 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           </div>
 
           {activeView === 'inquiries' ? (
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">Externe Interessen</h3>
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                  {isLoadingInquiries ? 'Lädt…' : `${inquiries.length} Anfrage${inquiries.length === 1 ? '' : 'n'}`}
-                </span>
+            <div className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)]">
+              <div className="relative overflow-hidden border-b border-white/10 bg-gradient-to-br from-slate-900 via-[#0f172a] to-slate-950 px-5 py-6 sm:px-8 sm:py-8">
+                <div className="pointer-events-none absolute -right-16 -top-24 h-48 w-48 rounded-full bg-orange-500/15 blur-3xl" aria-hidden />
+                <div className="pointer-events-none absolute -bottom-20 -left-10 h-40 w-40 rounded-full bg-sky-500/10 blur-3xl" aria-hidden />
+                <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-orange-400/95">Talent-Marktplatz</p>
+                    <h2 className="mt-2 text-xl font-bold tracking-tight text-white sm:text-2xl">Externe Interessen</h2>
+                    <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-400">
+                      Anfragen von Kunden und Interessenten zu Profilen im Marktplatz – zentral bearbeiten, kontaktieren und zuordnen.
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white backdrop-blur-sm ${
+                        isLoadingInquiries ? 'animate-pulse' : ''
+                      }`}
+                    >
+                      <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" aria-hidden />
+                      {isLoadingInquiries
+                        ? 'Wird geladen…'
+                        : `${inquiries.length} Anfrage${inquiries.length === 1 ? '' : 'n'}`}
+                    </span>
+                  </div>
+                </div>
               </div>
-              {inquiryDeleteError && (
-                <div className="mx-4 mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[11px] font-bold text-red-800">
-                  {inquiryDeleteError}
-                </div>
-              )}
-              {inquiryClaimError && (
-                <div className="mx-4 mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-800">
-                  {inquiryClaimError}
-                </div>
-              )}
-              {inquiries.length === 0 ? (
-                <div className="px-4 py-3 text-xs font-medium text-slate-500">
-                  Noch keine Interessenanfragen vorhanden.
-                </div>
-              ) : (
-                <div className="max-h-[70vh] overflow-auto divide-y divide-slate-100">
-                  {inquiries.slice(0, 200).map((inq) => {
-                    const editing = getActiveInquiryEditing(inq);
-                    const isMine = editing?.userId === user.id;
-                    const mailSubject = encodeURIComponent(`Rueckmeldung zu Ihrer Anfrage (${candidateNameById.get(inq.candidateUserId) || 'Kandidat'})`);
-                    const mailBody = encodeURIComponent(
-                      `Hallo ${inq.contactName},\n\nvielen Dank fuer Ihr Interesse.\n\nBeste Gruesse\n${user.firstName?.trim() || 'Recruiter-Team'}`
-                    );
-                    return (
-                    <div key={inq.id} className="px-4 py-3 text-xs text-slate-700 flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-black text-slate-900">
-                          {candidateNameById.get(inq.candidateUserId) || inq.candidateUserId}
-                        </p>
-                        <p className="mt-1 font-semibold">
-                          {inq.contactName} · {inq.contactEmail} · {inq.contactPhone}
-                        </p>
-                        {inq.message && <p className="mt-1 text-slate-600">{inq.message}</p>}
-                        <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                          {new Date(inq.createdAt).toLocaleString('de-DE')}
-                        </p>
-                        {editing && (
-                          <p className={`mt-2 text-[10px] font-black uppercase tracking-wide ${isMine ? 'text-emerald-700' : 'text-amber-700'}`}>
-                            {isMine ? 'Du bearbeitest diese Anfrage gerade' : `${editing.label} bearbeitet diese Anfrage gerade`}
-                          </p>
-                        )}
-                      </div>
-                      <div className="shrink-0 flex flex-col gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={isMine ? 'outline' : 'secondary'}
-                          className="h-8 text-[10px] font-black"
-                          isLoading={inquiryClaimBusyId === inq.id}
-                          disabled={inquiryClaimBusyId === inq.id}
-                          onClick={() => void handleInquiryEditingClaim(inq)}
-                          title={isMine ? 'Bearbeitung beenden' : 'Bearbeitung melden'}
-                        >
-                          {isMine ? 'Bearbeitung beenden' : 'Ich bearbeite'}
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="h-8 text-[10px] font-black"
-                          onClick={() => window.open(`mailto:${inq.contactEmail}?subject=${mailSubject}&body=${mailBody}`, '_self')}
-                          title="E-Mail an Interessent senden"
-                        >
-                          E-Mail senden
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="danger"
-                          className="h-8 text-[10px] font-black"
-                          isLoading={deletingInquiryId === inq.id}
-                          disabled={deletingInquiryId === inq.id}
-                          onClick={() => void handleDeleteInquiry(inq)}
-                          title="Anfrage löschen"
-                        >
-                          Löschen
-                        </Button>
-                      </div>
+
+              <div className="space-y-4 bg-gradient-to-b from-slate-50/90 to-slate-50 p-4 sm:p-6">
+                {inquiryDeleteError && (
+                  <div className="rounded-2xl border border-red-200/80 bg-red-50 px-4 py-3 text-xs font-semibold text-red-800 shadow-sm">
+                    {inquiryDeleteError}
+                  </div>
+                )}
+                {inquiryClaimError && (
+                  <div className="rounded-2xl border border-amber-200/80 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900 shadow-sm">
+                    {inquiryClaimError}
+                  </div>
+                )}
+
+                {isLoadingInquiries && inquiries.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
+                    <div className="h-10 w-10 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" aria-hidden />
+                    <p className="mt-4 text-sm font-semibold text-slate-700">Anfragen werden geladen…</p>
+                  </div>
+                ) : inquiries.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200/90 bg-white px-6 py-16 text-center shadow-sm">
+                    <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 text-slate-400 shadow-inner ring-1 ring-slate-200/80">
+                      <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                        <path strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" d="M8 10h8M8 14h5m-7 7h12a2 2 0 002-2V7l-4-4H6a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
                     </div>
-                  )})}
-                </div>
-              )}
+                    <p className="text-base font-semibold text-slate-800">Noch keine Interessenanfragen</p>
+                    <p className="mt-2 max-w-sm text-sm leading-relaxed text-slate-500">
+                      Sobald sich Interessenten über den Marktplatz melden, erscheinen die Anfragen hier mit Kontaktdaten und Kontext.
+                    </p>
+                  </div>
+                ) : (
+                  <ul className="max-h-[min(70vh,720px)] space-y-4 overflow-y-auto pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(148,163,184,0.5)_transparent]">
+                    {inquiries.slice(0, 200).map((inq) => {
+                      const editing = getActiveInquiryEditing(inq);
+                      const isMine = editing?.userId === user.id;
+                      const mailSubject = encodeURIComponent(`Rueckmeldung zu Ihrer Anfrage (${candidateNameById.get(inq.candidateUserId) || 'Kandidat'})`);
+                      const mailBody = encodeURIComponent(
+                        `Hallo ${inq.contactName},\n\nvielen Dank fuer Ihr Interesse.\n\nBeste Gruesse\n${user.firstName?.trim() || 'Recruiter-Team'}`
+                      );
+                      const candidateLabel = candidateNameById.get(inq.candidateUserId) || inq.candidateUserId;
+                      const created = new Date(inq.createdAt);
+                      const initials = contactInitialsFromName(inq.contactName);
+                      return (
+                        <li key={inq.id}>
+                          <article className="group relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm transition-all duration-200 hover:border-slate-300/90 hover:shadow-md sm:p-5">
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:justify-between lg:gap-6">
+                              <div className="flex min-w-0 flex-1 gap-4">
+                                <div
+                                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 text-sm font-bold text-white shadow-md shadow-orange-500/25 ring-1 ring-white/20"
+                                  aria-hidden
+                                >
+                                  {initials}
+                                </div>
+                                <div className="min-w-0 flex-1 space-y-3">
+                                  <div className="flex flex-wrap items-start justify-between gap-2">
+                                    <div>
+                                      <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Interessent</p>
+                                      <p className="truncate text-base font-semibold text-slate-900">{inq.contactName}</p>
+                                    </div>
+                                    <time
+                                      className="shrink-0 rounded-full border border-slate-200/90 bg-slate-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500"
+                                      dateTime={inq.createdAt}
+                                    >
+                                      {created.toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })}
+                                    </time>
+                                  </div>
+                                  <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-600">
+                                    <a
+                                      href={`mailto:${encodeURIComponent(inq.contactEmail)}`}
+                                      className="inline-flex min-w-0 items-center gap-1.5 font-medium text-slate-700 underline decoration-slate-300 underline-offset-2 transition-colors hover:text-orange-600 hover:decoration-orange-300"
+                                    >
+                                      <svg className="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                                        <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                      </svg>
+                                      <span className="truncate">{inq.contactEmail}</span>
+                                    </a>
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <svg className="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                                        <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                      </svg>
+                                      {inq.contactPhone}
+                                    </span>
+                                  </div>
+                                  <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2">
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Bezogen auf Talent</p>
+                                    <p className="mt-0.5 font-semibold text-slate-800">{candidateLabel}</p>
+                                  </div>
+                                  {inq.message ? (
+                                    <div className="rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-600 ring-1 ring-slate-100">
+                                      {inq.message}
+                                    </div>
+                                  ) : null}
+                                  {editing ? (
+                                    <p
+                                      className={`inline-flex max-w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wide ${
+                                        isMine ? 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/80' : 'bg-amber-50 text-amber-900 ring-1 ring-amber-200/80'
+                                      }`}
+                                    >
+                                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${isMine ? 'bg-emerald-500' : 'bg-amber-500'}`} aria-hidden />
+                                      {isMine ? 'Du bearbeitest diese Anfrage gerade' : `${editing.label} bearbeitet diese Anfrage gerade`}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              </div>
+                              <div className="flex shrink-0 flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:flex-wrap lg:w-52 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant={isMine ? 'outline' : 'secondary'}
+                                  className="h-9 w-full justify-center text-[11px] font-bold sm:flex-1 lg:w-full"
+                                  isLoading={inquiryClaimBusyId === inq.id}
+                                  disabled={inquiryClaimBusyId === inq.id}
+                                  onClick={() => void handleInquiryEditingClaim(inq)}
+                                  title={isMine ? 'Bearbeitung beenden' : 'Bearbeitung melden'}
+                                >
+                                  {isMine ? 'Bearbeitung beenden' : 'Ich bearbeite'}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-9 w-full justify-center text-[11px] font-bold sm:flex-1 lg:w-full"
+                                  onClick={() => window.open(`mailto:${inq.contactEmail}?subject=${mailSubject}&body=${mailBody}`, '_self')}
+                                  title="E-Mail an Interessent senden"
+                                >
+                                  E-Mail senden
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="danger"
+                                  className="h-9 w-full justify-center text-[11px] font-bold sm:flex-1 lg:w-full"
+                                  isLoading={deletingInquiryId === inq.id}
+                                  disabled={deletingInquiryId === inq.id}
+                                  onClick={() => void handleDeleteInquiry(inq)}
+                                  title="Anfrage löschen"
+                                >
+                                  Löschen
+                                </Button>
+                              </div>
+                            </div>
+                          </article>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
             </div>
           ) : activeView === 'external' ? (
             <div className="overflow-hidden rounded-2xl border border-[#1b2a47] bg-[#101B31] shadow-sm">
