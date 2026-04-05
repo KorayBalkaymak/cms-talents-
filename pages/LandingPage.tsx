@@ -78,8 +78,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
           <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
           <div className="relative mx-auto max-w-6xl px-6 pt-24 pb-28 md:pt-32 md:pb-36">
-            <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[minmax(0,42rem)_minmax(0,1fr)] lg:gap-16 xl:gap-20">
-              <div className="min-w-0 w-full">
+            <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16 xl:gap-20">
+              <div className="w-full min-w-[16rem]">
                 <style>{`
                   @keyframes cmsLogoShineSweep {
                     0% { transform: translateX(-160%) rotate(25deg); opacity: 0; }
@@ -104,7 +104,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                   }
                   .cms-logo-aura {
                     position: absolute;
-                    inset: -66px;
+                    inset: -22px;
                     border-radius: 9999px;
                     background: radial-gradient(circle at 50% 50%,
                       rgba(255,255,255,0.22) 0%,
@@ -118,11 +118,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                   }
                   .cms-spotlight-beam {
                     position: absolute;
-                    top: -780px;
+                    top: -260px;
                     left: 50%;
                     transform: translateX(-50%);
-                    width: 780px;
-                    height: 1020px;
+                    width: 260px;
+                    height: 340px;
                     clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
                     background: linear-gradient(to bottom, rgba(255,255,255,0.35), rgba(255,255,255,0.0));
                     filter: blur(0.2px);
@@ -131,32 +131,27 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                   }
                 `}</style>
 
-                {/* Logo: ~3× zur ursprünglichen Basis (w-56); volle Spaltenbreite, max. 42rem */}
-                <div className="animate-fade-in-up mb-10 flex w-full justify-center lg:justify-start">
-                  <div className="relative inline-flex">
-                    {/* Spotlight beams (3× Skala) */}
-                    <div className="cms-spotlight-beam" style={{ width: 960, opacity: 0.26 }} />
-                    <div className="cms-spotlight-beam" style={{ width: 720, opacity: 0.38 }} />
-                    <div className="cms-spotlight-beam" style={{ width: 510, opacity: 0.55 }} />
+                {/* Logo-Badge: feste Größen (w-56/sm:w-64), damit die Spalte nicht auf ~0px kollabiert */}
+                <div className="animate-fade-in-up mb-8 flex w-full justify-center lg:justify-start">
+                  <div className="relative inline-flex shrink-0">
+                    <div className="cms-spotlight-beam" style={{ width: 320, opacity: 0.26 }} />
+                    <div className="cms-spotlight-beam" style={{ width: 240, opacity: 0.38 }} />
+                    <div className="cms-spotlight-beam" style={{ width: 170, opacity: 0.55 }} />
 
-                    {/* Orange Glow */}
-                    <div className="absolute -inset-[7.5rem] rounded-full bg-orange-500/20 blur-3xl" />
+                    <div className="absolute -inset-10 rounded-full bg-orange-500/20 blur-3xl" />
                     <div className="cms-logo-aura" />
 
-                    {/* Outer ring: 14rem × 3 = 42rem */}
-                    <div className="relative flex aspect-square w-[min(100%,42rem)] max-h-[min(70vh,42rem)] shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/10 shadow-[0_84px_180px_-180px_rgba(0,0,0,0.85)] backdrop-blur-sm sm:w-[min(100%,48rem)] sm:max-h-[min(70vh,48rem)]">
-                      {/* Outer glint */}
+                    <div className="relative flex h-56 w-56 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/10 shadow-[0_28px_90px_-60px_rgba(0,0,0,0.85)] backdrop-blur-sm sm:h-64 sm:w-64">
                       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
                         <div className="cms-logo-shine" />
                       </div>
 
-                      {/* Inner white fill — ~92.5 % des Außenrings (wie zuvor proportional) */}
-                      <div className="relative flex aspect-square w-[92.5%] max-h-full shrink-0 items-center justify-center rounded-full bg-white shadow-[0_60px_150px_-105px_rgba(0,0,0,0.55)]">
+                      <div className="relative flex h-52 w-52 shrink-0 items-center justify-center rounded-full bg-white shadow-[0_20px_50px_-35px_rgba(0,0,0,0.55)] sm:h-60 sm:w-60">
                         <div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,1),rgba(255,255,255,0.75)_45%,rgba(255,255,255,1)_100%)]" />
                         <img
                           src="/1adef99a-1986-43bc-acb8-278472ee426c.png"
                           alt="CMS Talents"
-                          className="relative h-[98%] w-[98%] object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.18)]"
+                          className="relative h-[85%] w-[85%] object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.18)]"
                           loading="lazy"
                           decoding="async"
                         />
