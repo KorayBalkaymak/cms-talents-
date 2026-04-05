@@ -397,7 +397,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
       {/* Navigation Bar */}
       <header className="bg-[#101B31] border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center justify-start gap-3 sm:gap-4 lg:justify-between">
             <div
               className="flex min-w-0 cursor-pointer items-center gap-3 shrink-0"
               onClick={() => onNavigate('/')}
