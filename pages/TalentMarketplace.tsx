@@ -5,7 +5,7 @@ import { rankCandidates, highlightText } from '../services/SearchService';
 import { candidateService } from '../services/CandidateService';
 import { authService } from '../services/AuthService';
 import { CmsLogoHeroBadge } from '../components/CmsLogoHeroBadge';
-import { Input, Avatar, Badge, Button, Modal, EmptyState, FileUpload } from '../components/UI';
+import { Input, Textarea, Avatar, Badge, Button, Modal, EmptyState, FileUpload } from '../components/UI';
 import { documentService } from '../services/DocumentService';
 import { INDUSTRIES, AVAILABILITY_OPTIONS } from '../constants';
 import { User } from '../types';
@@ -208,6 +208,18 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const [showInquiryForm, setShowInquiryForm] = useState(false);
   const [inquiryCustomerPdfs, setInquiryCustomerPdfs] = useState<{ name: string; data: string }[]>([]);
   const [inquiryPdfError, setInquiryPdfError] = useState('');
+  const [showGeneralInquiryModal, setShowGeneralInquiryModal] = useState(false);
+  const [generalInquiryForm, setGeneralInquiryForm] = useState({
+    firstName: '',
+    lastName: '',
+    companyName: '',
+    contactEmail: '',
+    contactPhone: '',
+    searchProfile: '',
+  });
+  const [generalInquiryLoading, setGeneralInquiryLoading] = useState(false);
+  const [generalInquiryError, setGeneralInquiryError] = useState('');
+  const [generalInquirySuccess, setGeneralInquirySuccess] = useState('');
 
   // PDF in Modal mit iframe anzeigen (zuverlässig, keine weiße Seite)
   const openDocument = async (userId: string, docType: string, docName: string) => {
@@ -343,6 +355,61 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
       setInquiryError(e?.message || 'Anfrage konnte nicht gesendet werden.');
     } finally {
       setInquiryLoading(false);
+    }
+  };
+
+  const submitGeneralInquiry = async () => {
+    setGeneralInquiryError('');
+    setGeneralInquirySuccess('');
+    const missing =
+      !generalInquiryForm.firstName.trim() ||
+      !generalInquiryForm.lastName.trim() ||
+      !generalInquiryForm.contactEmail.trim() ||
+      !generalInquiryForm.contactPhone.trim() ||
+      !generalInquiryForm.searchProfile.trim();
+    if (missing) {
+      setGeneralInquiryError('Bitte Vorname, Nachname, E-Mail, Telefon und Ihr Suchprofil ausfüllen.');
+      return;
+    }
+    const email = generalInquiryForm.contactEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setGeneralInquiryError('Bitte eine gültige E-Mail-Adresse eingeben.');
+      return;
+    }
+    setGeneralInquiryLoading(true);
+    try {
+      const fullName = `${generalInquiryForm.firstName.trim()} ${generalInquiryForm.lastName.trim()}`.trim();
+      const companyLine = generalInquiryForm.companyName.trim()
+        ? `Firma: ${generalInquiryForm.companyName.trim()}`
+        : 'Firma: —';
+      const head = [
+        companyLine,
+        `Vorname: ${generalInquiryForm.firstName.trim()}`,
+        `Nachname: ${generalInquiryForm.lastName.trim()}`,
+        `E-Mail: ${email}`,
+        `Telefon: ${generalInquiryForm.contactPhone.trim()}`,
+      ].join('\n');
+      const structuredMessage = `${head}\n\nSuchprofil:\n${generalInquiryForm.searchProfile.trim()}`;
+      await candidateService.createInquiry({
+        candidateUserId: null,
+        contactName: fullName,
+        contactEmail: email,
+        contactPhone: generalInquiryForm.contactPhone.trim(),
+        message: structuredMessage,
+      });
+      setGeneralInquirySuccess('Vielen Dank. Ihre Anfrage wurde an das Recruiter-Team gesendet.');
+      setGeneralInquiryForm({
+        firstName: '',
+        lastName: '',
+        companyName: '',
+        contactEmail: '',
+        contactPhone: '',
+        searchProfile: '',
+      });
+    } catch (e: any) {
+      setGeneralInquiryError(e?.message || 'Anfrage konnte nicht gesendet werden.');
+    } finally {
+      setGeneralInquiryLoading(false);
     }
   };
 
@@ -615,6 +682,29 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
             </div>
           </div>
 
+          <div className="mb-8 rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50/90 via-white to-slate-50/80 p-4 shadow-sm ring-1 ring-orange-100/60 sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-base font-black text-[#101B31]">Keinen passenden Kandidaten gefunden?</p>
+                <p className="mt-1 text-sm font-medium leading-relaxed text-slate-600">
+                  Teilen Sie dem Recruiter-Team mit, wen oder welches Profil Sie suchen – wir melden uns bei Ihnen.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="primary"
+                className="h-11 shrink-0 px-5 text-xs font-black uppercase tracking-widest sm:self-center"
+                onClick={() => {
+                  setGeneralInquiryError('');
+                  setGeneralInquirySuccess('');
+                  setShowGeneralInquiryModal(true);
+                }}
+              >
+                Anfrage senden
+              </Button>
+            </div>
+          </div>
+
           {filteredAndRanked.length === 0 ? (
             <EmptyState
               title="Keine Talente gefunden"
@@ -637,6 +727,83 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
           )}
         </div>
       </main>
+
+      <Modal
+        isOpen={showGeneralInquiryModal}
+        onClose={() => {
+          if (!generalInquiryLoading) {
+            setShowGeneralInquiryModal(false);
+            setGeneralInquiryError('');
+            setGeneralInquirySuccess('');
+          }
+        }}
+        title="Suchprofil an den Recruiter senden"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600">
+            Beschreiben Sie kurz Rolle, Skills, Standort oder Rahmenbedingungen. Pflichtfelder sind mit * markiert.
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Input
+              value={generalInquiryForm.firstName}
+              onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, firstName: e.target.value }))}
+              placeholder="Vorname *"
+              className="h-10"
+            />
+            <Input
+              value={generalInquiryForm.lastName}
+              onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, lastName: e.target.value }))}
+              placeholder="Nachname *"
+              className="h-10"
+            />
+            <Input
+              value={generalInquiryForm.companyName}
+              onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, companyName: e.target.value }))}
+              placeholder="Firma (optional)"
+              className="h-10 sm:col-span-2"
+            />
+            <Input
+              type="email"
+              value={generalInquiryForm.contactEmail}
+              onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, contactEmail: e.target.value }))}
+              placeholder="E-Mail *"
+              className="h-10"
+            />
+            <Input
+              value={generalInquiryForm.contactPhone}
+              onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, contactPhone: e.target.value }))}
+              placeholder="Telefon *"
+              className="h-10"
+            />
+          </div>
+          <Textarea
+            value={generalInquiryForm.searchProfile}
+            onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, searchProfile: e.target.value }))}
+            placeholder="Was suchen Sie? (Rolle, Branche, Standort, Verfügbarkeit …) *"
+            rows={5}
+            className="min-h-[120px] w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+          />
+          {generalInquiryError && <p className="text-xs font-bold text-red-600">{generalInquiryError}</p>}
+          {generalInquirySuccess && <p className="text-xs font-bold text-emerald-700">{generalInquirySuccess}</p>}
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={generalInquiryLoading}
+              onClick={() => {
+                setShowGeneralInquiryModal(false);
+                setGeneralInquiryError('');
+                setGeneralInquirySuccess('');
+              }}
+            >
+              Schließen
+            </Button>
+            <Button type="button" variant="primary" isLoading={generalInquiryLoading} onClick={() => void submitGeneralInquiry()}>
+              Absenden
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {selectedCandidate && (
         <Modal

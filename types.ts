@@ -160,7 +160,8 @@ export type InquiryCustomerAttachment = { name: string; data: string };
 
 export interface CandidateInquiry {
   id: string;
-  candidateUserId: string;
+  /** Leer/null = allgemeine Marktplatz-Anfrage ohne konkretes Profil */
+  candidateUserId: string | null;
   contactName: string;
   contactEmail: string;
   contactPhone: string;

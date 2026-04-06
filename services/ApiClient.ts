@@ -88,7 +88,7 @@ type DocumentRow = {
 
 type InquiryRow = {
   id: string;
-  candidate_user_id: string;
+  candidate_user_id: string | null;
   contact_name: string;
   contact_email: string;
   contact_phone: string;
@@ -419,7 +419,7 @@ class ApiClient {
   }
 
   private pushLocalInquiry(input: {
-    candidateUserId: string;
+    candidateUserId: string | null;
     contactName: string;
     contactEmail: string;
     contactPhone: string;
@@ -430,7 +430,7 @@ class ApiClient {
     const attachments = this.normalizeInquiryCustomerAttachments(input.customerAttachments);
     const next: CandidateInquiry = {
       id: `local-${crypto.randomUUID()}`,
-      candidateUserId: input.candidateUserId,
+      candidateUserId: input.candidateUserId ?? null,
       contactName: input.contactName.trim(),
       contactEmail: input.contactEmail.trim(),
       contactPhone: input.contactPhone.trim(),
@@ -704,7 +704,7 @@ class ApiClient {
   private inquiryRowToInquiry(row: InquiryRow): CandidateInquiry {
     return {
       id: row.id,
-      candidateUserId: row.candidate_user_id,
+      candidateUserId: row.candidate_user_id ?? null,
       contactName: row.contact_name,
       contactEmail: row.contact_email,
       contactPhone: row.contact_phone,
@@ -1907,7 +1907,8 @@ class ApiClient {
   }
 
   async createCandidateInquiry(input: {
-    candidateUserId: string;
+    /** Optional: null = allgemeine Marktplatz-Anfrage */
+    candidateUserId: string | null;
     contactName: string;
     contactEmail: string;
     contactPhone: string;
@@ -1916,7 +1917,7 @@ class ApiClient {
   }): Promise<void> {
     const attachments = this.normalizeInquiryCustomerAttachments(input.customerAttachments);
     const basePayload = {
-      candidate_user_id: input.candidateUserId,
+      candidate_user_id: input.candidateUserId ?? null,
       contact_name: input.contactName.trim(),
       contact_email: input.contactEmail.trim(),
       contact_phone: input.contactPhone.trim(),

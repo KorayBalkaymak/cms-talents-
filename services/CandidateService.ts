@@ -151,7 +151,7 @@ class CandidateService {
   }
 
   async createInquiry(input: {
-    candidateUserId: string;
+    candidateUserId: string | null;
     contactName: string;
     contactEmail: string;
     contactPhone: string;

@@ -83,6 +83,11 @@ function contactInitialsFromName(name: string): string {
 /** Erkennt die strukturierte Marktplatz-Anfrage (TalentMarketplace.submitInquiry), ein- oder mehrzeilig. */
 const MARKETPLACE_INQUIRY_FIELDS: { prefix: string; label: string }[] = [
   { prefix: 'Firma:', label: 'Firma' },
+  { prefix: 'Vorname:', label: 'Vorname' },
+  { prefix: 'Nachname:', label: 'Nachname' },
+  { prefix: 'E-Mail:', label: 'E-Mail' },
+  { prefix: 'Telefon:', label: 'Telefon' },
+  { prefix: 'Suchprofil:', label: 'Suchprofil' },
   { prefix: 'Position (Kunde):', label: 'Position (Kunde)' },
   { prefix: 'Projektlaufzeit:', label: 'Projektlaufzeit' },
   { prefix: 'Projektstandort:', label: 'Projektstandort' },
@@ -92,6 +97,22 @@ const MARKETPLACE_INQUIRY_FIELDS: { prefix: string; label: string }[] = [
 function parseMarketplaceInquiryDetails(message: string | undefined): { label: string; value: string }[] | null {
   if (!message?.trim()) return null;
   const text = message.trim();
+
+  const suchSplit = text.split(/\n\nSuchprofil:\n/);
+  if (suchSplit.length === 2) {
+    const head = suchSplit[0].trim();
+    const suchBody = suchSplit[1].trim();
+    const headRows = parseMarketplaceInquiryDetails(head);
+    const base = headRows && headRows.length > 0 ? [...headRows] : [];
+    if (headRows == null && head) {
+      for (const line of head.split('\n').map((l) => l.trim()).filter(Boolean)) {
+        const hit = [...MARKETPLACE_INQUIRY_FIELDS].sort((a, b) => b.prefix.length - a.prefix.length).find((f) => line.startsWith(f.prefix));
+        if (hit) base.push({ label: hit.label, value: line.slice(hit.prefix.length).trim() });
+      }
+    }
+    if (suchBody) base.push({ label: 'Suchprofil', value: suchBody });
+    return base.length > 0 ? base : null;
+  }
 
   const hits = MARKETPLACE_INQUIRY_FIELDS.map(({ prefix, label }) => {
     const index = text.indexOf(prefix);
@@ -1400,11 +1421,18 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     {inquiries.slice(0, 200).map((inq) => {
                       const editing = getActiveInquiryEditing(inq);
                       const isMine = editing?.userId === user.id;
-                      const mailSubject = encodeURIComponent(`Rueckmeldung zu Ihrer Anfrage (${candidateNameById.get(inq.candidateUserId) || 'Kandidat'})`);
+                      const talentLabelForMail =
+                        inq.candidateUserId == null
+                          ? 'Allgemeine Marktplatz-Anfrage'
+                          : candidateNameById.get(inq.candidateUserId) || 'Kandidat';
+                      const mailSubject = encodeURIComponent(`Rueckmeldung zu Ihrer Anfrage (${talentLabelForMail})`);
                       const mailBody = encodeURIComponent(
                         `Hallo ${inq.contactName},\n\nvielen Dank fuer Ihr Interesse.\n\nBeste Gruesse\n${user.firstName?.trim() || 'Recruiter-Team'}`
                       );
-                      const candidateLabel = candidateNameById.get(inq.candidateUserId) || inq.candidateUserId;
+                      const candidateLabel =
+                        inq.candidateUserId == null
+                          ? 'Allgemeine Marktplatz-Anfrage'
+                          : candidateNameById.get(inq.candidateUserId) || inq.candidateUserId;
                       const created = new Date(inq.createdAt);
                       const initials = contactInitialsFromName(inq.contactName);
                       const inquiryDetailRows = parseMarketplaceInquiryDetails(inq.message);
