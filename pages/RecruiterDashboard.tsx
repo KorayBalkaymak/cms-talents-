@@ -119,8 +119,25 @@ function parseMarketplaceInquiryDetails(message: string | undefined): { label: s
   return fromLines.length >= 2 ? fromLines : null;
 }
 
+/** Rotes Ausrufezeichen im Kreis – gleiche Logik wie „Bearbeiten nötig: seit 3+ Tagen offen“ (nicht bei freigegeben + aktiv). */
+function StaleNeedsAttentionIcon({ title }: { title: string }) {
+  return (
+    <span
+      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-red-600 bg-red-50 text-red-600 shadow-sm"
+      title={title}
+      aria-label={title}
+      role="img"
+    >
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </span>
+  );
+}
+
 const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidates, isInitialLoading = false, onAdminAction, onUpdateCandidate, onRefreshCandidates, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [onlyStaleUnedited, setOnlyStaleUnedited] = useState(false);
   const [activeView, setActiveView] = useState<'talents' | 'inquiries' | 'external' | 'users' | 'calculator'>('talents');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
   const [candidateDocs, setCandidateDocs] = useState<CandidateDocumentsForRecruiter | null>(null);
@@ -416,8 +433,19 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     ? candidates
     : candidates.filter((c) => !!c.isSubmitted || !!c.isPublished || c.status === CandidateStatus.ACTIVE);
 
+  const isCandidateStale = useCallback((cand: CandidateProfile) => {
+    const updatedAtMs = new Date(cand.updatedAt).getTime();
+    return Number.isFinite(updatedAtMs) && Date.now() - updatedAtMs >= STALE_CANDIDATE_MS;
+  }, []);
+
+  const isStaleNeedsReview = useCallback(
+    (cand: CandidateProfile) =>
+      isCandidateStale(cand) && !(cand.isPublished && cand.status === CandidateStatus.ACTIVE),
+    [isCandidateStale]
+  );
+
   const deferredSearchTerm = useDeferredValue(searchTerm);
-  const filtered = useMemo(() => {
+  const searchFiltered = useMemo(() => {
     const term = deferredSearchTerm.trim().toLowerCase();
     return visibleCandidates
       .slice()
@@ -436,6 +464,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         c.skills.some((s) => s.toLowerCase().includes(term))
       );
   }, [visibleCandidates, deferredSearchTerm]);
+
+  const filtered = useMemo(() => {
+    if (!onlyStaleUnedited) return searchFiltered;
+    return searchFiltered.filter((c) => isCandidateStale(c));
+  }, [searchFiltered, onlyStaleUnedited, isCandidateStale]);
 
   const filteredRegisteredUsers = useMemo(() => {
     const term = deferredSearchTerm.trim().toLowerCase();
@@ -556,11 +589,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       if (Number.isFinite(n) && n >= 0) return `${Math.round(n)} km`;
     }
     return '-';
-  }, []);
-
-  const isCandidateStale = useCallback((cand: CandidateProfile) => {
-    const updatedAtMs = new Date(cand.updatedAt).getTime();
-    return Number.isFinite(updatedAtMs) && Date.now() - updatedAtMs >= STALE_CANDIDATE_MS;
   }, []);
 
   const candidateReviewHint = useCallback((cand: CandidateProfile) => {
@@ -1892,13 +1920,31 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-orange-600" />
                 </div>
               ) : filtered.length === 0 ? (
-                <EmptyState title="Keine Kandidaten" description="Nichts gefunden." />
+                <EmptyState
+                  title={onlyStaleUnedited ? 'Keine Treffer für diesen Filter' : 'Keine Kandidaten'}
+                  description={
+                    onlyStaleUnedited
+                      ? 'Keine Kandidaten, bei denen die letzte Bearbeitung mindestens 3 Tage her ist – oder die Suche schließt alle aus.'
+                      : 'Nichts gefunden.'
+                  }
+                />
               ) : (
                 <div className="space-y-8">
-                <p className="-mt-2 mb-1 text-center text-[11px] font-bold text-slate-500 sm:text-left">
-                  {industryGroups.length} {industryGroups.length === 1 ? 'Branche' : 'Branchen'} · {filtered.length}{' '}
-                  {filtered.length === 1 ? 'Kandidat' : 'Kandidaten'}
-                </p>
+                <div className="-mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="mb-1 text-center text-[11px] font-bold text-slate-500 sm:mb-0 sm:text-left">
+                    {industryGroups.length} {industryGroups.length === 1 ? 'Branche' : 'Branchen'} · {filtered.length}{' '}
+                    {filtered.length === 1 ? 'Kandidat' : 'Kandidaten'}
+                  </p>
+                  <label className="flex cursor-pointer select-none items-center gap-2 self-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold text-slate-800 shadow-sm ring-1 ring-slate-900/5 sm:self-auto">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 shrink-0 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
+                      checked={onlyStaleUnedited}
+                      onChange={(e) => setOnlyStaleUnedited(e.target.checked)}
+                    />
+                    <span className="leading-snug">Nur ohne Bearbeitung seit 3+ Tagen</span>
+                  </label>
+                </div>
                 {industryGroups.map(({ industry, candidates }) => (
                   <section
                     key={industry}
@@ -1931,6 +1977,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       {candidates.map((cand) => (
                         <div key={cand.userId} className="space-y-3 px-4 py-4">
                           <div className="flex gap-3">
+                            {isStaleNeedsReview(cand) ? (
+                              <StaleNeedsAttentionIcon title="Bearbeiten nötig: seit 3+ Tagen offen" />
+                            ) : null}
                             <Avatar seed={cand.firstName + cand.lastName} size="sm" imageUrl={cand.profileImageUrl} />
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-bold text-slate-900">
@@ -1990,6 +2039,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             <tr key={cand.userId} className="transition-colors hover:bg-slate-50/80">
                               <td className="px-5 py-3">
                                 <div className="flex items-center gap-3">
+                                  {isStaleNeedsReview(cand) ? (
+                                    <StaleNeedsAttentionIcon title="Bearbeiten nötig: seit 3+ Tagen offen" />
+                                  ) : null}
                                   <Avatar seed={cand.firstName + cand.lastName} size="sm" imageUrl={cand.profileImageUrl} />
                                   <div>
                                     <div className="text-sm font-bold text-slate-900">
