@@ -31,7 +31,7 @@ function parseLocaleDecimal(raw: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-/** Stundenlohn-Rechner: rate × (1 + %/100) × Faktor — Premium Dark UI */
+/** Verrechnungssatz: rate × (1 + %/100) × Faktor — Premium Dark UI */
 const HourlyRateCalculator: React.FC = () => {
   const [rateInput, setRateInput] = useState('30');
   const [pctInput, setPctInput] = useState('22');
@@ -74,7 +74,7 @@ const HourlyRateCalculator: React.FC = () => {
           <header className="space-y-1 text-center">
             <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-white/35">Kalkulator</p>
             <h2 className="text-2xl font-extralight tracking-tight text-white sm:text-[1.65rem]">
-              Stundenlohn <span className="font-light text-orange-400/95">kalkulieren</span>
+              Verrechnungssatz <span className="font-light text-orange-400/95">kalkulieren</span>
             </h2>
             <p className="text-xs font-light text-white/45">Basis × (1 + Aufschlag) × Faktor</p>
           </header>
@@ -82,7 +82,7 @@ const HourlyRateCalculator: React.FC = () => {
           <div className="space-y-5">
             <label className="block">
               <span className="mb-2 block text-[11px] font-medium uppercase tracking-wider text-white/40">
-                Basis-Stundenlohn (€)
+                Basis-Verrechnungssatz (€)
               </span>
               <input
                 type="text"
