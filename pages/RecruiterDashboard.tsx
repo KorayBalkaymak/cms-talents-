@@ -5,7 +5,7 @@ import { CmsLogoHeroBadge } from '../components/CmsLogoHeroBadge';
 import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea, FileUpload } from '../components/UI';
 import HourlyRateCalculator from '../components/HourlyRateCalculator';
 import { candidateService } from '../services/CandidateService';
-import { INDUSTRIES, AVAILABILITY_OPTIONS, BOOSTER_KEYWORD_CATEGORIES } from '../constants';
+import { INDUSTRIES, AVAILABILITY_OPTIONS, BOOSTER_KEYWORD_CATEGORIES, WORK_UMKREIS_OPTIONS, parseWorkUmkreisOption } from '../constants';
 import { documentService } from '../services/DocumentService';
 import { recruiterRoleFromEmail } from '../services/ApiClient';
 import { COPPER_PANEL } from '../constants/copperTheme';
@@ -157,6 +157,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     profession: '',
     experienceYears: '',
     availability: AVAILABILITY_OPTIONS[0] || '',
+    workUmkreis: WORK_UMKREIS_OPTIONS[0] || '+25',
     salaryWishEur: '',
     about: '',
     languagesRaw: '',
@@ -543,6 +544,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   }, []);
 
   const displayWorkRadius = useCallback((cand: CandidateProfile): string => {
+    if (cand.workArea?.trim()) return cand.workArea.trim();
     if (cand.workRadiusKm !== null && cand.workRadiusKm !== undefined && Number.isFinite(Number(cand.workRadiusKm))) {
       return `${cand.workRadiusKm} km`;
     }
@@ -878,6 +880,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
+      const { workRadiusKm, workArea } = parseWorkUmkreisOption(externalForm.workUmkreis);
       await candidateService.createExternalCandidate({
         firstName: externalForm.firstName.trim() || undefined,
         lastName: externalForm.lastName.trim() || undefined,
@@ -888,6 +891,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         experienceYears: Number(externalForm.experienceYears || 0),
         availability: externalForm.availability,
         salaryWishEur: Number(externalForm.salaryWishEur || 0) > 0 ? Number(externalForm.salaryWishEur) : undefined,
+        workRadiusKm,
+        workArea,
         about: externalForm.about.trim() || undefined,
         languages: externalForm.languagesRaw.trim() || undefined,
         skills,
@@ -910,6 +915,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         skillsRaw: '',
         experienceYears: '',
         salaryWishEur: '',
+        workUmkreis: WORK_UMKREIS_OPTIONS[0] || '+25',
       }));
       setExternalBoostedKeywords([]);
       setExternalDocs({
@@ -1559,6 +1565,18 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   />
                   <Select label="Verfügbarkeit" labelClassName="text-white" value={externalForm.availability} onChange={(e) => setExternalForm((p) => ({ ...p, availability: e.target.value }))}>
                     {AVAILABILITY_OPTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
+                  </Select>
+                  <Select
+                    label="Arbeitsumkreis"
+                    labelClassName="text-white"
+                    value={externalForm.workUmkreis}
+                    onChange={(e) => setExternalForm((p) => ({ ...p, workUmkreis: e.target.value }))}
+                  >
+                    {WORK_UMKREIS_OPTIONS.map((w) => (
+                      <option key={w} value={w}>
+                        {w === '+25' || w === '+50' || w === '+100' || w === '+150' || w === '+200' || w === '+300' ? `${w} km` : w}
+                      </option>
+                    ))}
                   </Select>
                   <div className="md:col-span-2">
                     <Input

@@ -120,6 +120,8 @@ type ExternalCandidateRow = {
   is_published: boolean;
   created_at: string;
   updated_at: string;
+  work_radius_km?: number | null;
+  work_area?: string | null;
 };
 
 function normalizeEmail(email: string): string {
@@ -187,6 +189,11 @@ function isExternalCandidatesNamesSchemaMissing(message?: string): boolean {
 
 function isExternalCandidatesProfessionSchemaMissing(message?: string): boolean {
   return (message || '').toLowerCase().includes("could not find the 'profession' column");
+}
+
+function isExternalCandidatesWorkFieldsSchemaMissing(message?: string): boolean {
+  const t = (message || '').toLowerCase();
+  return t.includes("work_radius_km") || t.includes("work_area");
 }
 
 function isCandidateInquiriesSchemaMissing(message?: string): boolean {
@@ -306,6 +313,8 @@ class ApiClient {
       experienceYears: row.experience_years || 0,
       availability: row.availability || '',
       salaryWishEur: row.salary_wish_eur ?? null,
+      workRadiusKm: row.work_radius_km ?? null,
+      workArea: row.work_area ?? null,
       about: row.about || undefined,
       languages: row.languages?.trim() || null,
       skills: row.skills || [],
@@ -2078,6 +2087,8 @@ class ApiClient {
     experienceYears: number;
     availability: string;
     salaryWishEur?: number;
+    workRadiusKm?: number | null;
+    workArea?: string | null;
     about?: string;
     languages?: string;
     skills?: string[];
@@ -2102,6 +2113,11 @@ class ApiClient {
       availability: input.availability.trim(),
       salary_wish_eur:
         input.salaryWishEur && input.salaryWishEur > 0 ? Math.round(input.salaryWishEur) : null,
+      work_radius_km:
+        input.workRadiusKm !== null && input.workRadiusKm !== undefined && Number.isFinite(Number(input.workRadiusKm))
+          ? Math.max(0, Math.round(Number(input.workRadiusKm)))
+          : null,
+      work_area: input.workArea?.trim() || null,
       about: input.about?.trim() || null,
       languages: input.languages?.trim() || null,
       skills: (input.skills || []).filter(Boolean),
@@ -2126,6 +2142,8 @@ class ApiClient {
       experience_years: row.experience_years,
       availability: row.availability,
       salary_wish_eur: row.salary_wish_eur,
+      work_radius_km: row.work_radius_km,
+      work_area: row.work_area,
       about: row.about,
       languages: row.languages,
       skills: row.skills,
@@ -2148,6 +2166,15 @@ class ApiClient {
         return this.externalRowToCandidate(row);
       }
       insertError = retryProf.error;
+    }
+    if (insertError && isExternalCandidatesWorkFieldsSchemaMissing(insertError.message)) {
+      const { work_radius_km: _wr, work_area: _wa, ...noWork } = insertPayload;
+      insertPayload = noWork;
+      const retryWork = await supabase.from('external_candidates').insert(insertPayload);
+      if (!retryWork.error) {
+        return this.externalRowToCandidate(row);
+      }
+      insertError = retryWork.error;
     }
     if (insertError && isExternalCandidatesNamesSchemaMissing(insertError.message)) {
       const { first_name: _fn, last_name: _ln, ...payloadNoNames } = insertPayload;

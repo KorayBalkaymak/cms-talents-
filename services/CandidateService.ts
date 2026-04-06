@@ -171,6 +171,8 @@ class CandidateService {
     experienceYears: number;
     availability: string;
     salaryWishEur?: number;
+    workRadiusKm?: number | null;
+    workArea?: string | null;
     about?: string;
     languages?: string;
     skills?: string[];

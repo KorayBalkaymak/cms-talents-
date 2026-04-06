@@ -126,11 +126,15 @@ const CandidateCard = memo(({ item, search, onSelect, codeName }: { item: MatchI
           )}
           {candidate.industry && <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">{candidate.industry}</Badge>}
           <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">{candidate.experienceYears} J. Exp</Badge>
-          {workRadiusKm !== null && workRadiusKm !== undefined && (
+          {candidate.workArea?.trim() ? (
+            <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">
+              {candidate.workArea.trim()}
+            </Badge>
+          ) : workRadiusKm !== null && workRadiusKm !== undefined ? (
             <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">
               {workRadiusKm} km Radius
             </Badge>
-          )}
+          ) : null}
           {salaryWishEur !== null && salaryWishEur !== undefined && (
             <Badge variant="slate" className="bg-slate-50 text-[#101B31] border border-slate-200 px-3 py-1">
               {salaryWishEur} EUR Wunschgehalt

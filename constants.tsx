@@ -193,3 +193,29 @@ export const AVAILABILITY_OPTIONS = [
   '3 Monate',
   'Nach Vereinbarung',
 ];
+
+/** Arbeitsumkreis (Kandidat hinzufügen → external_candidates / Marktplatz) */
+export const WORK_UMKREIS_OPTIONS = [
+  '+25',
+  '+50',
+  '+100',
+  '+150',
+  '+200',
+  '+300',
+  'Deutschlandweit',
+  'International',
+] as const;
+
+/** Werte für work_radius_km bzw. work_area in der Datenbank */
+export function parseWorkUmkreisOption(option: string): { workRadiusKm: number | null; workArea: string | null } {
+  const t = option.trim();
+  if (!t) return { workRadiusKm: null, workArea: null };
+  if (t === 'Deutschlandweit' || t === 'International') {
+    return { workRadiusKm: null, workArea: t };
+  }
+  const n = Number(t.replace(/^\+/, ''));
+  if (Number.isFinite(n) && n > 0) {
+    return { workRadiusKm: Math.round(n), workArea: null };
+  }
+  return { workRadiusKm: null, workArea: t };
+}
