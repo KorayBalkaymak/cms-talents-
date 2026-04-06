@@ -681,7 +681,7 @@ class ApiClient {
       const d = data.trim();
       if (!n || !d) continue;
       out.push({ name: n, data: d });
-      if (out.length >= 3) break;
+      if (out.length >= 2) break;
     }
     return out.length ? out : undefined;
   }
@@ -691,12 +691,12 @@ class ApiClient {
   ): InquiryCustomerAttachment[] {
     if (!input?.length) return [];
     const out: InquiryCustomerAttachment[] = [];
-    for (const a of input.slice(0, 3)) {
+    for (const a of input.slice(0, 2)) {
       const name = (a.name || 'document.pdf').trim().slice(0, 255);
       const data = (a.data || '').trim();
       if (!name || !data) continue;
       out.push({ name, data });
-      if (out.length >= 3) break;
+      if (out.length >= 2) break;
     }
     return out;
   }

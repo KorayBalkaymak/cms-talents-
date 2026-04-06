@@ -19,6 +19,9 @@ interface TalentMarketplaceProps {
 
 type MatchItem = { candidate: CandidateProfile; score: number };
 
+/** Max. PDF-Unterlagen pro Interessenanfrage (Marktplatz). */
+const MAX_INQUIRY_CUSTOMER_PDFS = 2;
+
 function codeNameFromUserId(userId: string): string {
   const labels = ['TX', 'QN', 'VK', 'RM', 'SL', 'PN', 'ZR', 'LF', 'MK', 'JD'];
   let hash = 0;
@@ -252,7 +255,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
 
   const handleInquiryCustomerPdfs = async (files: FileList | null) => {
     if (!files?.length) return;
-    const remaining = 3 - inquiryCustomerPdfs.length;
+    const remaining = MAX_INQUIRY_CUSTOMER_PDFS - inquiryCustomerPdfs.length;
     if (remaining <= 0) return;
     setInquiryPdfError('');
     const toAdd = Math.min(files.length, remaining);
@@ -708,6 +711,20 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               {showInquiryForm && (
                 <>
                   <p className="mt-4 mb-3 text-sm font-medium text-slate-700">Bitte alle Pflichtfelder ausfüllen.</p>
+                  <div className="mb-4 rounded-xl border border-dashed border-orange-300/60 bg-white/80 p-3 sm:p-4">
+                    <FileUpload
+                      label="PDF-Unterlagen (optional)"
+                      accept="application/pdf"
+                      multiple
+                      onChange={handleInquiryCustomerPdfs}
+                      files={inquiryCustomerPdfs}
+                      onRemove={(idx) =>
+                        setInquiryCustomerPdfs((prev) => prev.filter((_, i) => i !== idx))
+                      }
+                      helperText={`Bis zu ${MAX_INQUIRY_CUSTOMER_PDFS} PDFs, je max. 10 MB. Noch ${Math.max(0, MAX_INQUIRY_CUSTOMER_PDFS - inquiryCustomerPdfs.length)} möglich.`}
+                      error={inquiryPdfError || undefined}
+                    />
+                  </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Input value={inquiryForm.companyName} onChange={(e) => setInquiryForm((s) => ({ ...s, companyName: e.target.value }))} placeholder="Welche Firma *" className="h-10" />
                     <Input value={inquiryForm.firstName} onChange={(e) => setInquiryForm((s) => ({ ...s, firstName: e.target.value }))} placeholder="Vorname *" className="h-10" />
@@ -718,20 +735,6 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
                     <Input value={inquiryForm.projectDuration} onChange={(e) => setInquiryForm((s) => ({ ...s, projectDuration: e.target.value }))} placeholder="Projektlaufzeit *" className="h-10" />
                     <Input value={inquiryForm.projectLocation} onChange={(e) => setInquiryForm((s) => ({ ...s, projectLocation: e.target.value }))} placeholder="Projektstandort *" className="h-10" />
                     <Input type="number" min="0" value={inquiryForm.budget} onChange={(e) => setInquiryForm((s) => ({ ...s, budget: e.target.value }))} placeholder="Budget (EUR) *" className="h-10" />
-                  </div>
-                  <div className="mt-4">
-                    <FileUpload
-                      label="Unterlagen (PDF, optional)"
-                      accept="application/pdf"
-                      multiple
-                      onChange={handleInquiryCustomerPdfs}
-                      files={inquiryCustomerPdfs}
-                      onRemove={(idx) =>
-                        setInquiryCustomerPdfs((prev) => prev.filter((_, i) => i !== idx))
-                      }
-                      helperText={`Bis zu 3 PDF-Dateien, je max. 10 MB. Noch ${Math.max(0, 3 - inquiryCustomerPdfs.length)} möglich.`}
-                      error={inquiryPdfError || undefined}
-                    />
                   </div>
                   {inquiryError && <p className="mt-2 text-xs font-bold text-red-600">{inquiryError}</p>}
                   {inquirySuccess && <p className="mt-2 text-xs font-bold text-emerald-700">{inquirySuccess}</p>}
