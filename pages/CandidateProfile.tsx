@@ -3,7 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { CandidateProfile, CandidateStatus, CandidateDocuments, validateProfileForPublishing, validateDocumentsForRecruiterSubmit, canPublishProfile } from '../types';
 import { CmsLogoHeroBadge } from '../components/CmsLogoHeroBadge';
 import { Button, Input, Select, Avatar, Textarea, FileUpload } from '../components/UI';
-import { INDUSTRIES, AVAILABILITY_OPTIONS, BOOSTER_KEYWORD_CATEGORIES } from '../constants';
+import {
+  INDUSTRIES,
+  AVAILABILITY_OPTIONS,
+  BOOSTER_KEYWORD_CATEGORIES,
+  WORK_UMKREIS_OPTIONS,
+  parseWorkUmkreisOption,
+} from '../constants';
 import { documentService } from '../services/DocumentService';
 import { candidateService } from '../services/CandidateService';
 import { authService } from '../services/AuthService';
@@ -94,6 +100,30 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
     setFormData(prev => ({ ...prev, [name]: Number.parseInt(value, 10) || 0 }));
   };
 
+  const currentWorkUmkreisOption = (() => {
+    const area = (formData.workArea || '').trim();
+    if (area === 'Deutschlandweit' || area === 'International') return area;
+    const radius = formData.workRadiusKm;
+    if (radius !== null && radius !== undefined && Number.isFinite(radius) && radius > 0) {
+      const option = `+${Math.round(radius)}`;
+      return (WORK_UMKREIS_OPTIONS as readonly string[]).includes(option) ? option : '';
+    }
+    return '';
+  })();
+
+  const handleWorkUmkreisChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const option = e.target.value;
+    const parsed = parseWorkUmkreisOption(option);
+    setFormData((prev) => ({
+      ...prev,
+      workRadiusKm: parsed.workRadiusKm,
+      workArea: parsed.workArea,
+    }));
+    if (errors.workRadiusKm) {
+      setErrors((prev) => ({ ...prev, workRadiusKm: '' }));
+    }
+  };
+
   const handleAddSkill = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
@@ -159,7 +189,13 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
     if (formData.salaryWishEur === null || formData.salaryWishEur === undefined || formData.salaryWishEur <= 0) {
       newErrors.salaryWishEur = 'Pflichtfeld';
     }
-    if (formData.workRadiusKm === null || formData.workRadiusKm === undefined || formData.workRadiusKm < 0) {
+    const hasRadius =
+      formData.workRadiusKm !== null &&
+      formData.workRadiusKm !== undefined &&
+      Number.isFinite(formData.workRadiusKm) &&
+      formData.workRadiusKm >= 0;
+    const hasArea = !!formData.workArea?.trim();
+    if (!hasRadius && !hasArea) {
       newErrors.workRadiusKm = 'Pflichtfeld';
     }
 
@@ -606,28 +642,22 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                   error={errors.salaryWishEur}
                   className="h-9 rounded-xl text-sm sm:h-10"
                 />
-                <Input
-                  label="Arbeitsradius (km) *"
+                <Select
+                  label="Arbeitsradius / Einsatzgebiet *"
                   labelClassName="text-slate-900 font-bold"
-                  name="workRadiusKm"
-                  type="number"
-                  value={formData.workRadiusKm ?? ''}
-                  onChange={handleNumberChange}
-                  placeholder="z. B. 30"
-                  min="0"
+                  name="workUmkreis"
+                  value={currentWorkUmkreisOption}
+                  onChange={handleWorkUmkreisChange}
                   error={errors.workRadiusKm}
                   className="h-9 rounded-xl text-sm sm:h-10"
-                />
-                <div className="sm:col-span-2">
-                  <Input
-                    label="Arbeitsumgebung/Region (optional)"
-                    name="workArea"
-                    value={formData.workArea ?? ''}
-                    onChange={handleChange}
-                    placeholder="z. B. Umgebung Rhein-Main"
-                    className="h-9 rounded-xl text-sm sm:h-10"
-                  />
-                </div>
+                >
+                  <option value="">Option wählen…</option>
+                  {WORK_UMKREIS_OPTIONS.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
+                </Select>
               </div>
             </div>
 
