@@ -716,10 +716,16 @@ class ApiClient {
   }
 
   private profileRowToUser(row: ProfileRow): User {
+    const fromEmail = recruiterRoleFromEmail(row.email);
+    const role = isRecruiterRole(row.role)
+      ? row.role
+      : fromEmail !== UserRole.CANDIDATE
+        ? fromEmail
+        : row.role;
     return {
       id: row.id,
       email: row.email,
-      role: row.role,
+      role,
       createdAt: row.created_at,
       firstName: row.first_name || undefined,
     };

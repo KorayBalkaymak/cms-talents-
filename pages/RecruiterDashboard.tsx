@@ -9,6 +9,7 @@ import { INDUSTRIES, AVAILABILITY_OPTIONS, BOOSTER_KEYWORD_CATEGORIES } from '..
 import { documentService } from '../services/DocumentService';
 import { recruiterRoleFromEmail } from '../services/ApiClient';
 import { COPPER_PANEL } from '../constants/copperTheme';
+import { supabase } from '../utils/supabase';
 
 interface RecruiterDashboardProps {
   user: User;
@@ -218,6 +219,21 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       setIsLoadingInquiries(false);
     }
   }, []);
+
+  /** Nach Auth-Hydration / Token-Refresh erneut laden (mobil: erster Fetch oft vor gültigem JWT). */
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (
+        (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') &&
+        session
+      ) {
+        void loadInquiries();
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [loadInquiries]);
 
   /** Externe Interessen: schneller Poll in dieser Ansicht + Reload bei Tab-/App-Rückkehr (Handy/Tablet/Desktop). */
   useEffect(() => {
