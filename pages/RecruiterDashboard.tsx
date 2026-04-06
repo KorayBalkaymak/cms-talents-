@@ -1331,7 +1331,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     </p>
                   </div>
                 ) : (
-                  <ul className="max-h-[min(70vh,720px)] space-y-4 overflow-y-auto pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(148,163,184,0.5)_transparent]">
+                  <ul className="space-y-4 pr-1 md:max-h-[min(70vh,720px)] md:overflow-y-auto [scrollbar-width:thin] md:[scrollbar-color:rgba(148,163,184,0.5)_transparent]">
                     {inquiries.slice(0, 200).map((inq) => {
                       const editing = getActiveInquiryEditing(inq);
                       const isMine = editing?.userId === user.id;

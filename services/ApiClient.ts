@@ -1872,29 +1872,53 @@ class ApiClient {
     }
   }
 
-  async getCandidateInquiries(): Promise<CandidateInquiry[]> {
-    const authUser = await this.currentAuthUser();
-    if (!authUser) {
-      return [];
-    }
-    const local = this.readLocalInquiries();
-    const { data, error } = await supabase
-      .from('candidate_inquiries')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(300);
+  /**
+   * Lokale Fallback-Anfragen (z. B. Safari/Offline oder wenn die Supabase-Abfrage fehlschlägt).
+   */
+  getLocalInquiriesFallback(): CandidateInquiry[] {
+    return this.readLocalInquiries();
+  }
 
-    if (error || !data) {
-      if (isCandidateInquiriesSchemaMissing(error?.message)) {
+  async getCandidateInquiries(): Promise<CandidateInquiry[]> {
+    const local = this.readLocalInquiries();
+    try {
+      // getUser() triggert ggf. einen Netzwerk-Refresh und kann auf Mobilgeräten kurz null liefern,
+      // obwohl die Session bereits aus dem Storage da ist — dann würden Anfragen als [] erscheinen.
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user) {
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from('candidate_inquiries')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(300);
+
+      if (error || !data) {
+        if (isCandidateInquiriesSchemaMissing(error?.message)) {
+          return local;
+        }
         return local;
       }
+      const remote = (data as InquiryRow[]).map((row) => this.inquiryRowToInquiry(row));
+      const byId = new Map<string, CandidateInquiry>();
+      for (const x of local) {
+        byId.set(x.id, x);
+      }
+      for (const x of remote) {
+        byId.set(x.id, x);
+      }
+      const merged = Array.from(byId.values()).sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      return merged.slice(0, 300);
+    } catch (e) {
+      console.warn('[ApiClient] getCandidateInquiries failed, using local cache', e);
       return local;
     }
-    const remote = (data as InquiryRow[]).map((row) => this.inquiryRowToInquiry(row));
-    const merged = [...local, ...remote].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-    return merged.slice(0, 300);
   }
 
   async deleteCandidateInquiry(inquiryId: string): Promise<void> {

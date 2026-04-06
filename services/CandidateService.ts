@@ -188,7 +188,7 @@ class CandidateService {
       return await api.getCandidateInquiries();
     } catch (e) {
       console.error('[CandidateService] Error fetching inquiries:', e);
-      return [];
+      return api.getLocalInquiriesFallback();
     }
   }
 
