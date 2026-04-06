@@ -72,7 +72,7 @@ const HourlyRateCalculator: React.FC = () => {
 
         <div className="relative space-y-8">
           <header className="space-y-1 text-center">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-white/35">Gehaltsrechner</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-white/35">Kalkulator</p>
             <h2 className="text-2xl font-extralight tracking-tight text-white sm:text-[1.65rem]">
               Stundenlohn <span className="font-light text-orange-400/95">kalkulieren</span>
             </h2>

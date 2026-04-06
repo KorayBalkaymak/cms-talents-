@@ -227,7 +227,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
           </div>
         </section>
 
-        {/* ─── Zweck: klares Orange (ohne Kupfer/Gehaltsrechner) ─── */}
+        {/* ─── Zweck: klares Orange (ohne Kupfer/Kalkulator) ─── */}
         <section className="bg-white py-20 md:py-28">
           <div className="relative mx-auto max-w-6xl px-6">
             <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-xl shadow-orange-500/25">
