@@ -576,7 +576,31 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col lg:flex-row gap-10" style={{ contain: 'paint' }}>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col gap-10" style={{ contain: 'paint' }}>
+        <div className="w-full rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50/90 via-white to-slate-50/80 p-4 shadow-sm ring-1 ring-orange-100/60 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-base font-black text-[#101B31]">Keinen passenden Kandidaten gefunden?</p>
+              <p className="mt-1 text-sm font-medium leading-relaxed text-slate-600">
+                Teilen Sie dem Recruiter-Team mit, wen oder welches Profil Sie suchen – wir melden uns bei Ihnen.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="primary"
+              className="h-11 shrink-0 px-5 text-xs font-black uppercase tracking-widest sm:self-center"
+              onClick={() => {
+                setGeneralInquiryError('');
+                setGeneralInquirySuccess('');
+                setShowGeneralInquiryModal(true);
+              }}
+            >
+              Anfrage senden
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-10">
         {/* Filters */}
         <aside className="lg:w-80 flex-shrink-0 space-y-6">
           <div className="rounded-3xl border border-slate-200 bg-white shadow-[0_18px_60px_-45px_rgba(2,6,23,0.25)] overflow-hidden">
@@ -682,29 +706,6 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
             </div>
           </div>
 
-          <div className="mb-8 rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50/90 via-white to-slate-50/80 p-4 shadow-sm ring-1 ring-orange-100/60 sm:p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <p className="text-base font-black text-[#101B31]">Keinen passenden Kandidaten gefunden?</p>
-                <p className="mt-1 text-sm font-medium leading-relaxed text-slate-600">
-                  Teilen Sie dem Recruiter-Team mit, wen oder welches Profil Sie suchen – wir melden uns bei Ihnen.
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="primary"
-                className="h-11 shrink-0 px-5 text-xs font-black uppercase tracking-widest sm:self-center"
-                onClick={() => {
-                  setGeneralInquiryError('');
-                  setGeneralInquirySuccess('');
-                  setShowGeneralInquiryModal(true);
-                }}
-              >
-                Anfrage senden
-              </Button>
-            </div>
-          </div>
-
           {filteredAndRanked.length === 0 ? (
             <EmptyState
               title="Keine Talente gefunden"
@@ -725,6 +726,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               {resultCards}
             </div>
           )}
+        </div>
         </div>
       </main>
 

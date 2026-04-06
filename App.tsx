@@ -15,7 +15,19 @@ const resolveInitialPath = () => {
   if (window.location.pathname === '/verify-email') {
     return '/verify-email';
   }
-  return window.location.hash || '#/';
+  // Hash-Routing (#/talents): bevorzugt
+  const rawHash = window.location.hash.slice(1);
+  if (rawHash && rawHash !== '/') {
+    const normalized = rawHash.startsWith('/') ? rawHash : `/${rawHash}`;
+    return `#${normalized}`;
+  }
+  // Vercel/SPA: direkte Pfade ohne Hash (z. B. /talents) → gleiche Ansicht wie #/talents
+  let pathname = window.location.pathname;
+  if (pathname.endsWith('/') && pathname.length > 1) pathname = pathname.slice(0, -1);
+  if (pathname && pathname !== '/' && pathname !== '/index.html') {
+    return `#${pathname}${window.location.search}`;
+  }
+  return '#/';
 };
 
 const App: React.FC = () => {
@@ -80,10 +92,23 @@ const App: React.FC = () => {
     init();
 
     const handleLocationChange = () => {
-      const path = window.location.pathname === '/verify-email'
-        ? '/verify-email'
-        : (window.location.hash || '#/');
-      setCurrentPath(path);
+      if (window.location.pathname === '/verify-email') {
+        setCurrentPath('/verify-email');
+        return;
+      }
+      const rawHash = window.location.hash.slice(1);
+      if (rawHash && rawHash !== '/') {
+        const normalized = rawHash.startsWith('/') ? rawHash : `/${rawHash}`;
+        setCurrentPath(`#${normalized}`);
+        return;
+      }
+      let pathname = window.location.pathname;
+      if (pathname.endsWith('/') && pathname.length > 1) pathname = pathname.slice(0, -1);
+      if (pathname && pathname !== '/' && pathname !== '/index.html') {
+        setCurrentPath(`#${pathname}${window.location.search}`);
+        return;
+      }
+      setCurrentPath('#/');
     };
 
     window.addEventListener('hashchange', handleLocationChange);
