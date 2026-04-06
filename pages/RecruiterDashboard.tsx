@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useDeferredValue, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useDeferredValue, useCallback, useRef } from 'react';
 import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, CandidateDocumentsForRecruiter, CandidateInquiry, RegisteredUserListItem, getActiveInquiryEditing, getActiveRecruiterEditing } from '../types';
 import { CmsLogoHeroBadge } from '../components/CmsLogoHeroBadge';
 import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea, FileUpload } from '../components/UI';
@@ -219,6 +219,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     }
   }, []);
 
+  /** Externe Interessen: schneller Poll in dieser Ansicht + Reload bei Tab-/App-Rückkehr (Handy/Tablet/Desktop). */
   useEffect(() => {
     let cancelled = false;
     const safeLoad = async () => {
@@ -231,16 +232,32 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       }
     };
     void safeLoad();
-    const id = window.setInterval(safeLoad, 35000);
+    const pollMs = activeView === 'inquiries' ? 10_000 : 30_000;
+    const id = window.setInterval(safeLoad, pollMs);
     return () => {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, []);
+  }, [activeView]);
 
+  const inquiriesResumeRefreshAt = useRef(0);
   useEffect(() => {
-    if (activeView !== 'inquiries') return;
-    void loadInquiries();
+    const refreshIfInquiries = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (activeView !== 'inquiries') return;
+      const now = Date.now();
+      if (now - inquiriesResumeRefreshAt.current < 1500) return;
+      inquiriesResumeRefreshAt.current = now;
+      void loadInquiries();
+    };
+    document.addEventListener('visibilitychange', refreshIfInquiries);
+    window.addEventListener('focus', refreshIfInquiries);
+    window.addEventListener('online', refreshIfInquiries);
+    return () => {
+      document.removeEventListener('visibilitychange', refreshIfInquiries);
+      window.removeEventListener('focus', refreshIfInquiries);
+      window.removeEventListener('online', refreshIfInquiries);
+    };
   }, [activeView, loadInquiries]);
 
   useEffect(() => {
