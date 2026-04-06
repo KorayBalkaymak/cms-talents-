@@ -368,6 +368,21 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     }
   };
 
+  const openInquiryCustomerAttachmentPdf = useCallback((_name: string, data: string) => {
+    try {
+      const base64 = data.includes('base64,') ? data.split('base64,')[1] : data;
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener');
+      window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const handleInquiryEditingClaim = async (inq: CandidateInquiry) => {
     if (inquiryClaimBusyId) return;
     const editing = getActiveInquiryEditing(inq);
@@ -1462,6 +1477,29 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                         <p className="text-sm leading-relaxed text-slate-600">{inq.message}</p>
                                       </div>
                                     )
+                                  ) : null}
+                                  {(inq.customerAttachments?.length ?? 0) > 0 ? (
+                                    <div className="rounded-xl border border-sky-100/90 bg-gradient-to-br from-sky-50/80 via-white to-slate-50/80 px-3 py-3 shadow-sm ring-1 ring-sky-100/60">
+                                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-900/80">
+                                        Unterlagen vom Kunden (PDF)
+                                      </p>
+                                      <ul className="flex flex-col gap-2">
+                                        {inq.customerAttachments!.map((att, attIdx) => (
+                                          <li key={`${inq.id}-att-${attIdx}`}>
+                                            <button
+                                              type="button"
+                                              onClick={() => openInquiryCustomerAttachmentPdf(att.name, att.data)}
+                                              className="inline-flex w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-white/90 bg-white/95 px-3 py-2 text-left text-sm font-semibold text-slate-800 shadow-sm transition hover:border-sky-200 hover:bg-sky-50/50"
+                                            >
+                                              <span className="truncate">{att.name}</span>
+                                              <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-sky-700">
+                                                Öffnen
+                                              </span>
+                                            </button>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
                                   ) : null}
                                   {editing ? (
                                     <p

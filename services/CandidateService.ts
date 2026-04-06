@@ -156,6 +156,7 @@ class CandidateService {
     contactEmail: string;
     contactPhone: string;
     message?: string;
+    customerAttachments?: { name: string; data: string }[];
   }): Promise<void> {
     await api.createCandidateInquiry(input);
   }

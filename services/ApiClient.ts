@@ -6,6 +6,7 @@ import {
   CandidateInquiry,
   CandidateProfile,
   CandidateStatus,
+  InquiryCustomerAttachment,
   isRecruiterEditingClaimStale,
   RegisteredUserListItem,
   SocialLink,
@@ -92,6 +93,7 @@ type InquiryRow = {
   contact_email: string;
   contact_phone: string;
   message: string | null;
+  customer_attachments?: unknown;
   created_at: string;
   recruiter_editing_user_id?: string | null;
   recruiter_editing_label?: string | null;
@@ -203,6 +205,11 @@ function isCandidateInquiriesSchemaMissing(message?: string): boolean {
     text.includes("relation \"public.candidate_inquiries\" does not exist") ||
     text.includes("relation \"candidate_inquiries\" does not exist")
   );
+}
+
+function isCustomerAttachmentsColumnMissing(message?: string): boolean {
+  const m = (message || '').toLowerCase();
+  return m.includes('customer_attachments') && (m.includes('column') || m.includes('schema'));
 }
 
 function isEditedDocumentsSchemaMissing(message?: string): boolean {
@@ -417,8 +424,10 @@ class ApiClient {
     contactEmail: string;
     contactPhone: string;
     message?: string;
+    customerAttachments?: InquiryCustomerAttachment[];
   }): void {
     if (typeof window === 'undefined') return;
+    const attachments = this.normalizeInquiryCustomerAttachments(input.customerAttachments);
     const next: CandidateInquiry = {
       id: `local-${crypto.randomUUID()}`,
       candidateUserId: input.candidateUserId,
@@ -426,6 +435,7 @@ class ApiClient {
       contactEmail: input.contactEmail.trim(),
       contactPhone: input.contactPhone.trim(),
       message: input.message?.trim() || undefined,
+      customerAttachments: attachments.length ? attachments : undefined,
       createdAt: new Date().toISOString(),
     };
     try {
@@ -658,6 +668,39 @@ class ApiClient {
     };
   }
 
+  private parseInquiryCustomerAttachments(raw: unknown): InquiryCustomerAttachment[] | undefined {
+    if (raw == null) return undefined;
+    if (!Array.isArray(raw)) return undefined;
+    const out: InquiryCustomerAttachment[] = [];
+    for (const item of raw) {
+      if (typeof item !== 'object' || !item) continue;
+      const name = (item as { name?: unknown }).name;
+      const data = (item as { data?: unknown }).data;
+      if (typeof name !== 'string' || typeof data !== 'string') continue;
+      const n = name.trim().slice(0, 255);
+      const d = data.trim();
+      if (!n || !d) continue;
+      out.push({ name: n, data: d });
+      if (out.length >= 3) break;
+    }
+    return out.length ? out : undefined;
+  }
+
+  private normalizeInquiryCustomerAttachments(
+    input?: InquiryCustomerAttachment[]
+  ): InquiryCustomerAttachment[] {
+    if (!input?.length) return [];
+    const out: InquiryCustomerAttachment[] = [];
+    for (const a of input.slice(0, 3)) {
+      const name = (a.name || 'document.pdf').trim().slice(0, 255);
+      const data = (a.data || '').trim();
+      if (!name || !data) continue;
+      out.push({ name, data });
+      if (out.length >= 3) break;
+    }
+    return out;
+  }
+
   private inquiryRowToInquiry(row: InquiryRow): CandidateInquiry {
     return {
       id: row.id,
@@ -666,6 +709,7 @@ class ApiClient {
       contactEmail: row.contact_email,
       contactPhone: row.contact_phone,
       message: row.message || undefined,
+      customerAttachments: this.parseInquiryCustomerAttachments(row.customer_attachments),
       createdAt: row.created_at,
       recruiterEditingUserId: row.recruiter_editing_user_id ?? null,
       recruiterEditingLabel: row.recruiter_editing_label ?? null,
@@ -1868,19 +1912,30 @@ class ApiClient {
     contactEmail: string;
     contactPhone: string;
     message?: string;
+    customerAttachments?: InquiryCustomerAttachment[];
   }): Promise<void> {
-    const payload = {
+    const attachments = this.normalizeInquiryCustomerAttachments(input.customerAttachments);
+    const basePayload = {
       candidate_user_id: input.candidateUserId,
       contact_name: input.contactName.trim(),
       contact_email: input.contactEmail.trim(),
       contact_phone: input.contactPhone.trim(),
       message: input.message?.trim() || null,
     };
-    const { error } = await supabase.from('candidate_inquiries').insert(payload);
+    const payloadWithAttachments =
+      attachments.length > 0
+        ? { ...basePayload, customer_attachments: attachments }
+        : basePayload;
+
+    let { error } = await supabase.from('candidate_inquiries').insert(payloadWithAttachments as Record<string, unknown>);
+    if (error && attachments.length > 0 && isCustomerAttachmentsColumnMissing(error.message)) {
+      const retry = await supabase.from('candidate_inquiries').insert(basePayload);
+      error = retry.error;
+    }
     if (error) {
       if (isCandidateInquiriesSchemaMissing(error.message)) {
         // Fallback: Anfrage lokal speichern, damit sie in der Dashboard-Sicht sichtbar bleibt.
-        this.pushLocalInquiry(input);
+        this.pushLocalInquiry({ ...input, customerAttachments: attachments });
         return;
       }
       throw new Error(error.message);

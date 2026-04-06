@@ -155,6 +155,9 @@ export interface CandidateDocumentsForRecruiter {
 // =====================================================
 // EXTERNAL INTEREST INQUIRIES (Marketplace -> Recruiter)
 // =====================================================
+/** Vom Marktplatz-Kunden hochgeladene PDFs (max. 3) zu einer Interessenanfrage. */
+export type InquiryCustomerAttachment = { name: string; data: string };
+
 export interface CandidateInquiry {
   id: string;
   candidateUserId: string;
@@ -162,6 +165,8 @@ export interface CandidateInquiry {
   contactEmail: string;
   contactPhone: string;
   message?: string;
+  /** Optional: PDF-Unterlagen des Kunden (Marktplatz „Ich habe Interesse“). */
+  customerAttachments?: InquiryCustomerAttachment[];
   createdAt: string;
   recruiterEditingUserId?: string | null;
   recruiterEditingLabel?: string | null;

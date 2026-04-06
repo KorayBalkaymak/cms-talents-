@@ -5,7 +5,8 @@ import { rankCandidates, highlightText } from '../services/SearchService';
 import { candidateService } from '../services/CandidateService';
 import { authService } from '../services/AuthService';
 import { CmsLogoHeroBadge } from '../components/CmsLogoHeroBadge';
-import { Input, Avatar, Badge, Button, Modal, EmptyState } from '../components/UI';
+import { Input, Avatar, Badge, Button, Modal, EmptyState, FileUpload } from '../components/UI';
+import { documentService } from '../services/DocumentService';
 import { INDUSTRIES, AVAILABILITY_OPTIONS } from '../constants';
 import { User } from '../types';
 
@@ -202,6 +203,8 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const [inquiryError, setInquiryError] = useState('');
   const [inquirySuccess, setInquirySuccess] = useState('');
   const [showInquiryForm, setShowInquiryForm] = useState(false);
+  const [inquiryCustomerPdfs, setInquiryCustomerPdfs] = useState<{ name: string; data: string }[]>([]);
+  const [inquiryPdfError, setInquiryPdfError] = useState('');
 
   // PDF in Modal mit iframe anzeigen (zuverlässig, keine weiße Seite)
   const openDocument = async (userId: string, docType: string, docName: string) => {
@@ -239,11 +242,31 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
 
   const handleSelectCandidate = useCallback((candidate: CandidateProfile) => {
     setShowInquiryForm(false);
+    setInquiryCustomerPdfs([]);
+    setInquiryPdfError('');
     setSelectedCandidate(candidate);
     setInquiryError('');
     setInquirySuccess('');
     onNavigate('/talents');
   }, [onNavigate]);
+
+  const handleInquiryCustomerPdfs = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const remaining = 3 - inquiryCustomerPdfs.length;
+    if (remaining <= 0) return;
+    setInquiryPdfError('');
+    const toAdd = Math.min(files.length, remaining);
+    const next = [...inquiryCustomerPdfs];
+    for (let i = 0; i < toAdd; i += 1) {
+      const result = await documentService.uploadPdf(files[i]);
+      if (!result.success) {
+        setInquiryPdfError(result.error || 'PDF konnte nicht verarbeitet werden.');
+        break;
+      }
+      if (result.data && result.name) next.push({ name: result.name, data: result.data });
+    }
+    setInquiryCustomerPdfs(next);
+  };
 
   const selectedCandidateCodeName = useMemo(
     () => (selectedCandidate ? codeNameFromUserId(selectedCandidate.userId) : ''),
@@ -297,6 +320,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
         contactEmail: email,
         contactPhone: inquiryForm.contactPhone.trim(),
         message: structuredMessage,
+        customerAttachments: inquiryCustomerPdfs.length ? inquiryCustomerPdfs : undefined,
       });
       setInquirySuccess('Vielen Dank. Ihre Anfrage wurde an das Recruiter-Team gesendet.');
       setInquiryForm({
@@ -310,6 +334,8 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
         projectLocation: '',
         budget: '',
       });
+      setInquiryCustomerPdfs([]);
+      setInquiryPdfError('');
     } catch (e: any) {
       setInquiryError(e?.message || 'Anfrage konnte nicht gesendet werden.');
     } finally {
@@ -615,6 +641,8 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
           onClose={() => {
             setSelectedCandidate(null);
             setShowInquiryForm(false);
+            setInquiryCustomerPdfs([]);
+            setInquiryPdfError('');
             setInquiryError('');
             setInquirySuccess('');
             onNavigate('/talents');
@@ -662,7 +690,19 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
             )}
 
             <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-4">
-              <Button className="w-full sm:w-auto" variant="primary" onClick={() => setShowInquiryForm((v) => !v)}>
+              <Button
+                className="w-full sm:w-auto"
+                variant="primary"
+                onClick={() => {
+                  setShowInquiryForm((v) => {
+                    if (v) {
+                      setInquiryCustomerPdfs([]);
+                      setInquiryPdfError('');
+                    }
+                    return !v;
+                  });
+                }}
+              >
                 Ich habe Interesse
               </Button>
               {showInquiryForm && (
@@ -678,6 +718,20 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
                     <Input value={inquiryForm.projectDuration} onChange={(e) => setInquiryForm((s) => ({ ...s, projectDuration: e.target.value }))} placeholder="Projektlaufzeit *" className="h-10" />
                     <Input value={inquiryForm.projectLocation} onChange={(e) => setInquiryForm((s) => ({ ...s, projectLocation: e.target.value }))} placeholder="Projektstandort *" className="h-10" />
                     <Input type="number" min="0" value={inquiryForm.budget} onChange={(e) => setInquiryForm((s) => ({ ...s, budget: e.target.value }))} placeholder="Budget (EUR) *" className="h-10" />
+                  </div>
+                  <div className="mt-4">
+                    <FileUpload
+                      label="Unterlagen (PDF, optional)"
+                      accept="application/pdf"
+                      multiple
+                      onChange={handleInquiryCustomerPdfs}
+                      files={inquiryCustomerPdfs}
+                      onRemove={(idx) =>
+                        setInquiryCustomerPdfs((prev) => prev.filter((_, i) => i !== idx))
+                      }
+                      helperText={`Bis zu 3 PDF-Dateien, je max. 10 MB. Noch ${Math.max(0, 3 - inquiryCustomerPdfs.length)} möglich.`}
+                      error={inquiryPdfError || undefined}
+                    />
                   </div>
                   {inquiryError && <p className="mt-2 text-xs font-bold text-red-600">{inquiryError}</p>}
                   {inquirySuccess && <p className="mt-2 text-xs font-bold text-emerald-700">{inquirySuccess}</p>}
