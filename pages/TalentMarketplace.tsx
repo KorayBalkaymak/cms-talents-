@@ -210,9 +210,13 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const [inquiryPdfError, setInquiryPdfError] = useState('');
   const [showGeneralInquiryModal, setShowGeneralInquiryModal] = useState(false);
   const [generalInquiryForm, setGeneralInquiryForm] = useState({
+    companyName: '',
+    customerPosition: '',
+    projectDuration: '',
+    projectLocation: '',
+    budget: '',
     firstName: '',
     lastName: '',
-    companyName: '',
     contactEmail: '',
     contactPhone: '',
     searchProfile: '',
@@ -362,13 +366,18 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
     setGeneralInquiryError('');
     setGeneralInquirySuccess('');
     const missing =
+      !generalInquiryForm.companyName.trim() ||
+      !generalInquiryForm.customerPosition.trim() ||
+      !generalInquiryForm.projectDuration.trim() ||
+      !generalInquiryForm.projectLocation.trim() ||
+      !generalInquiryForm.budget.trim() ||
       !generalInquiryForm.firstName.trim() ||
       !generalInquiryForm.lastName.trim() ||
       !generalInquiryForm.contactEmail.trim() ||
       !generalInquiryForm.contactPhone.trim() ||
       !generalInquiryForm.searchProfile.trim();
     if (missing) {
-      setGeneralInquiryError('Bitte Vorname, Nachname, E-Mail, Telefon und Ihr Suchprofil ausfüllen.');
+      setGeneralInquiryError('Bitte alle Pflichtfelder ausfüllen.');
       return;
     }
     const email = generalInquiryForm.contactEmail.trim();
@@ -379,11 +388,12 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
     setGeneralInquiryLoading(true);
     try {
       const fullName = `${generalInquiryForm.firstName.trim()} ${generalInquiryForm.lastName.trim()}`.trim();
-      const companyLine = generalInquiryForm.companyName.trim()
-        ? `Firma: ${generalInquiryForm.companyName.trim()}`
-        : 'Firma: —';
       const head = [
-        companyLine,
+        `Firma: ${generalInquiryForm.companyName.trim()}`,
+        `Position (Kunde): ${generalInquiryForm.customerPosition.trim()}`,
+        `Projektlaufzeit: ${generalInquiryForm.projectDuration.trim()}`,
+        `Projektstandort: ${generalInquiryForm.projectLocation.trim()}`,
+        `Budget (EUR): ${generalInquiryForm.budget.trim()} EUR`,
         `Vorname: ${generalInquiryForm.firstName.trim()}`,
         `Nachname: ${generalInquiryForm.lastName.trim()}`,
         `E-Mail: ${email}`,
@@ -399,9 +409,13 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
       });
       setGeneralInquirySuccess('Vielen Dank. Ihre Anfrage wurde an das Recruiter-Team gesendet.');
       setGeneralInquiryForm({
+        companyName: '',
+        customerPosition: '',
+        projectDuration: '',
+        projectLocation: '',
+        budget: '',
         firstName: '',
         lastName: '',
-        companyName: '',
         contactEmail: '',
         contactPhone: '',
         searchProfile: '',
@@ -743,9 +757,41 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
       >
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            Beschreiben Sie kurz Rolle, Skills, Standort oder Rahmenbedingungen. Pflichtfelder sind mit * markiert.
+            Alle Felder sind Pflichtfelder. Beschreiben Sie im Suchprofil, welches Talent Sie suchen.
           </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Input
+              value={generalInquiryForm.companyName}
+              onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, companyName: e.target.value }))}
+              placeholder="Firma *"
+              className="h-10 sm:col-span-2"
+            />
+            <Input
+              value={generalInquiryForm.customerPosition}
+              onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, customerPosition: e.target.value }))}
+              placeholder="Ihre Position (z. B. Einkauf, HR, Projektleitung) *"
+              className="h-10 sm:col-span-2"
+            />
+            <Input
+              value={generalInquiryForm.projectDuration}
+              onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, projectDuration: e.target.value }))}
+              placeholder="Projektlaufzeit *"
+              className="h-10"
+            />
+            <Input
+              value={generalInquiryForm.projectLocation}
+              onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, projectLocation: e.target.value }))}
+              placeholder="Projektstandort *"
+              className="h-10"
+            />
+            <Input
+              type="number"
+              min="0"
+              value={generalInquiryForm.budget}
+              onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, budget: e.target.value }))}
+              placeholder="Budget (EUR) *"
+              className="h-10 sm:col-span-2"
+            />
             <Input
               value={generalInquiryForm.firstName}
               onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, firstName: e.target.value }))}
@@ -757,12 +803,6 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, lastName: e.target.value }))}
               placeholder="Nachname *"
               className="h-10"
-            />
-            <Input
-              value={generalInquiryForm.companyName}
-              onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, companyName: e.target.value }))}
-              placeholder="Firma (optional)"
-              className="h-10 sm:col-span-2"
             />
             <Input
               type="email"
