@@ -1172,17 +1172,17 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         </div>
 
         <header className="relative z-10 flex flex-col gap-3 border-b border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_1px_0_rgba(15,23,42,0.04)] backdrop-blur-sm sm:px-6 md:h-[4.25rem] md:flex-row md:items-center md:justify-between md:gap-4 md:py-0">
-          <div className="hidden min-w-0 flex-1 items-center gap-3 md:flex md:gap-5">
-            <div className="shrink-0">
+          <div className="order-2 flex min-w-0 w-full flex-1 flex-col gap-3 md:order-1 md:flex-row md:items-center md:gap-5">
+            <div className="hidden shrink-0 md:block">
               <h1 className="text-lg font-semibold tracking-tight text-slate-900">Dashboard</h1>
               <p className="text-xs font-medium text-slate-500">Recruiting · CMS Talents</p>
             </div>
             <div
-              className="hidden h-9 w-px shrink-0 bg-gradient-to-b from-transparent via-slate-300/90 to-transparent sm:block"
+              className="hidden h-9 w-px shrink-0 bg-gradient-to-b from-transparent via-slate-300/90 to-transparent md:block"
               aria-hidden
             />
             <nav
-              className="flex min-w-0 flex-1 flex-wrap items-center gap-1 rounded-2xl border border-slate-200/70 bg-gradient-to-b from-white to-slate-50/90 p-1 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.1)] ring-1 ring-slate-900/[0.04]"
+              className="flex min-w-0 w-full flex-1 flex-wrap items-center gap-1 rounded-2xl border border-slate-200/70 bg-gradient-to-b from-white to-slate-50/90 p-1 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.1)] ring-1 ring-slate-900/[0.04]"
               aria-label="Hauptnavigation"
             >
               <button
@@ -1243,7 +1243,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </nav>
           </div>
           <div
-            className={`relative w-full min-w-0 md:max-w-sm md:flex-1 lg:max-w-md ${activeView === 'calculator' ? 'hidden' : ''}`}
+            className={`relative order-1 w-full min-w-0 md:order-2 md:max-w-sm md:flex-1 lg:max-w-md ${activeView === 'calculator' ? 'hidden' : ''}`}
           >
             <input
               type="search"
@@ -1273,67 +1273,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         <div
           className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-slate-50/50 p-3 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:p-6 sm:pb-8"
         >
-          <div className="mb-4 md:hidden">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Bereiche</p>
-            <div className="-mx-1 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
-              <button
-                type="button"
-                onClick={() => setActiveView('talents')}
-                className={`shrink-0 rounded-xl border px-3.5 py-2.5 text-xs font-medium transition-all ${
-                  activeView === 'talents'
-                    ? 'border-slate-700 bg-slate-900 text-white shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                }`}
-              >
-                Talents
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveView('inquiries')}
-                className={`shrink-0 rounded-xl border px-3.5 py-2.5 text-xs font-medium transition-all ${
-                  activeView === 'inquiries'
-                    ? 'border-slate-700 bg-slate-900 text-white shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                }`}
-              >
-                Interessen
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveView('external')}
-                className={`shrink-0 rounded-xl border px-3.5 py-2.5 text-xs font-medium transition-all ${
-                  activeView === 'external'
-                    ? 'border-slate-700 bg-slate-900 text-white shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                }`}
-              >
-                Hinzufügen
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveView('users')}
-                className={`shrink-0 rounded-xl border px-3.5 py-2.5 text-xs font-medium transition-all ${
-                  activeView === 'users'
-                    ? 'border-slate-700 bg-slate-900 text-white shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                }`}
-              >
-                Nutzer
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveView('calculator')}
-                className={`shrink-0 rounded-xl border px-3.5 py-2.5 text-xs font-medium transition-all ${
-                  activeView === 'calculator'
-                    ? 'border-slate-700 bg-slate-900 text-white shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                }`}
-              >
-                Rechner
-              </button>
-            </div>
-          </div>
-
           {activeView === 'inquiries' ? (
             <div className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)]">
               <div className="relative overflow-hidden border-b border-white/10 bg-gradient-to-br from-slate-900 via-[#0f172a] to-slate-950 px-5 py-6 sm:px-8 sm:py-8">
