@@ -1745,15 +1745,15 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     {plannerError}
                   </div>
                 )}
-                <div className="grid grid-cols-1 gap-4 p-4 xl:grid-cols-12">
-                  <section className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 xl:col-span-8">
+                <div className="grid grid-cols-1 gap-4 p-4">
+                  <section className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
                     <h4 className="text-sm font-black text-slate-900">Kalender / Aufgaben planen</h4>
-                    <div className="mt-3 grid grid-cols-1 gap-3">
+                    <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
                       <Input
                         value={plannerEventForm.title}
                         onChange={(e) => setPlannerEventForm((s) => ({ ...s, title: e.target.value }))}
                         placeholder="Was ist zu tun? (z. B. Interview Kunde Müller)"
-                        className="h-10"
+                        className="h-10 lg:col-span-2"
                       />
                       <Input
                         type="datetime-local"
@@ -1766,6 +1766,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         onChange={(e) => setPlannerEventForm((s) => ({ ...s, note: e.target.value }))}
                         placeholder="Notiz (optional)"
                         rows={3}
+                        className="lg:col-span-3"
                       />
                       <Button
                         type="button"
@@ -1777,7 +1778,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         Termin speichern
                       </Button>
                     </div>
-                    <div className="mt-4 max-h-[68vh] space-y-2 overflow-y-auto pr-1">
+                    <div className="mt-4 max-h-[74vh] space-y-2 overflow-y-auto pr-1">
                       {plannerLoading && plannerEvents.length === 0 ? (
                         <div className="rounded-xl border border-slate-200 bg-white px-3 py-6 text-center text-xs font-semibold text-slate-500">
                           Kalender wird geladen…
@@ -1816,10 +1817,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     </div>
                   </section>
 
-                  <section className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 xl:col-span-4">
+                  <section className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
                     <h4 className="text-sm font-black text-slate-900">Recruiter-Teamchat</h4>
                     <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
-                      <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+                      <div className="max-h-[32vh] space-y-2 overflow-y-auto pr-1">
                         {plannerLoading && plannerMessages.length === 0 ? (
                           <p className="py-6 text-center text-xs font-semibold text-slate-500">Chat wird geladen…</p>
                         ) : plannerMessages.length === 0 ? (
