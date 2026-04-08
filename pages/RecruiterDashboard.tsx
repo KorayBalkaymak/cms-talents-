@@ -1971,7 +1971,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         </span>
                       </div>
                       <div className="bg-gradient-to-b from-slate-50 to-white p-3">
-                        <div className="max-h-[34vh] space-y-2 overflow-y-auto pr-1">
+                        <div className="max-h-[52vh] space-y-2 overflow-y-auto pr-1">
                           {plannerLoading && plannerMessages.length === 0 ? (
                             <p className="py-6 text-center text-xs font-semibold text-slate-500">Chat wird geladen…</p>
                           ) : plannerMessages.length === 0 ? (
@@ -1993,12 +1993,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             </div>
                           ))}
                         </div>
-                        <div className="mt-3 rounded-xl border border-slate-200 bg-white p-2.5">
+                        <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
                           <Textarea
                             value={plannerMessageDraft}
                             onChange={(e) => setPlannerMessageDraft(e.target.value)}
                             placeholder="Nachricht an alle Recruiter…"
-                            rows={3}
+                            rows={5}
                           />
                           <div className="mt-2 flex justify-end">
                             <Button
