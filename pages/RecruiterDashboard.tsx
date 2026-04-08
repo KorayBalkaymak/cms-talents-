@@ -1974,8 +1974,18 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             <p className="py-6 text-center text-xs font-semibold text-slate-500">Noch keine Nachrichten.</p>
                           ) : plannerMessages.map((msg) => {
                             const displayMessage = (msg.message || '').replace(/^📅\s*/u, '');
+                            const isPlannerNotice = /^Neuer Termin:/i.test(displayMessage.trim());
                             return (
-                            <div key={msg.id} className={`rounded-xl border px-3 py-2 shadow-sm ${msg.senderId === user.id ? 'border-orange-200 bg-orange-50/90' : 'border-slate-200 bg-white'}`}>
+                            <div
+                              key={msg.id}
+                              className={`rounded-xl border px-3 py-2 shadow-sm ${
+                                isPlannerNotice
+                                  ? 'border-emerald-200 bg-emerald-50/95'
+                                  : msg.senderId === user.id
+                                    ? 'border-orange-200 bg-orange-50/90'
+                                    : 'border-slate-200 bg-white'
+                              }`}
+                            >
                               <div className="mb-1 flex items-center justify-between gap-2">
                                 <div className="inline-flex items-center gap-2">
                                   <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[10px] font-black text-white">
@@ -1987,7 +1997,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                   {new Date(msg.createdAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}
                                 </span>
                               </div>
-                              <p className="whitespace-pre-wrap break-words text-xs leading-relaxed text-slate-700">{displayMessage}</p>
+                              <p className={`whitespace-pre-wrap break-words text-xs leading-relaxed ${isPlannerNotice ? 'text-emerald-900 font-semibold' : 'text-slate-700'}`}>
+                                {displayMessage}
+                              </p>
                             </div>
                           );
                           })}
