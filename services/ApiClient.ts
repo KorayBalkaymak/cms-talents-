@@ -691,14 +691,7 @@ class ApiClient {
       Object.prototype.hasOwnProperty.call(row as object, 'edited_certificates') ||
       Object.prototype.hasOwnProperty.call(row as object, 'edited_qualifications');
     if (!hasEditedColumns) {
-      // DB ohne edited_* Spalten: für Marktplatz auf Standard-Dokumentspalten zurückfallen.
-      if (row.cv_pdf?.name) items.push({ type: 'cv', name: row.cv_pdf.name });
-      for (const cert of row.certificates || []) {
-        if (cert?.name) items.push({ type: 'certificate', name: cert.name });
-      }
-      for (const qual of row.qualifications || []) {
-        if (qual?.name) items.push({ type: 'qualification', name: qual.name });
-      }
+      // Datenschutz: Im Marktplatz niemals Originaldokumente als Fallback anzeigen.
       return items;
     }
 
@@ -1767,8 +1760,8 @@ class ApiClient {
     if (hasEditedColumns) {
       return this.documentRowToDocuments(row, true);
     }
-    // Legacy fallback (ohne edited_* Spalten): Marktplatz-Version liegt in Basisspalten.
-    return this.documentRowToDocuments(row, false);
+    // Datenschutz: ohne edited_* Spalten im Marktplatz keine Dokumente anzeigen.
+    return { userId, certificates: [], qualifications: [] };
   }
 
   /** Originaldokumente (für Kandidaten): unabhängig davon, ob der Nutzer bereits veröffentlicht ist. */
