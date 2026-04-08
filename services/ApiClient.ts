@@ -21,6 +21,8 @@ const LOCAL_INQUIRIES_KEY = 'cms_talents_local_inquiries';
 const LOCAL_EXTERNAL_CANDIDATES_KEY = 'cms_talents_local_external_candidates';
 const LOCAL_EDITED_DOCS_KEY = 'cms_talents_local_edited_documents';
 const LOCAL_ORIGINAL_DOCS_KEY = 'cms_talents_local_original_documents';
+const LOCAL_RECRUITER_EVENTS_KEY = 'cms_talents_local_recruiter_events';
+const LOCAL_RECRUITER_CHAT_KEY = 'cms_talents_local_recruiter_chat';
 const EDITING_CLAIM_SET_PREFIX = 'editing_claim:set:';
 const EDITING_CLAIM_CLEAR = 'editing_claim:clear';
 
@@ -230,6 +232,15 @@ function isCandidateInquiriesSchemaMissing(message?: string): boolean {
 function isCustomerAttachmentsColumnMissing(message?: string): boolean {
   const m = (message || '').toLowerCase();
   return m.includes('customer_attachments') && (m.includes('column') || m.includes('schema'));
+}
+
+function isRecruiterPlannerSchemaMissing(message?: string): boolean {
+  const m = (message || '').toLowerCase();
+  return (
+    m.includes('recruiter_chat_messages') ||
+    m.includes('recruiter_availability_events') ||
+    (m.includes('schema cache') && (m.includes('chat') || m.includes('availability')))
+  );
 }
 
 function isEditedDocumentsSchemaMissing(message?: string): boolean {
@@ -474,6 +485,44 @@ class ApiClient {
       return raw ? ((JSON.parse(raw) as CandidateInquiry[]) || []) : [];
     } catch {
       return [];
+    }
+  }
+
+  private readLocalRecruiterEvents(): RecruiterAvailabilityEvent[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.localStorage.getItem(LOCAL_RECRUITER_EVENTS_KEY);
+      return raw ? ((JSON.parse(raw) as RecruiterAvailabilityEvent[]) || []) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private writeLocalRecruiterEvents(items: RecruiterAvailabilityEvent[]): void {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(LOCAL_RECRUITER_EVENTS_KEY, JSON.stringify(items.slice(0, 500)));
+    } catch {
+      // ignore local fallback errors
+    }
+  }
+
+  private readLocalRecruiterChatMessages(): RecruiterTeamMessage[] {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.localStorage.getItem(LOCAL_RECRUITER_CHAT_KEY);
+      return raw ? ((JSON.parse(raw) as RecruiterTeamMessage[]) || []) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private writeLocalRecruiterChatMessages(items: RecruiterTeamMessage[]): void {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(LOCAL_RECRUITER_CHAT_KEY, JSON.stringify(items.slice(-500)));
+    } catch {
+      // ignore local fallback errors
     }
   }
 
@@ -2155,13 +2204,19 @@ class ApiClient {
   async getRecruiterAvailabilityEvents(): Promise<RecruiterAvailabilityEvent[]> {
     const current = await this.getSessionUser();
     if (!current || !isRecruiterRole(current.role)) return [];
+    const local = this.readLocalRecruiterEvents();
     const { data, error } = await supabase
       .from('recruiter_availability_events')
       .select('id,title,scheduled_for,note,created_at,created_by,created_by_label')
       .order('scheduled_for', { ascending: true })
       .limit(500);
-    if (error || !data) throw new Error(error?.message || 'Kalender konnte nicht geladen werden.');
-    return (data as RecruiterAvailabilityEventRow[]).map((row) => ({
+    if (error || !data) {
+      if (isRecruiterPlannerSchemaMissing(error?.message)) {
+        return local;
+      }
+      throw new Error(error?.message || 'Kalender konnte nicht geladen werden.');
+    }
+    const remote = (data as RecruiterAvailabilityEventRow[]).map((row) => ({
       id: row.id,
       title: row.title,
       scheduledFor: row.scheduled_for,
@@ -2170,6 +2225,11 @@ class ApiClient {
       createdBy: row.created_by,
       createdByLabel: row.created_by_label,
     }));
+    const merged = [...remote, ...local.filter((x) => x.id.startsWith('local-'))]
+      .sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime())
+      .slice(0, 500);
+    this.writeLocalRecruiterEvents(merged);
+    return merged;
   }
 
   async createRecruiterAvailabilityEvent(input: {
@@ -2187,26 +2247,55 @@ class ApiClient {
       created_by_label: recruiterClaimLabelFromUser(current),
     };
     const { error } = await supabase.from('recruiter_availability_events').insert(payload);
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (isRecruiterPlannerSchemaMissing(error.message)) {
+        const local = this.readLocalRecruiterEvents();
+        const next: RecruiterAvailabilityEvent = {
+          id: `local-${crypto.randomUUID()}`,
+          title: payload.title,
+          scheduledFor: input.scheduledFor,
+          note: input.note?.trim() || undefined,
+          createdAt: new Date().toISOString(),
+          createdBy: current.id,
+          createdByLabel: payload.created_by_label,
+        };
+        this.writeLocalRecruiterEvents([...local, next].sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime()));
+        return;
+      }
+      throw new Error(error.message);
+    }
   }
 
   async deleteRecruiterAvailabilityEvent(eventId: string): Promise<void> {
     const current = await this.getSessionUser();
     if (!current || !isRecruiterRole(current.role)) throw new Error('Keine Berechtigung für diese Aktion.');
     const { error } = await supabase.from('recruiter_availability_events').delete().eq('id', eventId);
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (isRecruiterPlannerSchemaMissing(error.message)) {
+        const local = this.readLocalRecruiterEvents().filter((x) => x.id !== eventId);
+        this.writeLocalRecruiterEvents(local);
+        return;
+      }
+      throw new Error(error.message);
+    }
   }
 
   async getRecruiterTeamMessages(limit = 200): Promise<RecruiterTeamMessage[]> {
     const current = await this.getSessionUser();
     if (!current || !isRecruiterRole(current.role)) return [];
+    const local = this.readLocalRecruiterChatMessages();
     const { data, error } = await supabase
       .from('recruiter_chat_messages')
       .select('id,message,created_at,sender_id,sender_label')
       .order('created_at', { ascending: false })
       .limit(Math.min(500, Math.max(20, limit)));
-    if (error || !data) throw new Error(error?.message || 'Chat konnte nicht geladen werden.');
-    return (data as RecruiterChatMessageRow[])
+    if (error || !data) {
+      if (isRecruiterPlannerSchemaMissing(error?.message)) {
+        return local.slice(-Math.min(500, Math.max(20, limit)));
+      }
+      throw new Error(error?.message || 'Chat konnte nicht geladen werden.');
+    }
+    const remote = (data as RecruiterChatMessageRow[])
       .map((row) => ({
         id: row.id,
         message: row.message,
@@ -2215,6 +2304,11 @@ class ApiClient {
         senderLabel: row.sender_label,
       }))
       .reverse();
+    const merged = [...remote, ...local.filter((x) => x.id.startsWith('local-'))]
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      .slice(-500);
+    this.writeLocalRecruiterChatMessages(merged);
+    return merged.slice(-Math.min(500, Math.max(20, limit)));
   }
 
   async createRecruiterTeamMessage(message: string): Promise<void> {
@@ -2226,7 +2320,21 @@ class ApiClient {
       sender_label: recruiterClaimLabelFromUser(current),
     };
     const { error } = await supabase.from('recruiter_chat_messages').insert(payload);
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (isRecruiterPlannerSchemaMissing(error.message)) {
+        const local = this.readLocalRecruiterChatMessages();
+        const next: RecruiterTeamMessage = {
+          id: `local-${crypto.randomUUID()}`,
+          message: payload.message,
+          createdAt: new Date().toISOString(),
+          senderId: current.id,
+          senderLabel: payload.sender_label,
+        };
+        this.writeLocalRecruiterChatMessages([...local, next]);
+        return;
+      }
+      throw new Error(error.message);
+    }
   }
 
   async createExternalCandidate(input: {
