@@ -1879,13 +1879,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     </div>
 
                     <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
-                      <div className="rounded-xl border border-slate-200 bg-white p-3">
-                        <p className="text-xs font-black uppercase tracking-widest text-slate-500">
+                      <div className="rounded-xl border border-[#1b2a47] bg-[#101B31] p-3">
+                        <p className="text-xs font-black uppercase tracking-widest text-slate-200">
                           Termine am {new Date(`${plannerSelectedDate}T00:00:00`).toLocaleDateString('de-DE', { dateStyle: 'full' })}
                         </p>
                         <div className="mt-2 max-h-48 space-y-2 overflow-y-auto pr-1">
                           {selectedPlannerEvents.length === 0 ? (
-                            <p className="text-xs font-semibold text-slate-500">Keine Einträge für diesen Tag.</p>
+                            <p className="text-xs font-semibold text-slate-300">Keine Einträge für diesen Tag.</p>
                           ) : selectedPlannerEvents.map((evt) => (
                             <div key={evt.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                               <div className="flex items-start justify-between gap-2">
@@ -1913,8 +1913,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         </div>
                       </div>
 
-                      <div className="rounded-xl border border-slate-200 bg-white p-3">
-                        <p className="text-xs font-black uppercase tracking-widest text-slate-500">Neuen Termin anlegen</p>
+                      <div className="rounded-xl border border-[#1b2a47] bg-[#101B31] p-3">
+                        <p className="text-xs font-black uppercase tracking-widest text-slate-200">Neuen Termin anlegen</p>
                         <div className="mt-2 grid grid-cols-1 gap-2">
                           <Input
                             value={plannerEventForm.title}
