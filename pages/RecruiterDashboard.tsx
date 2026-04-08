@@ -183,6 +183,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [inquiryClaimBusyId, setInquiryClaimBusyId] = useState<string | null>(null);
   const [inquiryDeleteError, setInquiryDeleteError] = useState<string | null>(null);
   const [inquiryClaimError, setInquiryClaimError] = useState<string | null>(null);
+  const [inquiryDeleteTarget, setInquiryDeleteTarget] = useState<CandidateInquiry | null>(null);
+  const [inquiryDeleteConfirmText, setInquiryDeleteConfirmText] = useState('');
   const [recruiterEditingHeartbeatCandidateId, setRecruiterEditingHeartbeatCandidateId] = useState<string | null>(null);
   const [inquiries, setInquiries] = useState<CandidateInquiry[]>([]);
   const [isLoadingInquiries, setIsLoadingInquiries] = useState(false);
@@ -554,14 +556,15 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
   const handleDeleteInquiry = async (inq: CandidateInquiry) => {
     if (deletingInquiryId) return;
-    const ok = window.confirm('Diese Anfrage wirklich löschen?');
-    if (!ok) return;
+    if (inquiryDeleteConfirmText.trim().toLowerCase() !== 'löschen') return;
 
     setInquiryDeleteError(null);
     setDeletingInquiryId(inq.id);
     try {
       await candidateService.deleteInquiry(inq.id);
       setInquiries((prev) => prev.filter((x) => x.id !== inq.id));
+      setInquiryDeleteTarget(null);
+      setInquiryDeleteConfirmText('');
     } catch (e: any) {
       setInquiryDeleteError(e?.message || 'Löschen fehlgeschlagen.');
     } finally {
@@ -1780,7 +1783,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                   className="h-9 w-full justify-center text-[11px] font-bold sm:flex-1 lg:w-full"
                                   isLoading={deletingInquiryId === inq.id}
                                   disabled={deletingInquiryId === inq.id}
-                                  onClick={() => void handleDeleteInquiry(inq)}
+                                  onClick={() => {
+                                    setInquiryDeleteTarget(inq);
+                                    setInquiryDeleteConfirmText('');
+                                  }}
                                   title="Anfrage löschen"
                                 >
                                   Löschen
@@ -3403,6 +3409,61 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   isLoading={!!deletingUserId}
                   disabled={!!deletingUserId || userDeleteConfirmText.trim().toLowerCase() !== 'löschen'}
                   onClick={() => void handleConfirmDeleteRegisteredUser()}
+                >
+                  Endgültig löschen
+                </Button>
+              </div>
+            </>
+          )}
+        </Modal>
+
+        <Modal
+          isOpen={!!inquiryDeleteTarget}
+          onClose={() => {
+            if (deletingInquiryId) return;
+            setInquiryDeleteTarget(null);
+            setInquiryDeleteConfirmText('');
+          }}
+          title="Anfrage löschen?"
+        >
+          {inquiryDeleteTarget && (
+            <>
+              <p className="text-sm leading-relaxed text-slate-700">
+                Die Anfrage von <strong className="text-slate-900">{inquiryDeleteTarget.contactName}</strong> wird dauerhaft gelöscht.
+                Diese Aktion kann nicht rückgängig gemacht werden.
+              </p>
+              <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                <p className="mb-2 text-xs font-semibold text-slate-700">
+                  Zur Bestätigung bitte <span className="font-black text-slate-900">löschen</span> eintippen.
+                </p>
+                <Input
+                  value={inquiryDeleteConfirmText}
+                  onChange={(e) => setInquiryDeleteConfirmText(e.target.value)}
+                  placeholder="löschen"
+                  autoComplete="off"
+                  className="h-10 bg-white"
+                />
+              </div>
+              <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  disabled={!!deletingInquiryId}
+                  onClick={() => {
+                    setInquiryDeleteTarget(null);
+                    setInquiryDeleteConfirmText('');
+                  }}
+                >
+                  Abbrechen
+                </Button>
+                <Button
+                  type="button"
+                  variant="danger"
+                  className="w-full sm:w-auto"
+                  isLoading={!!deletingInquiryId}
+                  disabled={!!deletingInquiryId || inquiryDeleteConfirmText.trim().toLowerCase() !== 'löschen'}
+                  onClick={() => void handleDeleteInquiry(inquiryDeleteTarget)}
                 >
                   Endgültig löschen
                 </Button>
