@@ -1846,7 +1846,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                 setPlannerSelectedDate(cell.key);
                                 setPlannerEventForm((s) => ({ ...s, scheduledDate: cell.key, scheduledTime: s.scheduledTime || '09:00' }));
                               }}
-                              className={`min-h-[112px] rounded-2xl border p-2 text-left transition ${
+                              className={`min-h-[90px] rounded-2xl border p-2 text-left transition ${
                                 isSelected
                                   ? 'border-orange-300 bg-orange-50 shadow-sm ring-2 ring-orange-200'
                                   : cell.inMonth
@@ -1855,7 +1855,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               }`}
                             >
                               <div className="mb-1 flex items-center justify-between">
-                                <span className={`text-lg font-black ${cell.isToday ? 'text-orange-600' : 'text-slate-800'}`}>
+                                <span className={`text-base font-black ${cell.isToday ? 'text-orange-600' : 'text-slate-800'}`}>
                                   {cell.date.getDate()}
                                 </span>
                                 {events.length > 0 ? (
@@ -1971,7 +1971,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         </span>
                       </div>
                       <div className="bg-gradient-to-b from-slate-50 to-white p-3">
-                        <div className="max-h-[52vh] space-y-2 overflow-y-auto pr-1">
+                        <div className="max-h-[64vh] space-y-2 overflow-y-auto pr-1">
                           {plannerLoading && plannerMessages.length === 0 ? (
                             <p className="py-6 text-center text-xs font-semibold text-slate-500">Chat wird geladen…</p>
                           ) : plannerMessages.length === 0 ? (
