@@ -236,7 +236,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [plannerEventBusyId, setPlannerEventBusyId] = useState<string | null>(null);
   const [plannerEventForm, setPlannerEventForm] = useState({
     title: '',
-    scheduledFor: '',
+    scheduledDate: '',
+    scheduledTime: '09:00',
     note: '',
   });
   const [plannerMessageDraft, setPlannerMessageDraft] = useState('');
@@ -420,11 +421,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const handleCreatePlannerEvent = async () => {
     setPlannerError(null);
     const title = plannerEventForm.title.trim();
-    const scheduledForRaw = plannerEventForm.scheduledFor.trim();
-    if (!title || !scheduledForRaw) {
+    const scheduledDateRaw = plannerEventForm.scheduledDate.trim();
+    const scheduledTimeRaw = plannerEventForm.scheduledTime.trim();
+    if (!title || !scheduledDateRaw || !scheduledTimeRaw) {
       setPlannerError('Bitte Titel und Terminzeit ausfüllen.');
       return;
     }
+    const scheduledForRaw = `${scheduledDateRaw}T${scheduledTimeRaw}`;
     const iso = new Date(scheduledForRaw).toISOString();
     if (!iso || Number.isNaN(new Date(iso).getTime())) {
       setPlannerError('Bitte ein gültiges Datum mit Uhrzeit wählen.');
@@ -437,7 +440,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         scheduledFor: iso,
         note: plannerEventForm.note.trim() || undefined,
       });
-      setPlannerEventForm({ title: '', scheduledFor: '', note: '' });
+      const chatNotice = `📅 Neuer Termin: ${title} am ${new Date(iso).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })}`;
+      await candidateService.createRecruiterTeamMessage(chatNotice);
+      setPlannerEventForm({ title: '', scheduledDate: scheduledDateRaw, scheduledTime: '09:00', note: '' });
       await loadPlannerData();
     } catch (e) {
       setPlannerError(e instanceof Error ? e.message : 'Termin konnte nicht erstellt werden.');
@@ -1839,7 +1844,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               type="button"
                               onClick={() => {
                                 setPlannerSelectedDate(cell.key);
-                                setPlannerEventForm((s) => ({ ...s, scheduledFor: `${cell.key}T09:00` }));
+                                setPlannerEventForm((s) => ({ ...s, scheduledDate: cell.key, scheduledTime: s.scheduledTime || '09:00' }));
                               }}
                               className={`min-h-[112px] rounded-2xl border p-2 text-left transition ${
                                 isSelected
@@ -1917,13 +1922,22 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             placeholder="Was ist zu tun? (z. B. Interview Kunde Müller)"
                             className="h-10"
                           />
-                          <Input
-                            type="text"
-                            value={plannerEventForm.scheduledFor}
-                            onChange={(e) => setPlannerEventForm((s) => ({ ...s, scheduledFor: e.target.value }))}
-                            placeholder="YYYY-MM-DDTHH:mm (z. B. 2026-04-23T09:00)"
-                            className="h-10"
-                          />
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <Input
+                              type="text"
+                              value={plannerEventForm.scheduledDate}
+                              onChange={(e) => setPlannerEventForm((s) => ({ ...s, scheduledDate: e.target.value }))}
+                              placeholder="Datum (YYYY-MM-DD)"
+                              className="h-10"
+                            />
+                            <Input
+                              type="text"
+                              value={plannerEventForm.scheduledTime}
+                              onChange={(e) => setPlannerEventForm((s) => ({ ...s, scheduledTime: e.target.value }))}
+                              placeholder="Uhrzeit (HH:mm)"
+                              className="h-10"
+                            />
+                          </div>
                           <Textarea
                             value={plannerEventForm.note}
                             onChange={(e) => setPlannerEventForm((s) => ({ ...s, note: e.target.value }))}
@@ -1945,43 +1959,59 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   </section>
 
                   <section className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-                    <h4 className="text-sm font-black text-slate-900">Recruiter-Teamchat</h4>
-                    <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
-                      <div className="max-h-[32vh] space-y-2 overflow-y-auto pr-1">
-                        {plannerLoading && plannerMessages.length === 0 ? (
-                          <p className="py-6 text-center text-xs font-semibold text-slate-500">Chat wird geladen…</p>
-                        ) : plannerMessages.length === 0 ? (
-                          <p className="py-6 text-center text-xs font-semibold text-slate-500">Noch keine Nachrichten.</p>
-                        ) : plannerMessages.map((msg) => (
-                          <div key={msg.id} className={`rounded-lg px-3 py-2 ${msg.senderId === user.id ? 'bg-orange-50 border border-orange-100' : 'bg-slate-50 border border-slate-200'}`}>
-                            <div className="mb-1 flex items-center justify-between gap-2">
-                              <span className="text-[11px] font-black text-slate-700">{msg.senderLabel}</span>
-                              <span className="text-[10px] font-semibold text-slate-400">
-                                {new Date(msg.createdAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}
-                              </span>
-                            </div>
-                            <p className="whitespace-pre-wrap break-words text-xs leading-relaxed text-slate-700">{msg.message}</p>
-                          </div>
-                        ))}
+                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                      <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-900 to-slate-800 px-4 py-3 text-white">
+                        <div>
+                          <h4 className="text-sm font-black uppercase tracking-widest">Recruiter-Teamchat</h4>
+                          <p className="mt-0.5 text-[11px] font-medium text-slate-300">Abstimmung im Team in Echtzeit</p>
+                        </div>
+                        <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-white/90">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                          Live
+                        </span>
                       </div>
-                      <div className="mt-3 space-y-2">
-                        <Textarea
-                          value={plannerMessageDraft}
-                          onChange={(e) => setPlannerMessageDraft(e.target.value)}
-                          placeholder="Nachricht an alle Recruiter…"
-                          rows={3}
-                        />
-                        <div className="flex justify-end">
-                          <Button
-                            type="button"
-                            variant="primary"
-                            className="h-10 text-xs font-black uppercase tracking-wide"
-                            isLoading={plannerMessageSending}
-                            disabled={!plannerMessageDraft.trim() || plannerMessageSending}
-                            onClick={() => void handleSendPlannerMessage()}
-                          >
-                            Nachricht senden
-                          </Button>
+                      <div className="bg-gradient-to-b from-slate-50 to-white p-3">
+                        <div className="max-h-[34vh] space-y-2 overflow-y-auto pr-1">
+                          {plannerLoading && plannerMessages.length === 0 ? (
+                            <p className="py-6 text-center text-xs font-semibold text-slate-500">Chat wird geladen…</p>
+                          ) : plannerMessages.length === 0 ? (
+                            <p className="py-6 text-center text-xs font-semibold text-slate-500">Noch keine Nachrichten.</p>
+                          ) : plannerMessages.map((msg) => (
+                            <div key={msg.id} className={`rounded-xl border px-3 py-2 shadow-sm ${msg.senderId === user.id ? 'border-orange-200 bg-orange-50/90' : 'border-slate-200 bg-white'}`}>
+                              <div className="mb-1 flex items-center justify-between gap-2">
+                                <div className="inline-flex items-center gap-2">
+                                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[10px] font-black text-white">
+                                    {(msg.senderLabel || 'R').slice(0, 1).toUpperCase()}
+                                  </span>
+                                  <span className="text-[11px] font-black text-slate-700">{msg.senderLabel}</span>
+                                </div>
+                                <span className="text-[10px] font-semibold text-slate-400">
+                                  {new Date(msg.createdAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}
+                                </span>
+                              </div>
+                              <p className="whitespace-pre-wrap break-words text-xs leading-relaxed text-slate-700">{msg.message}</p>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 rounded-xl border border-slate-200 bg-white p-2.5">
+                          <Textarea
+                            value={plannerMessageDraft}
+                            onChange={(e) => setPlannerMessageDraft(e.target.value)}
+                            placeholder="Nachricht an alle Recruiter…"
+                            rows={3}
+                          />
+                          <div className="mt-2 flex justify-end">
+                            <Button
+                              type="button"
+                              variant="primary"
+                              className="h-10 text-xs font-black uppercase tracking-wide"
+                              isLoading={plannerMessageSending}
+                              disabled={!plannerMessageDraft.trim() || plannerMessageSending}
+                              onClick={() => void handleSendPlannerMessage()}
+                            >
+                              Nachricht senden
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
