@@ -480,6 +480,22 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     }
   };
 
+  const adjustPlannerTime = (deltaMinutes: number) => {
+    const raw = (plannerEventForm.scheduledTime || '09:00').trim();
+    const match = raw.match(/^(\d{1,2}):(\d{2})$/);
+    let total = 9 * 60;
+    if (match) {
+      const h = Number(match[1]);
+      const m = Number(match[2]);
+      if (Number.isFinite(h) && Number.isFinite(m)) total = h * 60 + m;
+    }
+    const day = 24 * 60;
+    const normalized = ((total + deltaMinutes) % day + day) % day;
+    const hh = String(Math.floor(normalized / 60)).padStart(2, '0');
+    const mm = String(normalized % 60).padStart(2, '0');
+    setPlannerEventForm((s) => ({ ...s, scheduledTime: `${hh}:${mm}` }));
+  };
+
   const plannerMonthLabel = useMemo(
     () => plannerCurrentMonth.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }),
     [plannerCurrentMonth]
@@ -1930,13 +1946,35 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               placeholder="Datum (YYYY-MM-DD)"
                               className="h-10"
                             />
-                            <Input
-                              type="time"
-                              value={plannerEventForm.scheduledTime}
-                              onChange={(e) => setPlannerEventForm((s) => ({ ...s, scheduledTime: e.target.value }))}
-                              step={300}
-                              className="h-10"
-                            />
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="time"
+                                value={plannerEventForm.scheduledTime}
+                                onChange={(e) => setPlannerEventForm((s) => ({ ...s, scheduledTime: e.target.value }))}
+                                step={300}
+                                className="h-10"
+                              />
+                              <div className="flex shrink-0 flex-col gap-1">
+                                <button
+                                  type="button"
+                                  className="inline-flex h-4 w-7 items-center justify-center rounded border border-slate-300 bg-white text-[9px] font-black text-slate-700 hover:bg-slate-50"
+                                  onClick={() => adjustPlannerTime(5)}
+                                  aria-label="Zeit erhöhen"
+                                  title="Zeit +5 Minuten"
+                                >
+                                  +
+                                </button>
+                                <button
+                                  type="button"
+                                  className="inline-flex h-4 w-7 items-center justify-center rounded border border-slate-300 bg-white text-[9px] font-black text-slate-700 hover:bg-slate-50"
+                                  onClick={() => adjustPlannerTime(-5)}
+                                  aria-label="Zeit verringern"
+                                  title="Zeit -5 Minuten"
+                                >
+                                  -
+                                </button>
+                              </div>
+                            </div>
                           </div>
                           <Textarea
                             value={plannerEventForm.note}
