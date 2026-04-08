@@ -440,7 +440,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         scheduledFor: iso,
         note: plannerEventForm.note.trim() || undefined,
       });
-      const chatNotice = `📅 Neuer Termin: ${title} am ${new Date(iso).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })}`;
+      const chatNotice = `Neuer Termin: ${title} am ${new Date(iso).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })}`;
       await candidateService.createRecruiterTeamMessage(chatNotice);
       setPlannerEventForm({ title: '', scheduledDate: scheduledDateRaw, scheduledTime: '09:00', note: '' });
       await loadPlannerData();
