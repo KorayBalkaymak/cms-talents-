@@ -1808,13 +1808,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 )}
                 <div className="grid grid-cols-1 gap-4 p-4">
                   <section className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-                    <div className="mx-auto w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div className="mx-auto w-full max-w-5xl rounded-2xl border border-[#1b2a47] bg-[#101B31] p-4 shadow-sm">
                       <div className="mb-4 flex items-center justify-between">
-                        <h4 className="text-3xl font-black capitalize tracking-tight text-slate-900">{plannerMonthLabel}</h4>
+                        <h4 className="text-3xl font-black capitalize tracking-tight text-white">{plannerMonthLabel}</h4>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
                             onClick={() => setPlannerCurrentMonth((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
                             aria-label="Vorheriger Monat"
                           >
@@ -1822,7 +1822,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           </button>
                           <button
                             type="button"
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
                             onClick={() => setPlannerCurrentMonth((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
                             aria-label="Nächster Monat"
                           >
@@ -1833,7 +1833,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
                       <div className="grid grid-cols-7 gap-2">
                         {PLANNER_WEEKDAY_LABELS.map((d) => (
-                          <div key={d} className="rounded-lg py-2 text-center text-sm font-black tracking-wide text-slate-500">{d}</div>
+                          <div key={d} className="rounded-lg py-2 text-center text-sm font-black tracking-wide text-slate-200">{d}</div>
                         ))}
                         {plannerCalendarDays.map((cell) => {
                           const events = plannerEventsByDate.get(cell.key) || [];
@@ -1848,7 +1848,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               }}
                               className={`min-h-[78px] rounded-2xl border p-2 text-left transition ${
                                 isSelected
-                                  ? 'border-orange-300 bg-orange-50 shadow-sm ring-2 ring-orange-200'
+                                  ? 'border-orange-300 bg-white shadow-sm ring-2 ring-orange-200'
                                   : cell.inMonth
                                     ? 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
                                     : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
