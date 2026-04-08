@@ -94,6 +94,16 @@ const MARKETPLACE_INQUIRY_FIELDS: { prefix: string; label: string }[] = [
   { prefix: 'Budget (EUR):', label: 'Budget (EUR)' },
 ];
 
+const PLANNER_WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+function toLocalDateKey(value: string | Date): string {
+  const d = typeof value === 'string' ? new Date(value) : value;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function parseMarketplaceInquiryDetails(message: string | undefined): { label: string; value: string }[] | null {
   if (!message?.trim()) return null;
   const text = message.trim();
@@ -231,6 +241,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   });
   const [plannerMessageDraft, setPlannerMessageDraft] = useState('');
   const [plannerMessageSending, setPlannerMessageSending] = useState(false);
+  const [plannerCurrentMonth, setPlannerCurrentMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [plannerSelectedDate, setPlannerSelectedDate] = useState(() => toLocalDateKey(new Date()));
 
   useEffect(() => {
     if (!selectedCandidate) return;
@@ -459,6 +474,47 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       setPlannerMessageSending(false);
     }
   };
+
+  const plannerMonthLabel = useMemo(
+    () => plannerCurrentMonth.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }),
+    [plannerCurrentMonth]
+  );
+
+  const plannerEventsByDate = useMemo(() => {
+    const map = new Map<string, RecruiterAvailabilityEvent[]>();
+    for (const evt of plannerEvents) {
+      const key = toLocalDateKey(evt.scheduledFor);
+      const list = map.get(key) || [];
+      list.push(evt);
+      map.set(key, list);
+    }
+    for (const [key, list] of map.entries()) {
+      list.sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime());
+      map.set(key, list);
+    }
+    return map;
+  }, [plannerEvents]);
+
+  const plannerCalendarDays = useMemo(() => {
+    const year = plannerCurrentMonth.getFullYear();
+    const month = plannerCurrentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startOffset = (firstDay.getDay() + 6) % 7;
+    const startDate = new Date(year, month, 1 - startOffset);
+    return Array.from({ length: 42 }).map((_, idx) => {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + idx);
+      const key = toLocalDateKey(date);
+      const inMonth = date.getMonth() === month;
+      const isToday = key === toLocalDateKey(new Date());
+      return { date, key, inMonth, isToday };
+    });
+  }, [plannerCurrentMonth]);
+
+  const selectedPlannerEvents = useMemo(
+    () => plannerEventsByDate.get(plannerSelectedDate) || [],
+    [plannerEventsByDate, plannerSelectedDate]
+  );
 
   const handleRecruiterEditingClaim = async (cand: CandidateProfile) => {
     const editing = getActiveRecruiterEditing(cand);
@@ -1747,73 +1803,143 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 )}
                 <div className="grid grid-cols-1 gap-4 p-4">
                   <section className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-                    <h4 className="text-sm font-black text-slate-900">Kalender / Aufgaben planen</h4>
-                    <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
-                      <Input
-                        value={plannerEventForm.title}
-                        onChange={(e) => setPlannerEventForm((s) => ({ ...s, title: e.target.value }))}
-                        placeholder="Was ist zu tun? (z. B. Interview Kunde Müller)"
-                        className="h-10 lg:col-span-2"
-                      />
-                      <Input
-                        type="datetime-local"
-                        value={plannerEventForm.scheduledFor}
-                        onChange={(e) => setPlannerEventForm((s) => ({ ...s, scheduledFor: e.target.value }))}
-                        className="h-10"
-                      />
-                      <Textarea
-                        value={plannerEventForm.note}
-                        onChange={(e) => setPlannerEventForm((s) => ({ ...s, note: e.target.value }))}
-                        placeholder="Notiz (optional)"
-                        rows={3}
-                        className="lg:col-span-3"
-                      />
-                      <Button
-                        type="button"
-                        variant="primary"
-                        className="h-10 text-xs font-black uppercase tracking-wide"
-                        isLoading={plannerEventBusyId === 'create'}
-                        onClick={() => void handleCreatePlannerEvent()}
-                      >
-                        Termin speichern
-                      </Button>
-                    </div>
-                    <div className="mt-4 max-h-[74vh] space-y-2 overflow-y-auto pr-1">
-                      {plannerLoading && plannerEvents.length === 0 ? (
-                        <div className="rounded-xl border border-slate-200 bg-white px-3 py-6 text-center text-xs font-semibold text-slate-500">
-                          Kalender wird geladen…
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <div className="mb-4 flex items-center justify-between">
+                        <h4 className="text-3xl font-black capitalize tracking-tight text-slate-900">{plannerMonthLabel}</h4>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
+                            onClick={() => setPlannerCurrentMonth((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
+                            aria-label="Vorheriger Monat"
+                          >
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
+                            onClick={() => setPlannerCurrentMonth((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
+                            aria-label="Nächster Monat"
+                          >
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                          </button>
                         </div>
-                      ) : plannerEvents.length === 0 ? (
-                        <div className="rounded-xl border border-dashed border-slate-300 bg-white px-3 py-6 text-center text-xs font-semibold text-slate-500">
-                          Noch keine Termine vorhanden.
-                        </div>
-                      ) : plannerEvents.map((evt) => (
-                        <div key={evt.id} className="rounded-xl border border-slate-200 bg-white p-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="text-sm font-bold text-slate-900">{evt.title}</p>
-                              <p className="mt-1 text-xs font-semibold text-slate-500">
-                                {new Date(evt.scheduledFor).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })}
-                              </p>
-                              {evt.note ? <p className="mt-2 text-xs text-slate-600">{evt.note}</p> : null}
-                              <p className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                                Von {evt.createdByLabel}
-                              </p>
-                            </div>
-                            <Button
+                      </div>
+
+                      <div className="grid grid-cols-7 gap-2">
+                        {PLANNER_WEEKDAY_LABELS.map((d) => (
+                          <div key={d} className="rounded-lg py-2 text-center text-sm font-black tracking-wide text-slate-500">{d}</div>
+                        ))}
+                        {plannerCalendarDays.map((cell) => {
+                          const events = plannerEventsByDate.get(cell.key) || [];
+                          const isSelected = cell.key === plannerSelectedDate;
+                          return (
+                            <button
+                              key={cell.key}
                               type="button"
-                              size="sm"
-                              variant="danger"
-                              className="h-8 px-2 text-[10px] font-black"
-                              isLoading={plannerEventBusyId === evt.id}
-                              disabled={plannerEventBusyId === evt.id}
-                              onClick={() => void handleDeletePlannerEvent(evt.id)}
+                              onClick={() => {
+                                setPlannerSelectedDate(cell.key);
+                                setPlannerEventForm((s) => ({ ...s, scheduledFor: `${cell.key}T09:00` }));
+                              }}
+                              className={`min-h-[112px] rounded-2xl border p-2 text-left transition ${
+                                isSelected
+                                  ? 'border-orange-300 bg-orange-50 shadow-sm ring-2 ring-orange-200'
+                                  : cell.inMonth
+                                    ? 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
+                                    : 'border-slate-100 bg-slate-50 text-slate-300'
+                              }`}
                             >
-                              Löschen
-                            </Button>
-                          </div>
+                              <div className="mb-1 flex items-center justify-between">
+                                <span className={`text-lg font-black ${cell.isToday ? 'text-orange-600' : cell.inMonth ? 'text-slate-800' : 'text-slate-300'}`}>
+                                  {cell.date.getDate()}
+                                </span>
+                                {events.length > 0 ? (
+                                  <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-black text-white">{events.length}</span>
+                                ) : null}
+                              </div>
+                              <div className="space-y-1">
+                                {events.slice(0, 2).map((evt) => (
+                                  <div key={evt.id} className="truncate rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700">
+                                    {new Date(evt.scheduledFor).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} · {evt.title}
+                                  </div>
+                                ))}
+                                {events.length > 2 ? (
+                                  <div className="text-[10px] font-bold text-slate-500">+{events.length - 2} weitere</div>
+                                ) : null}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
+                      <div className="rounded-xl border border-slate-200 bg-white p-3">
+                        <p className="text-xs font-black uppercase tracking-widest text-slate-500">
+                          Termine am {new Date(`${plannerSelectedDate}T00:00:00`).toLocaleDateString('de-DE', { dateStyle: 'full' })}
+                        </p>
+                        <div className="mt-2 max-h-48 space-y-2 overflow-y-auto pr-1">
+                          {selectedPlannerEvents.length === 0 ? (
+                            <p className="text-xs font-semibold text-slate-500">Keine Einträge für diesen Tag.</p>
+                          ) : selectedPlannerEvents.map((evt) => (
+                            <div key={evt.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-bold text-slate-800">{evt.title}</p>
+                                  <p className="text-xs font-semibold text-slate-500">
+                                    {new Date(evt.scheduledFor).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} · {evt.createdByLabel}
+                                  </p>
+                                  {evt.note ? <p className="mt-1 text-xs text-slate-600">{evt.note}</p> : null}
+                                </div>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="danger"
+                                  className="h-7 px-2 text-[10px] font-black"
+                                  isLoading={plannerEventBusyId === evt.id}
+                                  disabled={plannerEventBusyId === evt.id}
+                                  onClick={() => void handleDeletePlannerEvent(evt.id)}
+                                >
+                                  Löschen
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+
+                      <div className="rounded-xl border border-slate-200 bg-white p-3">
+                        <p className="text-xs font-black uppercase tracking-widest text-slate-500">Neuen Termin anlegen</p>
+                        <div className="mt-2 grid grid-cols-1 gap-2">
+                          <Input
+                            value={plannerEventForm.title}
+                            onChange={(e) => setPlannerEventForm((s) => ({ ...s, title: e.target.value }))}
+                            placeholder="Was ist zu tun? (z. B. Interview Kunde Müller)"
+                            className="h-10"
+                          />
+                          <Input
+                            type="datetime-local"
+                            value={plannerEventForm.scheduledFor}
+                            onChange={(e) => setPlannerEventForm((s) => ({ ...s, scheduledFor: e.target.value }))}
+                            className="h-10"
+                          />
+                          <Textarea
+                            value={plannerEventForm.note}
+                            onChange={(e) => setPlannerEventForm((s) => ({ ...s, note: e.target.value }))}
+                            placeholder="Notiz (optional)"
+                            rows={3}
+                          />
+                          <Button
+                            type="button"
+                            variant="primary"
+                            className="h-10 text-xs font-black uppercase tracking-wide"
+                            isLoading={plannerEventBusyId === 'create'}
+                            onClick={() => void handleCreatePlannerEvent()}
+                          >
+                            Termin speichern
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </section>
 
