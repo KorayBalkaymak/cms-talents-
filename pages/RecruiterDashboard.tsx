@@ -1918,9 +1918,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             className="h-10"
                           />
                           <Input
-                            type="datetime-local"
+                            type="text"
                             value={plannerEventForm.scheduledFor}
                             onChange={(e) => setPlannerEventForm((s) => ({ ...s, scheduledFor: e.target.value }))}
+                            placeholder="YYYY-MM-DDTHH:mm (z. B. 2026-04-23T09:00)"
                             className="h-10"
                           />
                           <Textarea
