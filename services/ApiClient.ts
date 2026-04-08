@@ -9,6 +9,8 @@ import {
   InquiryCustomerAttachment,
   isRecruiterEditingClaimStale,
   RegisteredUserListItem,
+  RecruiterAvailabilityEvent,
+  RecruiterTeamMessage,
   SocialLink,
   User,
   UserRole,
@@ -124,6 +126,24 @@ type ExternalCandidateRow = {
   updated_at: string;
   work_radius_km?: number | null;
   work_area?: string | null;
+};
+
+type RecruiterAvailabilityEventRow = {
+  id: string;
+  title: string;
+  scheduled_for: string;
+  note: string | null;
+  created_at: string;
+  created_by: string;
+  created_by_label: string;
+};
+
+type RecruiterChatMessageRow = {
+  id: string;
+  message: string;
+  created_at: string;
+  sender_id: string;
+  sender_label: string;
 };
 
 function normalizeEmail(email: string): string {
@@ -2130,6 +2150,83 @@ class ApiClient {
       }
       throw new Error(error.message);
     }
+  }
+
+  async getRecruiterAvailabilityEvents(): Promise<RecruiterAvailabilityEvent[]> {
+    const current = await this.getSessionUser();
+    if (!current || !isRecruiterRole(current.role)) return [];
+    const { data, error } = await supabase
+      .from('recruiter_availability_events')
+      .select('id,title,scheduled_for,note,created_at,created_by,created_by_label')
+      .order('scheduled_for', { ascending: true })
+      .limit(500);
+    if (error || !data) throw new Error(error?.message || 'Kalender konnte nicht geladen werden.');
+    return (data as RecruiterAvailabilityEventRow[]).map((row) => ({
+      id: row.id,
+      title: row.title,
+      scheduledFor: row.scheduled_for,
+      note: row.note || undefined,
+      createdAt: row.created_at,
+      createdBy: row.created_by,
+      createdByLabel: row.created_by_label,
+    }));
+  }
+
+  async createRecruiterAvailabilityEvent(input: {
+    title: string;
+    scheduledFor: string;
+    note?: string;
+  }): Promise<void> {
+    const current = await this.getSessionUser();
+    if (!current || !isRecruiterRole(current.role)) throw new Error('Keine Berechtigung für diese Aktion.');
+    const payload = {
+      title: input.title.trim(),
+      scheduled_for: input.scheduledFor,
+      note: input.note?.trim() || null,
+      created_by: current.id,
+      created_by_label: recruiterClaimLabelFromUser(current),
+    };
+    const { error } = await supabase.from('recruiter_availability_events').insert(payload);
+    if (error) throw new Error(error.message);
+  }
+
+  async deleteRecruiterAvailabilityEvent(eventId: string): Promise<void> {
+    const current = await this.getSessionUser();
+    if (!current || !isRecruiterRole(current.role)) throw new Error('Keine Berechtigung für diese Aktion.');
+    const { error } = await supabase.from('recruiter_availability_events').delete().eq('id', eventId);
+    if (error) throw new Error(error.message);
+  }
+
+  async getRecruiterTeamMessages(limit = 200): Promise<RecruiterTeamMessage[]> {
+    const current = await this.getSessionUser();
+    if (!current || !isRecruiterRole(current.role)) return [];
+    const { data, error } = await supabase
+      .from('recruiter_chat_messages')
+      .select('id,message,created_at,sender_id,sender_label')
+      .order('created_at', { ascending: false })
+      .limit(Math.min(500, Math.max(20, limit)));
+    if (error || !data) throw new Error(error?.message || 'Chat konnte nicht geladen werden.');
+    return (data as RecruiterChatMessageRow[])
+      .map((row) => ({
+        id: row.id,
+        message: row.message,
+        createdAt: row.created_at,
+        senderId: row.sender_id,
+        senderLabel: row.sender_label,
+      }))
+      .reverse();
+  }
+
+  async createRecruiterTeamMessage(message: string): Promise<void> {
+    const current = await this.getSessionUser();
+    if (!current || !isRecruiterRole(current.role)) throw new Error('Keine Berechtigung für diese Aktion.');
+    const payload = {
+      message: message.trim(),
+      sender_id: current.id,
+      sender_label: recruiterClaimLabelFromUser(current),
+    };
+    const { error } = await supabase.from('recruiter_chat_messages').insert(payload);
+    if (error) throw new Error(error.message);
   }
 
   async createExternalCandidate(input: {

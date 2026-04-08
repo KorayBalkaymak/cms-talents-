@@ -1,4 +1,4 @@
-import { CandidateProfile, CandidateStatus, CandidateDocuments, CandidateDocumentsForRecruiter, CandidateInquiry, RegisteredUserListItem } from '../types';
+import { CandidateProfile, CandidateStatus, CandidateDocuments, CandidateDocumentsForRecruiter, CandidateInquiry, RegisteredUserListItem, RecruiterAvailabilityEvent, RecruiterTeamMessage } from '../types';
 import { api } from './ApiClient';
 
 // =====================================================
@@ -211,6 +211,26 @@ class CandidateService {
       console.error('[CandidateService] Error setting inquiry editing claim:', e);
       throw e;
     }
+  }
+
+  async getRecruiterAvailabilityEvents(): Promise<RecruiterAvailabilityEvent[]> {
+    return await api.getRecruiterAvailabilityEvents();
+  }
+
+  async createRecruiterAvailabilityEvent(input: { title: string; scheduledFor: string; note?: string }): Promise<void> {
+    await api.createRecruiterAvailabilityEvent(input);
+  }
+
+  async deleteRecruiterAvailabilityEvent(eventId: string): Promise<void> {
+    await api.deleteRecruiterAvailabilityEvent(eventId);
+  }
+
+  async getRecruiterTeamMessages(limit = 200): Promise<RecruiterTeamMessage[]> {
+    return await api.getRecruiterTeamMessages(limit);
+  }
+
+  async createRecruiterTeamMessage(message: string): Promise<void> {
+    await api.createRecruiterTeamMessage(message);
   }
 }
 

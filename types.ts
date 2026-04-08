@@ -174,6 +174,24 @@ export interface CandidateInquiry {
   recruiterEditingAt?: string | null;
 }
 
+export interface RecruiterAvailabilityEvent {
+  id: string;
+  title: string;
+  scheduledFor: string;
+  note?: string;
+  createdAt: string;
+  createdBy: string;
+  createdByLabel: string;
+}
+
+export interface RecruiterTeamMessage {
+  id: string;
+  message: string;
+  createdAt: string;
+  senderId: string;
+  senderLabel: string;
+}
+
 /** Aktive Team-Meldung auf einer Anfrage oder null (fehlt oder veraltet). */
 export function getActiveInquiryEditing(
   inq: CandidateInquiry

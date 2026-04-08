@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useDeferredValue, useCallback, useRef } from 'react';
-import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, CandidateDocumentsForRecruiter, CandidateInquiry, RegisteredUserListItem, getActiveInquiryEditing, getActiveRecruiterEditing } from '../types';
+import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, CandidateDocumentsForRecruiter, CandidateInquiry, RegisteredUserListItem, RecruiterAvailabilityEvent, RecruiterTeamMessage, getActiveInquiryEditing, getActiveRecruiterEditing } from '../types';
 import { CmsLogoHeroBadge } from '../components/CmsLogoHeroBadge';
 import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea, FileUpload } from '../components/UI';
 import HourlyRateCalculator from '../components/HourlyRateCalculator';
@@ -159,7 +159,7 @@ function StaleNeedsAttentionIcon({ title }: { title: string }) {
 const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidates, isInitialLoading = false, onAdminAction, onUpdateCandidate, onRefreshCandidates, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [onlyStaleUnedited, setOnlyStaleUnedited] = useState(false);
-  const [activeView, setActiveView] = useState<'talents' | 'inquiries' | 'external' | 'users' | 'calculator'>('talents');
+  const [activeView, setActiveView] = useState<'talents' | 'inquiries' | 'planner' | 'external' | 'users' | 'calculator'>('talents');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
   const [candidateDocs, setCandidateDocs] = useState<CandidateDocumentsForRecruiter | null>(null);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
@@ -219,6 +219,18 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   // Input States
   const [newSkill, setNewSkill] = useState('');
   const [newLink, setNewLink] = useState({ label: '', url: '' });
+  const [plannerEvents, setPlannerEvents] = useState<RecruiterAvailabilityEvent[]>([]);
+  const [plannerMessages, setPlannerMessages] = useState<RecruiterTeamMessage[]>([]);
+  const [plannerLoading, setPlannerLoading] = useState(false);
+  const [plannerError, setPlannerError] = useState<string | null>(null);
+  const [plannerEventBusyId, setPlannerEventBusyId] = useState<string | null>(null);
+  const [plannerEventForm, setPlannerEventForm] = useState({
+    title: '',
+    scheduledFor: '',
+    note: '',
+  });
+  const [plannerMessageDraft, setPlannerMessageDraft] = useState('');
+  const [plannerMessageSending, setPlannerMessageSending] = useState(false);
 
   useEffect(() => {
     if (!selectedCandidate) return;
@@ -341,6 +353,112 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       window.clearInterval(id);
     };
   }, [activeView]);
+
+  const loadPlannerData = useCallback(async () => {
+    setPlannerLoading(true);
+    setPlannerError(null);
+    try {
+      const [events, messages] = await Promise.all([
+        candidateService.getRecruiterAvailabilityEvents(),
+        candidateService.getRecruiterTeamMessages(300),
+      ]);
+      setPlannerEvents(events);
+      setPlannerMessages(messages);
+    } catch (e) {
+      setPlannerError(e instanceof Error ? e.message : 'Kalender und Chat konnten nicht geladen werden.');
+    } finally {
+      setPlannerLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeView !== 'planner') return;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const [events, messages] = await Promise.all([
+          candidateService.getRecruiterAvailabilityEvents(),
+          candidateService.getRecruiterTeamMessages(300),
+        ]);
+        if (!cancelled) {
+          setPlannerEvents(events);
+          setPlannerMessages(messages);
+          setPlannerError(null);
+        }
+      } catch (e) {
+        if (!cancelled) setPlannerError(e instanceof Error ? e.message : 'Live-Update fehlgeschlagen.');
+      } finally {
+        if (!cancelled) setPlannerLoading(false);
+      }
+    };
+    setPlannerLoading(true);
+    void poll();
+    const id = window.setInterval(() => {
+      void poll();
+    }, 10000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [activeView]);
+
+  const handleCreatePlannerEvent = async () => {
+    setPlannerError(null);
+    const title = plannerEventForm.title.trim();
+    const scheduledForRaw = plannerEventForm.scheduledFor.trim();
+    if (!title || !scheduledForRaw) {
+      setPlannerError('Bitte Titel und Terminzeit ausfüllen.');
+      return;
+    }
+    const iso = new Date(scheduledForRaw).toISOString();
+    if (!iso || Number.isNaN(new Date(iso).getTime())) {
+      setPlannerError('Bitte ein gültiges Datum mit Uhrzeit wählen.');
+      return;
+    }
+    try {
+      setPlannerEventBusyId('create');
+      await candidateService.createRecruiterAvailabilityEvent({
+        title,
+        scheduledFor: iso,
+        note: plannerEventForm.note.trim() || undefined,
+      });
+      setPlannerEventForm({ title: '', scheduledFor: '', note: '' });
+      await loadPlannerData();
+    } catch (e) {
+      setPlannerError(e instanceof Error ? e.message : 'Termin konnte nicht erstellt werden.');
+    } finally {
+      setPlannerEventBusyId(null);
+    }
+  };
+
+  const handleDeletePlannerEvent = async (eventId: string) => {
+    setPlannerError(null);
+    try {
+      setPlannerEventBusyId(eventId);
+      await candidateService.deleteRecruiterAvailabilityEvent(eventId);
+      await loadPlannerData();
+    } catch (e) {
+      setPlannerError(e instanceof Error ? e.message : 'Termin konnte nicht gelöscht werden.');
+    } finally {
+      setPlannerEventBusyId(null);
+    }
+  };
+
+  const handleSendPlannerMessage = async () => {
+    setPlannerError(null);
+    const msg = plannerMessageDraft.trim();
+    if (!msg) return;
+    try {
+      setPlannerMessageSending(true);
+      await candidateService.createRecruiterTeamMessage(msg);
+      setPlannerMessageDraft('');
+      await loadPlannerData();
+    } catch (e) {
+      setPlannerError(e instanceof Error ? e.message : 'Nachricht konnte nicht gesendet werden.');
+    } finally {
+      setPlannerMessageSending(false);
+    }
+  };
 
   const handleRecruiterEditingClaim = async (cand: CandidateProfile) => {
     const editing = getActiveRecruiterEditing(cand);
@@ -1175,6 +1293,22 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </button>
             <button
               type="button"
+              onClick={() => setActiveView('planner')}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
+                activeView === 'planner'
+                  ? 'border-l-[3px] border-orange-500 bg-white/[0.07] pl-[9px] text-white ring-1 ring-white/10'
+                  : 'border-l-[3px] border-transparent pl-3 text-slate-400 hover:bg-white/[0.04] hover:text-slate-100'
+              }`}
+            >
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${activeView === 'planner' ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-800 text-slate-500'}`}>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10m-12 9h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v11a2 2 0 002 2z" />
+                </svg>
+              </span>
+              <span className="leading-snug">Verfügbarkeitskalender & Chat</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveView('external')}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
                 activeView === 'external'
@@ -1295,6 +1429,17 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               </button>
               <button
                 type="button"
+                onClick={() => setActiveView('planner')}
+                className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
+                  activeView === 'planner'
+                    ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
+                    : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
+                }`}
+              >
+                Kalender & Chat
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveView('external')}
                 className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'external'
@@ -1329,7 +1474,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </nav>
           </div>
           <div
-            className={`relative order-1 w-full min-w-0 md:order-2 md:max-w-sm md:flex-1 lg:max-w-md ${activeView === 'calculator' ? 'hidden' : ''}`}
+            className={`relative order-1 w-full min-w-0 md:order-2 md:max-w-sm md:flex-1 lg:max-w-md ${activeView === 'calculator' || activeView === 'planner' ? 'hidden' : ''}`}
           >
             <input
               type="search"
@@ -1584,6 +1729,136 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     })}
                   </ul>
                 )}
+              </div>
+            </div>
+          ) : activeView === 'planner' ? (
+            <div className="space-y-4">
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="border-b border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-5 py-4 text-white">
+                  <h3 className="text-sm font-black uppercase tracking-widest">Verfügbarkeitskalender & Team-Chat</h3>
+                  <p className="mt-1 text-xs font-medium text-slate-300">
+                    Gemeinsame Übersicht für Aufgaben, Termine und schnelle Abstimmung aller Recruiter.
+                  </p>
+                </div>
+                {plannerError && (
+                  <div className="mx-4 mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
+                    {plannerError}
+                  </div>
+                )}
+                <div className="grid grid-cols-1 gap-4 p-4 xl:grid-cols-2">
+                  <section className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                    <h4 className="text-sm font-black text-slate-900">Kalender / Aufgaben planen</h4>
+                    <div className="mt-3 grid grid-cols-1 gap-3">
+                      <Input
+                        value={plannerEventForm.title}
+                        onChange={(e) => setPlannerEventForm((s) => ({ ...s, title: e.target.value }))}
+                        placeholder="Was ist zu tun? (z. B. Interview Kunde Müller)"
+                        className="h-10"
+                      />
+                      <Input
+                        type="datetime-local"
+                        value={plannerEventForm.scheduledFor}
+                        onChange={(e) => setPlannerEventForm((s) => ({ ...s, scheduledFor: e.target.value }))}
+                        className="h-10"
+                      />
+                      <Textarea
+                        value={plannerEventForm.note}
+                        onChange={(e) => setPlannerEventForm((s) => ({ ...s, note: e.target.value }))}
+                        placeholder="Notiz (optional)"
+                        rows={3}
+                      />
+                      <Button
+                        type="button"
+                        variant="primary"
+                        className="h-10 text-xs font-black uppercase tracking-wide"
+                        isLoading={plannerEventBusyId === 'create'}
+                        onClick={() => void handleCreatePlannerEvent()}
+                      >
+                        Termin speichern
+                      </Button>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {plannerLoading && plannerEvents.length === 0 ? (
+                        <div className="rounded-xl border border-slate-200 bg-white px-3 py-6 text-center text-xs font-semibold text-slate-500">
+                          Kalender wird geladen…
+                        </div>
+                      ) : plannerEvents.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-slate-300 bg-white px-3 py-6 text-center text-xs font-semibold text-slate-500">
+                          Noch keine Termine vorhanden.
+                        </div>
+                      ) : plannerEvents.map((evt) => (
+                        <div key={evt.id} className="rounded-xl border border-slate-200 bg-white p-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-slate-900">{evt.title}</p>
+                              <p className="mt-1 text-xs font-semibold text-slate-500">
+                                {new Date(evt.scheduledFor).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })}
+                              </p>
+                              {evt.note ? <p className="mt-2 text-xs text-slate-600">{evt.note}</p> : null}
+                              <p className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                                Von {evt.createdByLabel}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="danger"
+                              className="h-8 px-2 text-[10px] font-black"
+                              isLoading={plannerEventBusyId === evt.id}
+                              disabled={plannerEventBusyId === evt.id}
+                              onClick={() => void handleDeletePlannerEvent(evt.id)}
+                            >
+                              Löschen
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                    <h4 className="text-sm font-black text-slate-900">Recruiter-Teamchat</h4>
+                    <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
+                      <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
+                        {plannerLoading && plannerMessages.length === 0 ? (
+                          <p className="py-6 text-center text-xs font-semibold text-slate-500">Chat wird geladen…</p>
+                        ) : plannerMessages.length === 0 ? (
+                          <p className="py-6 text-center text-xs font-semibold text-slate-500">Noch keine Nachrichten.</p>
+                        ) : plannerMessages.map((msg) => (
+                          <div key={msg.id} className={`rounded-lg px-3 py-2 ${msg.senderId === user.id ? 'bg-orange-50 border border-orange-100' : 'bg-slate-50 border border-slate-200'}`}>
+                            <div className="mb-1 flex items-center justify-between gap-2">
+                              <span className="text-[11px] font-black text-slate-700">{msg.senderLabel}</span>
+                              <span className="text-[10px] font-semibold text-slate-400">
+                                {new Date(msg.createdAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}
+                              </span>
+                            </div>
+                            <p className="whitespace-pre-wrap break-words text-xs leading-relaxed text-slate-700">{msg.message}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3 space-y-2">
+                        <Textarea
+                          value={plannerMessageDraft}
+                          onChange={(e) => setPlannerMessageDraft(e.target.value)}
+                          placeholder="Nachricht an alle Recruiter…"
+                          rows={3}
+                        />
+                        <div className="flex justify-end">
+                          <Button
+                            type="button"
+                            variant="primary"
+                            className="h-10 text-xs font-black uppercase tracking-wide"
+                            isLoading={plannerMessageSending}
+                            disabled={!plannerMessageDraft.trim() || plannerMessageSending}
+                            onClick={() => void handleSendPlannerMessage()}
+                          >
+                            Nachricht senden
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </div>
               </div>
             </div>
           ) : activeView === 'external' ? (
