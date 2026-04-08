@@ -191,6 +191,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [registeredUsersError, setRegisteredUsersError] = useState<string | null>(null);
   const [registeredUsersSuccess, setRegisteredUsersSuccess] = useState<string | null>(null);
   const [userDeleteTarget, setUserDeleteTarget] = useState<RegisteredUserListItem | null>(null);
+  const [userDeleteConfirmText, setUserDeleteConfirmText] = useState('');
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [unpublishingUserId, setUnpublishingUserId] = useState<string | null>(null);
   const [isCreatingExternal, setIsCreatingExternal] = useState(false);
@@ -1068,6 +1069,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
   const handleConfirmDeleteRegisteredUser = async () => {
     if (!userDeleteTarget || userDeleteTarget.id === user.id) return;
+    if (userDeleteConfirmText.trim().toLowerCase() !== 'löschen') return;
     const id = userDeleteTarget.id;
     setRegisteredUsersError(null);
     setDeletingUserId(id);
@@ -1075,6 +1077,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       await Promise.resolve(onAdminAction(id, 'delete', undefined, user.id));
       setRegisteredUsers((prev) => prev.filter((u) => u.id !== id));
       setUserDeleteTarget(null);
+      setUserDeleteConfirmText('');
       await onRefreshCandidates?.();
     } catch (e) {
       setRegisteredUsersError(e instanceof Error ? e.message : 'Löschen fehlgeschlagen.');
@@ -3353,6 +3356,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           onClose={() => {
             if (deletingUserId) return;
             setUserDeleteTarget(null);
+            setUserDeleteConfirmText('');
           }}
           title="Nutzer löschen?"
         >
@@ -3367,8 +3371,29 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   Hinweis: Recruiter- oder Admin-Konten sollten nur bei Bedarf gelöscht werden. Der Auth-Zugang in Supabase bleibt ggf. bestehen, bis er dort separat entfernt wird.
                 </p>
               )}
+              <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+                <p className="mb-2 text-xs font-semibold text-slate-700">
+                  Zur Bestätigung bitte <span className="font-black text-slate-900">löschen</span> eintippen.
+                </p>
+                <Input
+                  value={userDeleteConfirmText}
+                  onChange={(e) => setUserDeleteConfirmText(e.target.value)}
+                  placeholder='löschen'
+                  autoComplete="off"
+                  className="h-10 bg-white"
+                />
+              </div>
               <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <Button type="button" variant="outline" className="w-full sm:w-auto" disabled={!!deletingUserId} onClick={() => setUserDeleteTarget(null)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  disabled={!!deletingUserId}
+                  onClick={() => {
+                    setUserDeleteTarget(null);
+                    setUserDeleteConfirmText('');
+                  }}
+                >
                   Abbrechen
                 </Button>
                 <Button
@@ -3376,7 +3401,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   variant="danger"
                   className="w-full sm:w-auto"
                   isLoading={!!deletingUserId}
-                  disabled={!!deletingUserId}
+                  disabled={!!deletingUserId || userDeleteConfirmText.trim().toLowerCase() !== 'löschen'}
                   onClick={() => void handleConfirmDeleteRegisteredUser()}
                 >
                   Endgültig löschen
