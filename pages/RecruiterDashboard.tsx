@@ -1808,7 +1808,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 )}
                 <div className="grid grid-cols-1 gap-4 p-4">
                   <section className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div className="mx-auto w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                       <div className="mb-4 flex items-center justify-between">
                         <h4 className="text-3xl font-black capitalize tracking-tight text-slate-900">{plannerMonthLabel}</h4>
                         <div className="flex items-center gap-2">
@@ -1846,7 +1846,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                 setPlannerSelectedDate(cell.key);
                                 setPlannerEventForm((s) => ({ ...s, scheduledDate: cell.key, scheduledTime: s.scheduledTime || '09:00' }));
                               }}
-                              className={`min-h-[90px] rounded-2xl border p-2 text-left transition ${
+                              className={`min-h-[78px] rounded-2xl border p-2 text-left transition ${
                                 isSelected
                                   ? 'border-orange-300 bg-orange-50 shadow-sm ring-2 ring-orange-200'
                                   : cell.inMonth
@@ -1855,7 +1855,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               }`}
                             >
                               <div className="mb-1 flex items-center justify-between">
-                                <span className={`text-base font-black ${cell.isToday ? 'text-orange-600' : 'text-slate-800'}`}>
+                                <span className={`text-sm font-black ${cell.isToday ? 'text-orange-600' : 'text-slate-800'}`}>
                                   {cell.date.getDate()}
                                 </span>
                                 {events.length > 0 ? (
@@ -1958,7 +1958,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     </div>
                   </section>
 
-                  <section className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                  <section className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-4">
                     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                       <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-900 to-slate-800 px-4 py-3 text-white">
                         <div>
