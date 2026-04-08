@@ -692,6 +692,15 @@ class ApiClient {
       Object.prototype.hasOwnProperty.call(row as object, 'edited_qualifications');
     if (!hasEditedColumns) {
       // Datenschutz: Im Marktplatz niemals Originaldokumente als Fallback anzeigen.
+      // Wenn vorhanden, nur lokal bearbeitete Versionen anzeigen (Legacy-Fallback).
+      const localEdited = this.readLocalEditedDocuments(row.user_id);
+      if (localEdited?.cvPdf?.name) items.push({ type: 'cv', name: localEdited.cvPdf.name });
+      for (const cert of localEdited?.certificates || []) {
+        if (cert?.name) items.push({ type: 'certificate', name: cert.name });
+      }
+      for (const qual of localEdited?.qualifications || []) {
+        if (qual?.name) items.push({ type: 'qualification', name: qual.name });
+      }
       return items;
     }
 
@@ -1758,9 +1767,34 @@ class ApiClient {
       Object.prototype.hasOwnProperty.call(row as object, 'edited_certificates') ||
       Object.prototype.hasOwnProperty.call(row as object, 'edited_qualifications');
     if (hasEditedColumns) {
-      return this.documentRowToDocuments(row, true);
+      const edited = this.documentRowToDocuments(row, true);
+      const hasEditedContent = !!(
+        edited.cvPdf?.name ||
+        (edited.certificates?.length ?? 0) > 0 ||
+        (edited.qualifications?.length ?? 0) > 0
+      );
+      if (hasEditedContent) return edited;
+      const localEdited = this.readLocalEditedDocuments(userId);
+      if (localEdited) {
+        return {
+          userId,
+          cvPdf: localEdited.cvPdf || undefined,
+          certificates: localEdited.certificates || [],
+          qualifications: localEdited.qualifications || [],
+        };
+      }
+      return { userId, certificates: [], qualifications: [] };
     }
-    // Datenschutz: ohne edited_* Spalten im Marktplatz keine Dokumente anzeigen.
+    // Datenschutz: ohne edited_* Spalten im Marktplatz nur lokal bearbeitete Versionen anzeigen.
+    const localEdited = this.readLocalEditedDocuments(userId);
+    if (localEdited) {
+      return {
+        userId,
+        cvPdf: localEdited.cvPdf || undefined,
+        certificates: localEdited.certificates || [],
+        qualifications: localEdited.qualifications || [],
+      };
+    }
     return { userId, certificates: [], qualifications: [] };
   }
 
