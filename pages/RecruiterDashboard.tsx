@@ -1965,10 +1965,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           <h4 className="text-sm font-black uppercase tracking-widest">Recruiter-Teamchat</h4>
                           <p className="mt-0.5 text-[11px] font-medium text-slate-300">Abstimmung im Team in Echtzeit</p>
                         </div>
-                        <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-white/90">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                          Live
-                        </span>
                       </div>
                       <div className="bg-gradient-to-b from-slate-50 to-white p-3">
                         <div className="max-h-[64vh] space-y-2 overflow-y-auto pr-1">
