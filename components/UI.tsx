@@ -48,17 +48,21 @@ export const Button: React.FC<ButtonProps> = ({
 
 export const Input: React.FC<
   React.InputHTMLAttributes<HTMLInputElement> & { label?: string; error?: string; labelClassName?: string; errorClassName?: string }
-> = ({ label, error, className = '', labelClassName = 'text-slate-700', errorClassName = 'text-red-600', ...props }) => (
-  <div className="w-full">
-    {label && <label className={`block text-xs sm:text-sm font-medium mb-1 sm:mb-1.5 ${labelClassName}`}>{label}</label>}
-    <input
-      className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-white border rounded-lg text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none block appearance-none ${error ? 'border-red-500' : 'border-slate-300'} ${className}`}
-      style={{ color: '#0f172a', backgroundColor: '#ffffff' }}
-      {...props}
-    />
-    {error && <p className={`mt-1.5 text-xs sm:text-sm font-medium ${errorClassName}`}>{error}</p>}
-  </div>
-);
+> = ({ label, error, className = '', labelClassName = 'text-slate-700', errorClassName = 'text-red-600', ...props }) => {
+  const nativeControlTypes = new Set(['time', 'date', 'datetime-local', 'month', 'week']);
+  const appearanceClass = nativeControlTypes.has((props.type || '').toLowerCase()) ? 'appearance-auto' : 'appearance-none';
+  return (
+    <div className="w-full">
+      {label && <label className={`block text-xs sm:text-sm font-medium mb-1 sm:mb-1.5 ${labelClassName}`}>{label}</label>}
+      <input
+        className={`w-full px-3 py-2 sm:px-4 sm:py-2.5 bg-white border rounded-lg text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none block ${appearanceClass} ${error ? 'border-red-500' : 'border-slate-300'} ${className}`}
+        style={{ color: '#0f172a', backgroundColor: '#ffffff' }}
+        {...props}
+      />
+      {error && <p className={`mt-1.5 text-xs sm:text-sm font-medium ${errorClassName}`}>{error}</p>}
+    </div>
+  );
+};
 
 export const Select: React.FC<
   React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string; error?: string; labelClassName?: string; errorClassName?: string }
