@@ -1846,11 +1846,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                   ? 'border-orange-300 bg-orange-50 shadow-sm ring-2 ring-orange-200'
                                   : cell.inMonth
                                     ? 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
-                                    : 'border-slate-100 bg-slate-50 text-slate-300'
+                                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
                               }`}
                             >
                               <div className="mb-1 flex items-center justify-between">
-                                <span className={`text-lg font-black ${cell.isToday ? 'text-orange-600' : cell.inMonth ? 'text-slate-800' : 'text-slate-300'}`}>
+                                <span className={`text-lg font-black ${cell.isToday ? 'text-orange-600' : 'text-slate-800'}`}>
                                   {cell.date.getDate()}
                                 </span>
                                 {events.length > 0 ? (
