@@ -1931,10 +1931,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               className="h-10"
                             />
                             <Input
-                              type="text"
+                              type="time"
                               value={plannerEventForm.scheduledTime}
                               onChange={(e) => setPlannerEventForm((s) => ({ ...s, scheduledTime: e.target.value }))}
-                              placeholder="Uhrzeit (HH:mm)"
+                              step={300}
                               className="h-10"
                             />
                           </div>
