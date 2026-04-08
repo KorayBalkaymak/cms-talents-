@@ -1972,7 +1972,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             <p className="py-6 text-center text-xs font-semibold text-slate-500">Chat wird geladen…</p>
                           ) : plannerMessages.length === 0 ? (
                             <p className="py-6 text-center text-xs font-semibold text-slate-500">Noch keine Nachrichten.</p>
-                          ) : plannerMessages.map((msg) => (
+                          ) : plannerMessages.map((msg) => {
+                            const displayMessage = (msg.message || '').replace(/^📅\s*/u, '');
+                            return (
                             <div key={msg.id} className={`rounded-xl border px-3 py-2 shadow-sm ${msg.senderId === user.id ? 'border-orange-200 bg-orange-50/90' : 'border-slate-200 bg-white'}`}>
                               <div className="mb-1 flex items-center justify-between gap-2">
                                 <div className="inline-flex items-center gap-2">
@@ -1985,9 +1987,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                   {new Date(msg.createdAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}
                                 </span>
                               </div>
-                              <p className="whitespace-pre-wrap break-words text-xs leading-relaxed text-slate-700">{msg.message}</p>
+                              <p className="whitespace-pre-wrap break-words text-xs leading-relaxed text-slate-700">{displayMessage}</p>
                             </div>
-                          ))}
+                          );
+                          })}
                         </div>
                         <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
                           <Textarea
