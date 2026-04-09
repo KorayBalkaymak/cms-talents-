@@ -10,9 +10,9 @@ interface LandingPageProps {
 
 const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#a33b00] via-[#d35400] to-[#ff8a00] text-white antialiased">
+    <div className="min-h-screen bg-gradient-to-br from-[#ff8a00] via-[#ff6a00] to-[#c43b00] text-white antialiased">
       {/* ─── Navigation: Elite-Orange Header ─── */}
-      <header className="border-b border-amber-100/30 bg-gradient-to-r from-[#8f2f00] via-[#bf4a00] to-[#e06b00] shadow-[0_8px_24px_-16px_rgba(0,0,0,0.45)]">
+      <header className="border-b border-amber-100/40 bg-gradient-to-r from-[#c43b00] via-[#f05a00] to-[#ff8a00] shadow-[0_8px_24px_-16px_rgba(0,0,0,0.45)]">
         <nav className="h-[72px] flex items-center justify-center">
           <div className="w-full max-w-6xl mx-auto px-6 flex items-center justify-end">
             <div className="flex items-center gap-4 md:gap-10">
@@ -75,8 +75,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
       <main className="relative">
         {/* ─── Hero: high-impact, premium ─── */}
         <section className="relative overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(255,220,170,0.28),transparent_45%)]" />
-          <div className="pointer-events-none absolute top-1/4 -right-1/4 h-[600px] w-[600px] rounded-full bg-amber-200/20 blur-3xl" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(255,244,214,0.42),transparent_46%)]" />
+          <div className="pointer-events-none absolute top-1/4 -right-1/4 h-[600px] w-[600px] rounded-full bg-amber-100/35 blur-3xl" />
           <div className="pointer-events-none absolute bottom-0 left-0 h-px w-full bg-gradient-to-r from-transparent via-white/35 to-transparent" />
 
           <div className="relative mx-auto max-w-6xl px-6 pt-24 pb-28 md:pt-32 md:pb-36">
@@ -116,8 +116,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
 
               {/* Product preview card – premium look */}
               <div className="relative mt-12 lg:mt-0">
-                <div className="relative rounded-2xl border border-white/20 bg-white/10 p-px shadow-2xl shadow-black/30">
-                  <div className="overflow-hidden rounded-2xl border border-white/20 bg-black/20 backdrop-blur-sm">
+                <div className="relative rounded-2xl border border-amber-100/50 bg-amber-100/20 p-px shadow-2xl shadow-black/30">
+                  <div className="overflow-hidden rounded-2xl border border-amber-100/40 bg-gradient-to-br from-[#b13c00]/45 to-[#ff8a00]/35 backdrop-blur-sm">
                     <div className="p-6 border-b border-white/10">
                       <div className="flex items-center gap-2 mb-4">
                         <div className="flex gap-1.5">
@@ -254,7 +254,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
         </section>
 
         {/* ─── Value props: dunkelblau, Orange-Akzente ─── */}
-        <section className="bg-gradient-to-b from-[#7c2500] via-[#a83800] to-[#cb5600] py-24 md:py-32">
+        <section className="bg-gradient-to-b from-[#a83800] via-[#d95a00] to-[#ff8a00] py-24 md:py-32">
           <div className="mx-auto max-w-6xl px-6">
             <div className="mx-auto mb-16 max-w-2xl text-center">
               <h2 className="mb-4 text-3xl font-bold tracking-tight text-white md:text-4xl">
