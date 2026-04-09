@@ -10,19 +10,19 @@ interface LandingPageProps {
 
 const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#ff8a00] via-[#ff6a00] to-[#c43b00] text-white antialiased">
-      {/* ─── Navigation: Elite-Orange Header ─── */}
-      <header className="border-b border-amber-100/40 bg-gradient-to-r from-[#c43b00] via-[#f05a00] to-[#ff8a00] shadow-[0_8px_24px_-16px_rgba(0,0,0,0.45)]">
+    <div className="min-h-screen bg-[#101B31] text-white antialiased">
+      {/* ─── Navigation: weißer Header (nicht fixed) ─── */}
+      <header className="bg-white border-b border-slate-200/80">
         <nav className="h-[72px] flex items-center justify-center">
           <div className="w-full max-w-6xl mx-auto px-6 flex items-center justify-end">
             <div className="flex items-center gap-4 md:gap-10">
               {user ? (
                 <>
-                  <span className="hidden text-sm text-amber-100 md:inline">Hallo, {user.firstName || 'User'}</span>
+                  <span className="text-sm text-slate-500 hidden md:inline">Hallo, {user.firstName || 'User'}</span>
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="h-9 rounded-xl border-amber-100/30 bg-[#7c2500] px-4 text-xs font-medium text-white shadow-sm hover:bg-[#6b1f00] active:bg-[#5a1a00] md:h-10 md:px-5 md:text-sm"
+                    className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm bg-[#101B31] border-[#101B31] hover:bg-[#0B1324] active:bg-[#070D19]"
                     onClick={() => onNavigate('/recruiter/auth')}
                   >
                     Als Recruiter anmelden
@@ -31,7 +31,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                     <Button
                       variant="secondary"
                       size="sm"
-                      className="h-9 rounded-xl border-amber-100/30 bg-[#7c2500] px-4 text-xs font-medium text-white shadow-sm hover:bg-[#6b1f00] active:bg-[#5a1a00] md:h-10 md:px-5 md:text-sm"
+                      className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm bg-[#101B31] border-[#101B31] hover:bg-[#0B1324] active:bg-[#070D19]"
                       onClick={() => onNavigate('/candidate/profile')}
                     >
                       Mein Profil
@@ -40,7 +40,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                     <Button
                       variant="secondary"
                       size="sm"
-                      className="h-9 rounded-xl border-amber-100/30 bg-[#7c2500] px-4 text-xs font-medium text-white shadow-sm hover:bg-[#6b1f00] active:bg-[#5a1a00] md:h-10 md:px-5 md:text-sm"
+                      className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm bg-[#101B31] border-[#101B31] hover:bg-[#0B1324] active:bg-[#070D19]"
                       onClick={() => onNavigate('/recruiter/dashboard')}
                     >
                       Dashboard
@@ -52,7 +52,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="h-9 rounded-xl border-amber-100/30 bg-[#7c2500] px-4 text-xs font-medium text-white shadow-sm hover:bg-[#6b1f00] active:bg-[#5a1a00] md:h-10 md:px-5 md:text-sm"
+                    className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm bg-[#101B31] border-[#101B31] hover:bg-[#0B1324] active:bg-[#070D19]"
                     onClick={() => onNavigate('/recruiter/auth')}
                   >
                     Als Recruiter anmelden
@@ -60,7 +60,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="h-9 rounded-xl border-amber-100/30 bg-[#7c2500] px-4 text-xs font-medium text-white shadow-sm hover:bg-[#6b1f00] active:bg-[#5a1a00] md:h-10 md:px-5 md:text-sm"
+                    className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm bg-[#101B31] border-[#101B31] hover:bg-[#0B1324] active:bg-[#070D19]"
                     onClick={() => onNavigate('/candidate/auth')}
                   >
                     Mein Profil
@@ -72,12 +72,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
         </nav>
       </header>
 
-      <main className="relative">
+      <main>
         {/* ─── Hero: high-impact, premium ─── */}
         <section className="relative overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(255,244,214,0.42),transparent_46%)]" />
-          <div className="pointer-events-none absolute top-1/4 -right-1/4 h-[600px] w-[600px] rounded-full bg-amber-100/35 blur-3xl" />
-          <div className="pointer-events-none absolute bottom-0 left-0 h-px w-full bg-gradient-to-r from-transparent via-white/35 to-transparent" />
+          <div className="absolute top-1/4 -right-1/4 w-[600px] h-[600px] rounded-full bg-orange-500/10 blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
           <div className="relative mx-auto max-w-6xl px-6 pt-24 pb-28 md:pt-32 md:pb-36">
             <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16 xl:gap-20">
@@ -88,7 +87,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                 <h1 className="text-4xl md:text-5xl lg:text-[3.25rem] font-bold text-white tracking-tight leading-[1.1] mb-6 animate-fade-in-up-1">
                   Die besten Talente.
                   <br />
-                  <span className="text-amber-200">Die besten Partner.</span>
+                  <span className="text-orange-400">Die besten Partner.</span>
                 </h1>
                 <p className="text-lg text-white/80 leading-relaxed mb-10 animate-fade-in-up-2">
                   CMS Talents verbindet qualifizierte Fachkräfte mit führenden Arbeitgebern. Qualität, Vertrauen und passgenaues Matching – ohne Kompromisse.
@@ -116,8 +115,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
 
               {/* Product preview card – premium look */}
               <div className="relative mt-12 lg:mt-0">
-                <div className="relative rounded-2xl border border-amber-100/50 bg-amber-100/20 p-px shadow-2xl shadow-black/30">
-                  <div className="overflow-hidden rounded-2xl border border-amber-100/40 bg-gradient-to-br from-[#b13c00]/45 to-[#ff8a00]/35 backdrop-blur-sm">
+                <div className="relative rounded-2xl bg-white/5 border border-white/10 p-px shadow-2xl">
+                  <div className="rounded-2xl bg-[#101B31]/80 overflow-hidden border border-white/10">
                     <div className="p-6 border-b border-white/10">
                       <div className="flex items-center gap-2 mb-4">
                         <div className="flex gap-1.5">
@@ -131,8 +130,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                         {[
                           {
                             key: 'work',
-                            bg: 'bg-amber-100/95',
-                            fg: 'text-orange-700',
+                            bg: 'bg-orange-500',
+                            fg: 'text-orange-100',
                             icon: (
                               <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
                                 <path d="M9 7V6a3 3 0 0 1 3-3h0a3 3 0 0 1 3 3v1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -172,8 +171,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                           },
                           {
                             key: 'search',
-                            bg: 'bg-amber-100/95',
-                            fg: 'text-orange-700',
+                            bg: 'bg-orange-500',
+                            fg: 'text-orange-100',
                             icon: (
                               <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
                                 <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" strokeWidth="2" />
@@ -210,10 +209,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                           <div
                             key={item.key}
                             className={`flex aspect-square items-center justify-center rounded-lg ${
-                              item.key === 'work' || item.key === 'search' ? 'bg-amber-100/95' : item.bg
+                              item.key === 'work' || item.key === 'search' ? 'bg-orange-500' : item.bg
                             }`}
                           >
-                            <div className={item.key === 'work' || item.key === 'search' ? 'text-orange-700' : item.fg}>
+                            <div className={item.key === 'work' || item.key === 'search' ? 'text-white' : item.fg}>
                               {item.icon}
                             </div>
                           </div>
@@ -229,19 +228,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
         </section>
 
         {/* ─── Zweck: klares Orange (ohne Kupfer/Kalkulator) ─── */}
-        <section className="bg-gradient-to-br from-[#b64800] via-[#d86000] to-[#ff9800] py-20 md:py-28">
+        <section className="bg-white py-20 md:py-28">
           <div className="relative mx-auto max-w-6xl px-6">
-            <div className="overflow-hidden rounded-3xl border border-white/25 bg-gradient-to-br from-[#8f2f00]/80 via-[#c14b00]/75 to-[#e97500]/75 shadow-xl shadow-black/30 backdrop-blur-sm">
+            <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-xl shadow-orange-500/25">
               <div className="p-10 md:p-14">
                 <div className="mb-10 flex flex-col items-center text-center">
                   <h2 className="mb-4 text-3xl font-bold tracking-tight text-white md:text-4xl">
-                    Warum es CMS <span className="text-amber-200">Talents</span> gibt
+                    Warum es CMS <span className="text-orange-100">Talents</span> gibt
                   </h2>
                   <p className="text-lg font-semibold text-white/95">Der Zweck von CMS Talents</p>
                   <p className="mt-4 max-w-3xl text-lg leading-relaxed text-white/95">
                     CMS Talents ist eine Recruiting-Plattform, die{' '}
-                    <span className="font-semibold text-amber-100">qualifizierte Fachkräfte</span> mit{' '}
-                    <span className="font-semibold text-amber-100">passenden Arbeitgebern</span> zusammenbringt. Kandidaten erstellen ihr Profil, werden sichtbar und können von
+                    <span className="font-semibold text-orange-50">qualifizierte Fachkräfte</span> mit{' '}
+                    <span className="font-semibold text-orange-50">passenden Arbeitgebern</span> zusammenbringt. Kandidaten erstellen ihr Profil, werden sichtbar und können von
                     Recruitern gezielt gefunden werden.
                   </p>
                   <p className="mt-4 max-w-3xl text-base leading-relaxed text-white/85">
@@ -254,7 +253,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
         </section>
 
         {/* ─── Value props: dunkelblau, Orange-Akzente ─── */}
-        <section className="bg-gradient-to-b from-[#a83800] via-[#d95a00] to-[#ff8a00] py-24 md:py-32">
+        <section className="bg-[#101B31] py-24 md:py-32">
           <div className="mx-auto max-w-6xl px-6">
             <div className="mx-auto mb-16 max-w-2xl text-center">
               <h2 className="mb-4 text-3xl font-bold tracking-tight text-white md:text-4xl">
@@ -306,9 +305,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
               ].map((item, idx) => (
                 <div
                   key={idx}
-                className="group relative overflow-hidden rounded-2xl border border-amber-100/30 bg-white/10 p-8 shadow-lg shadow-black/25 transition-all duration-300 hover:border-amber-100/60 hover:bg-white/15"
+                  className="group relative overflow-hidden rounded-2xl border border-orange-500/35 bg-orange-500/10 p-8 shadow-lg shadow-black/20 transition-all duration-300 hover:border-orange-400/60 hover:bg-orange-500/15"
                 >
-                  <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-orange-700 shadow-md shadow-black/20 transition-colors duration-300 group-hover:bg-white">
+                  <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500 text-white shadow-md shadow-orange-500/30 transition-colors duration-300 group-hover:bg-orange-400">
                     {item.icon}
                   </div>
                   <h3 className="mb-3 text-xl font-semibold tracking-tight text-white">{item.title}</h3>
@@ -321,16 +320,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
       </main>
 
       {/* ─── Footer: weiß ─── */}
-      <footer className="border-t border-white/20 bg-[#7a2200] py-12">
+      <footer className="border-t border-slate-200 bg-white py-12">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-6 sm:flex-row">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-orange-100">CMS Talents © 2026</span>
+            <span className="text-sm font-medium text-slate-600">CMS Talents © 2026</span>
           </div>
           <div className="flex gap-10 text-sm">
-            <a href="#" className="text-orange-100 transition-colors duration-200 hover:text-white">
+            <a href="#" className="text-slate-600 transition-colors duration-200 hover:text-orange-600">
               Impressum
             </a>
-            <a href="#" className="text-orange-100 transition-colors duration-200 hover:text-white">
+            <a href="#" className="text-slate-600 transition-colors duration-200 hover:text-orange-600">
               Datenschutz
             </a>
           </div>
