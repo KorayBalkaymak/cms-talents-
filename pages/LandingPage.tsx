@@ -11,18 +11,18 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#a33b00] via-[#d35400] to-[#ff8a00] text-white antialiased">
-      {/* ─── Navigation: weißer Header (nicht fixed) ─── */}
-      <header className="bg-white border-b border-slate-200/80">
+      {/* ─── Navigation: Elite-Orange Header ─── */}
+      <header className="border-b border-amber-100/30 bg-gradient-to-r from-[#8f2f00] via-[#bf4a00] to-[#e06b00] shadow-[0_8px_24px_-16px_rgba(0,0,0,0.45)]">
         <nav className="h-[72px] flex items-center justify-center">
           <div className="w-full max-w-6xl mx-auto px-6 flex items-center justify-end">
             <div className="flex items-center gap-4 md:gap-10">
               {user ? (
                 <>
-                  <span className="text-sm text-slate-500 hidden md:inline">Hallo, {user.firstName || 'User'}</span>
+                  <span className="hidden text-sm text-amber-100 md:inline">Hallo, {user.firstName || 'User'}</span>
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm bg-[#101B31] border-[#101B31] hover:bg-[#0B1324] active:bg-[#070D19]"
+                    className="h-9 rounded-xl border-amber-100/30 bg-[#7c2500] px-4 text-xs font-medium text-white shadow-sm hover:bg-[#6b1f00] active:bg-[#5a1a00] md:h-10 md:px-5 md:text-sm"
                     onClick={() => onNavigate('/recruiter/auth')}
                   >
                     Als Recruiter anmelden
@@ -31,7 +31,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                     <Button
                       variant="secondary"
                       size="sm"
-                      className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm bg-[#101B31] border-[#101B31] hover:bg-[#0B1324] active:bg-[#070D19]"
+                      className="h-9 rounded-xl border-amber-100/30 bg-[#7c2500] px-4 text-xs font-medium text-white shadow-sm hover:bg-[#6b1f00] active:bg-[#5a1a00] md:h-10 md:px-5 md:text-sm"
                       onClick={() => onNavigate('/candidate/profile')}
                     >
                       Mein Profil
@@ -40,7 +40,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                     <Button
                       variant="secondary"
                       size="sm"
-                      className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm bg-[#101B31] border-[#101B31] hover:bg-[#0B1324] active:bg-[#070D19]"
+                      className="h-9 rounded-xl border-amber-100/30 bg-[#7c2500] px-4 text-xs font-medium text-white shadow-sm hover:bg-[#6b1f00] active:bg-[#5a1a00] md:h-10 md:px-5 md:text-sm"
                       onClick={() => onNavigate('/recruiter/dashboard')}
                     >
                       Dashboard
@@ -52,7 +52,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm bg-[#101B31] border-[#101B31] hover:bg-[#0B1324] active:bg-[#070D19]"
+                    className="h-9 rounded-xl border-amber-100/30 bg-[#7c2500] px-4 text-xs font-medium text-white shadow-sm hover:bg-[#6b1f00] active:bg-[#5a1a00] md:h-10 md:px-5 md:text-sm"
                     onClick={() => onNavigate('/recruiter/auth')}
                   >
                     Als Recruiter anmelden
@@ -60,7 +60,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="rounded-xl px-4 md:px-5 h-9 md:h-10 text-xs md:text-sm font-medium shadow-sm bg-[#101B31] border-[#101B31] hover:bg-[#0B1324] active:bg-[#070D19]"
+                    className="h-9 rounded-xl border-amber-100/30 bg-[#7c2500] px-4 text-xs font-medium text-white shadow-sm hover:bg-[#6b1f00] active:bg-[#5a1a00] md:h-10 md:px-5 md:text-sm"
                     onClick={() => onNavigate('/candidate/auth')}
                   >
                     Mein Profil
