@@ -19,6 +19,17 @@ interface TalentMarketplaceProps {
 
 type MatchItem = { candidate: CandidateProfile; score: number };
 
+/**
+ * Marktplatz-Dokumentzeile: Zuordnung per Slot + Index (nicht nur Dateiname),
+ * damit gleiche Namen in CV / Zertifikat / Qualifikation nicht denselben Inhalt öffnen.
+ */
+type MarketplaceDocEntry = {
+  slot: 'cv' | 'certificate' | 'qualification';
+  /** Position in certificates[] bzw. qualifications[]; bei CV immer 0. */
+  index: number;
+  displayName: string;
+};
+
 /** Max. PDF-Unterlagen pro Interessenanfrage (Marktplatz). */
 const MAX_INQUIRY_CUSTOMER_PDFS = 2;
 
@@ -188,7 +199,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
   const [selectedCandidateDocs, setSelectedCandidateDocs] = useState<CandidateDocuments | null>(null);
   const [loadingSelectedDocs, setLoadingSelectedDocs] = useState(false);
-  const [documentLoading, setDocumentLoading] = useState<string | null>(null);
+  const [documentLoading, setDocumentLoading] = useState<string | null>(null); // z. B. "cv:0", "qualification:1"
   const [pdfViewerUrl, setPdfViewerUrl] = useState<string | null>(null);
   const [pdfViewerTitle, setPdfViewerTitle] = useState<string>('');
   const [inquiryForm, setInquiryForm] = useState({
@@ -227,15 +238,25 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const candidateModalBodyRef = useRef<HTMLDivElement>(null);
 
   // PDF in Modal mit iframe anzeigen (zuverlässig, keine weiße Seite)
-  const openDocument = async (userId: string, docType: string, docName: string) => {
-    setDocumentLoading(docName);
+  const openDocument = async (
+    userId: string,
+    slot: MarketplaceDocEntry['slot'],
+    index: number,
+    displayName: string
+  ) => {
+    const loadKey = `${slot}:${index}`;
+    setDocumentLoading(loadKey);
     try {
       const docs = await candidateService.getMarketplaceDocuments(userId);
       if (!docs) return;
       let data: string | undefined;
-      if (docType === 'cv' && docs.cvPdf?.data) data = docs.cvPdf.data;
-      else if (docType === 'certificate') data = docs.certificates?.find(c => c.name === docName)?.data;
-      else if (docType === 'qualification') data = docs.qualifications?.find(q => q.name === docName)?.data;
+      if (slot === 'cv') {
+        data = docs.cvPdf?.data;
+      } else if (slot === 'certificate') {
+        data = docs.certificates?.[index]?.data;
+      } else {
+        data = docs.qualifications?.[index]?.data;
+      }
       if (!data) return;
       const base64 = data.includes('base64,') ? data.split('base64,')[1] : data;
       const binary = atob(base64);
@@ -243,7 +264,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
       const blob = new Blob([bytes], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
-      setPdfViewerTitle(docName);
+      setPdfViewerTitle(displayName);
       setPdfViewerUrl(url);
     } catch (e) {
       console.error('Dokument konnte nicht geladen werden:', e);
@@ -292,41 +313,66 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
     () => (selectedCandidate ? codeNameFromUserId(selectedCandidate.userId) : ''),
     [selectedCandidate]
   );
-  const selectedDocsList = useMemo(() => {
+  const selectedDocsList = useMemo((): MarketplaceDocEntry[] => {
     if (!selectedCandidateDocs) return [];
-    const items: { type: string; name: string }[] = [];
+    const items: MarketplaceDocEntry[] = [];
     const cv = selectedCandidateDocs.cvPdf;
-    if (cv?.data?.trim()) items.push({ type: 'cv', name: cv.name?.trim() || 'Lebenslauf.pdf' });
+    if (cv?.data?.trim()) {
+      items.push({
+        slot: 'cv',
+        index: 0,
+        displayName: cv.name?.trim() || 'Lebenslauf.pdf',
+      });
+    }
     (selectedCandidateDocs.certificates || []).forEach((doc, i) => {
-      if (doc?.data?.trim()) items.push({ type: 'certificate', name: doc.name?.trim() || `Zertifikat-${i + 1}.pdf` });
+      if (doc?.data?.trim()) {
+        items.push({
+          slot: 'certificate',
+          index: i,
+          displayName: doc.name?.trim() || `Zertifikat-${i + 1}.pdf`,
+        });
+      }
     });
     (selectedCandidateDocs.qualifications || []).forEach((doc, i) => {
-      if (doc?.data?.trim()) items.push({ type: 'qualification', name: doc.name?.trim() || `Qualifikation-${i + 1}.pdf` });
+      if (doc?.data?.trim()) {
+        items.push({
+          slot: 'qualification',
+          index: i,
+          displayName: doc.name?.trim() || `Qualifikation-${i + 1}.pdf`,
+        });
+      }
     });
     return items;
   }, [selectedCandidateDocs]);
 
   const renderMarketplaceDocButtons = () =>
     selectedDocsList.map((doc, idx) => (
-      <button
-        key={`${doc.type}-${doc.name}-${idx}`}
-        type="button"
-        onClick={() => selectedCandidate && openDocument(selectedCandidate.userId, doc.type, doc.name)}
-        disabled={!!documentLoading}
-        className="flex items-center gap-2 w-full text-left p-3 rounded-xl bg-slate-50 hover:bg-orange-50 border border-slate-100 hover:border-orange-200 transition-colors group"
-      >
-        <span className="w-10 h-10 rounded-lg bg-slate-200 group-hover:bg-orange-100 flex items-center justify-center shrink-0">
-          <svg className="w-5 h-5 text-slate-600 group-hover:text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
-        </span>
-        <div className="flex-1 min-w-0">
-          <span className="text-slate-500 text-xs uppercase block">
-            {doc.type === 'cv' ? 'Lebenslauf (CV)' : doc.type === 'certificate' ? 'Zertifikat' : 'Qualifikation'}
+        <button
+          key={`${doc.slot}-${doc.index}-${idx}`}
+          type="button"
+          onClick={() =>
+            selectedCandidate &&
+            openDocument(selectedCandidate.userId, doc.slot, doc.index, doc.displayName)
+          }
+          disabled={!!documentLoading}
+          className="flex items-center gap-2 w-full text-left p-3 rounded-xl bg-slate-50 hover:bg-orange-50 border border-slate-100 hover:border-orange-200 transition-colors group"
+        >
+          <span className="w-10 h-10 rounded-lg bg-slate-200 group-hover:bg-orange-100 flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-slate-600 group-hover:text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
           </span>
-          <span className="font-bold text-slate-900 truncate block">{doc.name}</span>
-        </div>
-      </button>
+          <div className="flex-1 min-w-0">
+            <span className="text-slate-500 text-xs uppercase block">
+              {doc.slot === 'cv'
+                ? 'Lebenslauf (CV)'
+                : doc.slot === 'certificate'
+                  ? 'Zertifikat'
+                  : 'Qualifikation'}
+            </span>
+            <span className="font-bold text-slate-900 truncate block">{doc.displayName}</span>
+          </div>
+        </button>
     ));
 
   const submitInquiry = async () => {
