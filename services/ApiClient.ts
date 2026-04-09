@@ -786,6 +786,15 @@ class ApiClient {
     return out;
   }
 
+  /** Liegt in den edited_*-Spalten mindestens ein PDF (data)? */
+  private rowHasEditedPdfData(row: DocumentRow): boolean {
+    const cv = row.edited_cv_pdf;
+    if (cv && String(cv.data || '').trim()) return true;
+    if ((row.edited_certificates || []).some((c) => c && String(c.data || '').trim())) return true;
+    if ((row.edited_qualifications || []).some((q) => q && String(q.data || '').trim())) return true;
+    return false;
+  }
+
   private parseInquiryCustomerAttachments(raw: unknown): InquiryCustomerAttachment[] | undefined {
     if (raw == null) return undefined;
     if (!Array.isArray(raw)) return undefined;
@@ -1809,30 +1818,14 @@ class ApiClient {
     if (!row) {
       return { userId, certificates: [], qualifications: [] };
     }
-    const hasEditedColumns =
-      Object.prototype.hasOwnProperty.call(row as object, 'edited_cv_pdf') ||
-      Object.prototype.hasOwnProperty.call(row as object, 'edited_certificates') ||
-      Object.prototype.hasOwnProperty.call(row as object, 'edited_qualifications');
-    if (hasEditedColumns) {
-      const edited = this.documentRowToDocuments(row, true);
-      if (this.marketplaceDocsHavePayload(edited)) {
-        return this.normalizeMarketplaceDocumentNames(edited);
-      }
-      const localEdited = this.readLocalEditedDocuments(userId);
-      if (localEdited) {
-        const merged: CandidateDocuments = {
-          userId,
-          cvPdf: localEdited.cvPdf || undefined,
-          certificates: localEdited.certificates || [],
-          qualifications: localEdited.qualifications || [],
-        };
-        if (this.marketplaceDocsHavePayload(merged)) {
-          return this.normalizeMarketplaceDocumentNames(merged);
-        }
-      }
-      return { userId, certificates: [], qualifications: [] };
+
+    // 1) Standard: bearbeitete PDFs aus edited_* (vom Recruiter gespeichert)
+    const edited = this.documentRowToDocuments(row, true);
+    if (this.marketplaceDocsHavePayload(edited)) {
+      return this.normalizeMarketplaceDocumentNames(edited);
     }
-    // Datenschutz: ohne edited_* Spalten im Marktplatz nur lokal bearbeitete Versionen anzeigen.
+
+    // 2) Recruiter-Browser: lokale Bearbeitung
     const localEdited = this.readLocalEditedDocuments(userId);
     if (localEdited) {
       const merged: CandidateDocuments = {
@@ -1845,6 +1838,20 @@ class ApiClient {
         return this.normalizeMarketplaceDocumentNames(merged);
       }
     }
+
+    // 3) Legacy: Wenn edited_*-Spalten beim Speichern fehlten, landet die Recruiter-Marktplatz-Version
+    //    in cv_pdf / certificates / qualifications (siehe updateEditedDocuments). edited_* bleiben leer.
+    //    Nur für veröffentlichte Profile und nur wenn edited_* wirklich keinen PDF-Inhalt haben.
+    if (!this.rowHasEditedPdfData(row)) {
+      const fromBase = this.documentRowToDocuments(row, false);
+      if (this.marketplaceDocsHavePayload(fromBase)) {
+        const profile = await this.fetchProfileRow(userId);
+        if (profile?.is_published) {
+          return this.normalizeMarketplaceDocumentNames(fromBase);
+        }
+      }
+    }
+
     return { userId, certificates: [], qualifications: [] };
   }
 
