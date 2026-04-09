@@ -142,7 +142,14 @@ export const Avatar: React.FC<AvatarProps> = ({ seed, size = 'md', className = '
   );
 };
 
-export const Modal: React.FC<{ isOpen: boolean, onClose: () => void, title: string, children: React.ReactNode }> = ({ isOpen, onClose, title, children }) => {
+export const Modal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+  /** Ref auf den scrollbaren Inhaltsbereich (z. B. Scroll nach oben beim Öffnen) */
+  contentRef?: React.Ref<HTMLDivElement>;
+}> = ({ isOpen, onClose, title, children, contentRef }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 sm:items-center sm:p-4">
@@ -154,7 +161,10 @@ export const Modal: React.FC<{ isOpen: boolean, onClose: () => void, title: stri
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
-        <div className="min-h-0 min-w-0 flex-1 touch-pan-y overflow-y-auto overflow-x-hidden overscroll-contain p-6 [-webkit-overflow-scrolling:touch]">
+        <div
+          ref={contentRef}
+          className="min-h-0 min-w-0 flex-1 touch-pan-y overflow-y-auto overflow-x-hidden overscroll-contain p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch]"
+        >
           {children}
         </div>
       </div>

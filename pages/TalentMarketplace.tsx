@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect, useCallback, memo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef, memo } from 'react';
 import { CandidateProfile, CandidateDocuments, UserRole } from '../types';
 import { rankCandidates, highlightText } from '../services/SearchService';
 import { candidateService } from '../services/CandidateService';
@@ -224,6 +224,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const [generalInquiryLoading, setGeneralInquiryLoading] = useState(false);
   const [generalInquiryError, setGeneralInquiryError] = useState('');
   const [generalInquirySuccess, setGeneralInquirySuccess] = useState('');
+  const candidateModalBodyRef = useRef<HTMLDivElement>(null);
 
   // PDF in Modal mit iframe anzeigen (zuverlässig, keine weiße Seite)
   const openDocument = async (userId: string, docType: string, docName: string) => {
@@ -483,6 +484,15 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
     return () => {
       cancelled = true;
     };
+  }, [selectedCandidate?.userId]);
+
+  useEffect(() => {
+    if (!selectedCandidate) return;
+    const raf = requestAnimationFrame(() => {
+      const el = candidateModalBodyRef.current;
+      if (el) el.scrollTop = 0;
+    });
+    return () => cancelAnimationFrame(raf);
   }, [selectedCandidate?.userId]);
 
   const filteredAndRanked = useMemo(() => {
@@ -873,6 +883,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
       {selectedCandidate && (
         <Modal
           isOpen={!!selectedCandidate}
+          contentRef={candidateModalBodyRef}
           onClose={() => {
             setSelectedCandidate(null);
             setShowInquiryForm(false);
@@ -884,26 +895,26 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
           }}
           title={selectedCandidateCodeName ? `Kandidatenprofil · ${selectedCandidateCodeName}` : 'Kandidatenprofil'}
         >
-          <div className="space-y-5 min-w-0 max-w-full">
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <div className="flex min-w-0 max-w-full flex-col gap-5">
+            <div className="order-1 grid grid-cols-2 gap-4 sm:grid-cols-3">
               <div className="bg-slate-50 p-4 rounded-xl"><p className="text-xs font-black text-slate-400 uppercase">Erfahrung</p><p className="text-lg font-bold text-slate-900">{selectedCandidate.experienceYears} Jahre</p></div>
               <div className="bg-slate-50 p-4 rounded-xl"><p className="text-xs font-black text-slate-400 uppercase">Verfügbarkeit</p><p className="text-lg font-bold text-slate-900">{selectedCandidate.availability || '-'}</p></div>
               {selectedCandidate.birthYear && <div className="bg-slate-50 p-4 rounded-xl"><p className="text-xs font-black text-slate-400 uppercase">Geburtsjahr</p><p className="text-lg font-bold text-slate-900">{selectedCandidate.birthYear}</p></div>}
             </div>
 
             {loadingSelectedDocs ? (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs font-bold text-slate-600">
+              <div className="order-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs font-bold text-slate-600">
                 Dokumente werden geladen...
               </div>
             ) : selectedDocsList.length > 0 && (
-              <div id="mp-candidate-docs" className="scroll-mt-4">
+              <div id="mp-candidate-docs" className="order-2 scroll-mt-4">
                 <p className="text-xs font-black text-slate-400 uppercase mb-3">Dokumente (anklicken zum Ansehen)</p>
                 <div className="space-y-2">{renderMarketplaceDocButtons()}</div>
               </div>
             )}
 
             {(selectedCandidate.address || selectedCandidate.zipCode || selectedCandidate.phoneNumber) && (
-              <div className="bg-slate-50 p-4 rounded-xl">
+              <div className="order-3 bg-slate-50 p-4 rounded-xl">
                 <p className="text-xs font-black text-slate-400 uppercase mb-2">Kontakt / Adresse</p>
                 <div className="space-y-1 text-slate-700">
                   {selectedCandidate.address && <p>{selectedCandidate.address}</p>}
@@ -914,24 +925,27 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
             )}
 
             {selectedCandidate.about && (
-              <div className="min-w-0 max-w-full overflow-hidden rounded-xl bg-slate-50 p-4">
+              <div className="order-6 min-w-0 max-w-full overflow-hidden rounded-xl bg-slate-50 p-4 sm:order-4">
                 <p className="text-xs font-black text-slate-400 uppercase mb-2">Über</p>
                 <p className="text-sm text-slate-700 [overflow-wrap:anywhere] break-words [word-break:break-word] max-sm:break-all max-sm:max-h-[min(45vh,18rem)] max-sm:overflow-y-auto sm:max-h-none">
                   {anonymizeCandidateText(selectedCandidate.about, selectedCandidate, selectedCandidateCodeName)}
                 </p>
               </div>
             )}
-            {(selectedCandidate.skills?.length ?? 0) > 0 && <div><p className="text-xs font-black text-slate-400 uppercase mb-3">Skills</p><div className="flex flex-wrap gap-2">{selectedCandidate.skills.map(skill => <Badge key={skill} variant="orange">{highlightText(skill, debouncedSearch)}</Badge>)}</div></div>}
-            {(selectedCandidate.boostedKeywords?.length ?? 0) > 0 && <div><p className="text-xs font-black text-slate-400 uppercase mb-3">Spezialisierungen</p><div className="flex flex-wrap gap-2">{selectedCandidate.boostedKeywords.map(kw => <Badge key={kw} variant="dark">{kw}</Badge>)}</div></div>}
-
-            {!loadingSelectedDocs && selectedDocsList.length > 0 && (
-              <div className="border-t border-slate-100 pt-5 sm:hidden">
-                <p className="text-xs font-black text-slate-400 uppercase mb-3">PDF-Dokumente</p>
-                <div className="space-y-2">{renderMarketplaceDocButtons()}</div>
+            {(selectedCandidate.skills?.length ?? 0) > 0 && (
+              <div className="order-4 sm:order-5">
+                <p className="text-xs font-black text-slate-400 uppercase mb-3">Skills</p>
+                <div className="flex flex-wrap gap-2">{selectedCandidate.skills.map(skill => <Badge key={skill} variant="orange">{highlightText(skill, debouncedSearch)}</Badge>)}</div>
+              </div>
+            )}
+            {(selectedCandidate.boostedKeywords?.length ?? 0) > 0 && (
+              <div className="order-5 sm:order-6">
+                <p className="text-xs font-black text-slate-400 uppercase mb-3">Spezialisierungen</p>
+                <div className="flex flex-wrap gap-2">{selectedCandidate.boostedKeywords.map(kw => <Badge key={kw} variant="dark">{kw}</Badge>)}</div>
               </div>
             )}
 
-            <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-4">
+            <div className="order-7 rounded-xl border border-orange-100 bg-orange-50/50 p-4">
               <Button
                 className="w-full sm:w-auto"
                 variant="primary"
