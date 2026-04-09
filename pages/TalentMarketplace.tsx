@@ -300,6 +300,29 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
     return items;
   }, [selectedCandidateDocs]);
 
+  const renderMarketplaceDocButtons = () =>
+    selectedDocsList.map((doc, idx) => (
+      <button
+        key={`${doc.type}-${doc.name}-${idx}`}
+        type="button"
+        onClick={() => selectedCandidate && openDocument(selectedCandidate.userId, doc.type, doc.name)}
+        disabled={!!documentLoading}
+        className="flex items-center gap-2 w-full text-left p-3 rounded-xl bg-slate-50 hover:bg-orange-50 border border-slate-100 hover:border-orange-200 transition-colors group"
+      >
+        <span className="w-10 h-10 rounded-lg bg-slate-200 group-hover:bg-orange-100 flex items-center justify-center shrink-0">
+          <svg className="w-5 h-5 text-slate-600 group-hover:text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+        </span>
+        <div className="flex-1 min-w-0">
+          <span className="text-slate-500 text-xs uppercase block">
+            {doc.type === 'cv' ? 'Lebenslauf (CV)' : doc.type === 'certificate' ? 'Zertifikat' : 'Qualifikation'}
+          </span>
+          <span className="font-bold text-slate-900 truncate block">{doc.name}</span>
+        </div>
+      </button>
+    ));
+
   const submitInquiry = async () => {
     if (!selectedCandidate) return;
     setInquiryError('');
@@ -861,7 +884,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
           }}
           title={selectedCandidateCodeName ? `Kandidatenprofil · ${selectedCandidateCodeName}` : 'Kandidatenprofil'}
         >
-          <div className="space-y-5">
+          <div className="space-y-5 min-w-0 max-w-full">
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               <div className="bg-slate-50 p-4 rounded-xl"><p className="text-xs font-black text-slate-400 uppercase">Erfahrung</p><p className="text-lg font-bold text-slate-900">{selectedCandidate.experienceYears} Jahre</p></div>
               <div className="bg-slate-50 p-4 rounded-xl"><p className="text-xs font-black text-slate-400 uppercase">Verfügbarkeit</p><p className="text-lg font-bold text-slate-900">{selectedCandidate.availability || '-'}</p></div>
@@ -873,16 +896,9 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
                 Dokumente werden geladen...
               </div>
             ) : selectedDocsList.length > 0 && (
-              <div>
+              <div id="mp-candidate-docs" className="scroll-mt-4">
                 <p className="text-xs font-black text-slate-400 uppercase mb-3">Dokumente (anklicken zum Ansehen)</p>
-                <div className="space-y-2">
-                  {selectedDocsList.map((doc, idx) => (
-                    <button key={idx} type="button" onClick={() => openDocument(selectedCandidate.userId, doc.type, doc.name)} disabled={!!documentLoading} className="flex items-center gap-2 w-full text-left p-3 rounded-xl bg-slate-50 hover:bg-orange-50 border border-slate-100 hover:border-orange-200 transition-colors group">
-                      <span className="w-10 h-10 rounded-lg bg-slate-200 group-hover:bg-orange-100 flex items-center justify-center shrink-0"><svg className="w-5 h-5 text-slate-600 group-hover:text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg></span>
-                      <div className="flex-1 min-w-0"><span className="text-slate-500 text-xs uppercase block">{doc.type === 'cv' ? 'Lebenslauf (CV)' : doc.type === 'certificate' ? 'Zertifikat' : 'Qualifikation'}</span><span className="font-bold text-slate-900 truncate block">{doc.name}</span></div>
-                    </button>
-                  ))}
-                </div>
+                <div className="space-y-2">{renderMarketplaceDocButtons()}</div>
               </div>
             )}
 
@@ -897,9 +913,23 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               </div>
             )}
 
-            {selectedCandidate.about && <div className="bg-slate-50 p-4 rounded-xl"><p className="text-xs font-black text-slate-400 uppercase mb-2">Über</p><p className="break-words [overflow-wrap:anywhere] text-slate-700">{anonymizeCandidateText(selectedCandidate.about, selectedCandidate, selectedCandidateCodeName)}</p></div>}
+            {selectedCandidate.about && (
+              <div className="min-w-0 max-w-full overflow-hidden rounded-xl bg-slate-50 p-4">
+                <p className="text-xs font-black text-slate-400 uppercase mb-2">Über</p>
+                <p className="text-sm text-slate-700 [overflow-wrap:anywhere] break-words [word-break:break-word] max-sm:break-all max-sm:max-h-[min(45vh,18rem)] max-sm:overflow-y-auto sm:max-h-none">
+                  {anonymizeCandidateText(selectedCandidate.about, selectedCandidate, selectedCandidateCodeName)}
+                </p>
+              </div>
+            )}
             {(selectedCandidate.skills?.length ?? 0) > 0 && <div><p className="text-xs font-black text-slate-400 uppercase mb-3">Skills</p><div className="flex flex-wrap gap-2">{selectedCandidate.skills.map(skill => <Badge key={skill} variant="orange">{highlightText(skill, debouncedSearch)}</Badge>)}</div></div>}
             {(selectedCandidate.boostedKeywords?.length ?? 0) > 0 && <div><p className="text-xs font-black text-slate-400 uppercase mb-3">Spezialisierungen</p><div className="flex flex-wrap gap-2">{selectedCandidate.boostedKeywords.map(kw => <Badge key={kw} variant="dark">{kw}</Badge>)}</div></div>}
+
+            {!loadingSelectedDocs && selectedDocsList.length > 0 && (
+              <div className="border-t border-slate-100 pt-5 sm:hidden">
+                <p className="text-xs font-black text-slate-400 uppercase mb-3">PDF-Dokumente</p>
+                <div className="space-y-2">{renderMarketplaceDocButtons()}</div>
+              </div>
+            )}
 
             <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-4">
               <Button

@@ -154,7 +154,7 @@ export const Modal: React.FC<{ isOpen: boolean, onClose: () => void, title: stri
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
         </div>
-        <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain p-6 [-webkit-overflow-scrolling:touch]">
+        <div className="min-h-0 min-w-0 flex-1 touch-pan-y overflow-y-auto overflow-x-hidden overscroll-contain p-6 [-webkit-overflow-scrolling:touch]">
           {children}
         </div>
       </div>
