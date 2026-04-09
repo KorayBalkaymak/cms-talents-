@@ -1762,7 +1762,6 @@ class ApiClient {
     if (!row) {
       return { userId, certificates: [], qualifications: [] };
     }
-    const profile = await this.fetchProfileRow(userId);
     const hasEditedColumns =
       Object.prototype.hasOwnProperty.call(row as object, 'edited_cv_pdf') ||
       Object.prototype.hasOwnProperty.call(row as object, 'edited_certificates') ||
@@ -1784,16 +1783,7 @@ class ApiClient {
           qualifications: localEdited.qualifications || [],
         };
       }
-      if (profile?.is_published) {
-        const original = this.documentRowToDocuments(row, false);
-        if (
-          original.cvPdf?.name ||
-          (original.certificates?.length ?? 0) > 0 ||
-          (original.qualifications?.length ?? 0) > 0
-        ) {
-          return original;
-        }
-      }
+      // Marktplatz: niemals Original-PDFs – nur bearbeitete Versionen (DB oder lokal beim Recruiter).
       return { userId, certificates: [], qualifications: [] };
     }
     // Datenschutz: ohne edited_* Spalten im Marktplatz nur lokal bearbeitete Versionen anzeigen.
@@ -1805,16 +1795,6 @@ class ApiClient {
         certificates: localEdited.certificates || [],
         qualifications: localEdited.qualifications || [],
       };
-    }
-    if (profile?.is_published) {
-      const original = this.documentRowToDocuments(row, false);
-      if (
-        original.cvPdf?.name ||
-        (original.certificates?.length ?? 0) > 0 ||
-        (original.qualifications?.length ?? 0) > 0
-      ) {
-        return original;
-      }
     }
     return { userId, certificates: [], qualifications: [] };
   }

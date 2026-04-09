@@ -908,14 +908,14 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               </div>
             ) : selectedDocsList.length > 0 ? (
               <div id="mp-candidate-docs" className="order-2 scroll-mt-4">
-                <p className="text-xs font-black text-slate-400 uppercase mb-3">Dokumente (anklicken zum Ansehen)</p>
+                <p className="text-xs font-black text-slate-400 uppercase mb-3">Bearbeitete PDFs (anklicken zum Ansehen)</p>
                 <div className="space-y-2">{renderMarketplaceDocButtons()}</div>
               </div>
             ) : (
               <div className="order-2 rounded-xl border border-amber-100 bg-amber-50/70 p-4 text-xs font-medium leading-relaxed text-slate-700">
                 <p className="font-black uppercase tracking-wide text-slate-500">PDF-Dokumente</p>
                 <p className="mt-2">
-                  Für dieses Profil liegen derzeit keine einsehbaren PDFs vor, oder die Freigabe durch das Team steht noch aus.
+                  Im Marktplatz werden nur <span className="font-semibold text-slate-800">vom Recruiter-Team bearbeitete</span> PDFs angezeigt. Derzeit sind keine solchen Dokumente freigegeben.
                 </p>
               </div>
             )}
