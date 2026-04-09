@@ -705,12 +705,20 @@ class ApiClient {
     }
 
     // edited docs for marktplatz
-    if (row.edited_cv_pdf?.name) items.push({ type: 'cv', name: row.edited_cv_pdf.name });
-    for (const cert of row.edited_certificates || []) {
-      if (cert?.name) items.push({ type: 'certificate', name: cert.name });
+    if (row.edited_cv_pdf && (row.edited_cv_pdf.data || row.edited_cv_pdf.name)) {
+      items.push({ type: 'cv', name: row.edited_cv_pdf.name?.trim() || 'Lebenslauf.pdf' });
     }
-    for (const qual of row.edited_qualifications || []) {
-      if (qual?.name) items.push({ type: 'qualification', name: qual.name });
+    for (let i = 0; i < (row.edited_certificates || []).length; i += 1) {
+      const cert = row.edited_certificates![i];
+      if (cert && (cert.data || cert.name)) {
+        items.push({ type: 'certificate', name: cert.name?.trim() || `Zertifikat-${i + 1}.pdf` });
+      }
+    }
+    for (let i = 0; i < (row.edited_qualifications || []).length; i += 1) {
+      const qual = row.edited_qualifications![i];
+      if (qual && (qual.data || qual.name)) {
+        items.push({ type: 'qualification', name: qual.name?.trim() || `Qualifikation-${i + 1}.pdf` });
+      }
     }
     return items;
   }
@@ -737,6 +745,45 @@ class ApiClient {
       certificates: source.certificates || [],
       qualifications: source.qualifications || [],
     };
+  }
+
+  /** Bearbeitete PDFs: Inhalt zählt über data; Name kann fehlen (sonst zeigt der Marktplatz nichts). */
+  private marketplaceDocsHavePayload(docs: CandidateDocuments): boolean {
+    if (docs.cvPdf?.data && String(docs.cvPdf.data).trim()) return true;
+    if ((docs.certificates || []).some((c) => c?.data && String(c.data).trim())) return true;
+    if ((docs.qualifications || []).some((q) => q?.data && String(q.data).trim())) return true;
+    return false;
+  }
+
+  private normalizeMarketplaceDocumentNames(docs: CandidateDocuments): CandidateDocuments {
+    const out: CandidateDocuments = {
+      userId: docs.userId,
+      certificates: [],
+      qualifications: [],
+    };
+    if (docs.cvPdf?.data && String(docs.cvPdf.data).trim()) {
+      out.cvPdf = {
+        data: docs.cvPdf.data,
+        name: (docs.cvPdf.name && docs.cvPdf.name.trim()) || 'Lebenslauf.pdf',
+      };
+    }
+    (docs.certificates || []).forEach((c, i) => {
+      if (c?.data && String(c.data).trim()) {
+        out.certificates!.push({
+          data: c.data,
+          name: (c.name && c.name.trim()) || `Zertifikat-${i + 1}.pdf`,
+        });
+      }
+    });
+    (docs.qualifications || []).forEach((q, i) => {
+      if (q?.data && String(q.data).trim()) {
+        out.qualifications!.push({
+          data: q.data,
+          name: (q.name && q.name.trim()) || `Qualifikation-${i + 1}.pdf`,
+        });
+      }
+    });
+    return out;
   }
 
   private parseInquiryCustomerAttachments(raw: unknown): InquiryCustomerAttachment[] | undefined {
@@ -1768,33 +1815,35 @@ class ApiClient {
       Object.prototype.hasOwnProperty.call(row as object, 'edited_qualifications');
     if (hasEditedColumns) {
       const edited = this.documentRowToDocuments(row, true);
-      const hasEditedContent = !!(
-        edited.cvPdf?.name ||
-        (edited.certificates?.length ?? 0) > 0 ||
-        (edited.qualifications?.length ?? 0) > 0
-      );
-      if (hasEditedContent) return edited;
+      if (this.marketplaceDocsHavePayload(edited)) {
+        return this.normalizeMarketplaceDocumentNames(edited);
+      }
       const localEdited = this.readLocalEditedDocuments(userId);
       if (localEdited) {
-        return {
+        const merged: CandidateDocuments = {
           userId,
           cvPdf: localEdited.cvPdf || undefined,
           certificates: localEdited.certificates || [],
           qualifications: localEdited.qualifications || [],
         };
+        if (this.marketplaceDocsHavePayload(merged)) {
+          return this.normalizeMarketplaceDocumentNames(merged);
+        }
       }
-      // Marktplatz: niemals Original-PDFs – nur bearbeitete Versionen (DB oder lokal beim Recruiter).
       return { userId, certificates: [], qualifications: [] };
     }
     // Datenschutz: ohne edited_* Spalten im Marktplatz nur lokal bearbeitete Versionen anzeigen.
     const localEdited = this.readLocalEditedDocuments(userId);
     if (localEdited) {
-      return {
+      const merged: CandidateDocuments = {
         userId,
         cvPdf: localEdited.cvPdf || undefined,
         certificates: localEdited.certificates || [],
         qualifications: localEdited.qualifications || [],
       };
+      if (this.marketplaceDocsHavePayload(merged)) {
+        return this.normalizeMarketplaceDocumentNames(merged);
+      }
     }
     return { userId, certificates: [], qualifications: [] };
   }

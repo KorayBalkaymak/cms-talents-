@@ -295,9 +295,14 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const selectedDocsList = useMemo(() => {
     if (!selectedCandidateDocs) return [];
     const items: { type: string; name: string }[] = [];
-    if (selectedCandidateDocs.cvPdf?.name) items.push({ type: 'cv', name: selectedCandidateDocs.cvPdf.name });
-    for (const doc of selectedCandidateDocs.certificates || []) if (doc?.name) items.push({ type: 'certificate', name: doc.name });
-    for (const doc of selectedCandidateDocs.qualifications || []) if (doc?.name) items.push({ type: 'qualification', name: doc.name });
+    const cv = selectedCandidateDocs.cvPdf;
+    if (cv?.data?.trim()) items.push({ type: 'cv', name: cv.name?.trim() || 'Lebenslauf.pdf' });
+    (selectedCandidateDocs.certificates || []).forEach((doc, i) => {
+      if (doc?.data?.trim()) items.push({ type: 'certificate', name: doc.name?.trim() || `Zertifikat-${i + 1}.pdf` });
+    });
+    (selectedCandidateDocs.qualifications || []).forEach((doc, i) => {
+      if (doc?.data?.trim()) items.push({ type: 'qualification', name: doc.name?.trim() || `Qualifikation-${i + 1}.pdf` });
+    });
     return items;
   }, [selectedCandidateDocs]);
 
@@ -906,18 +911,13 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               <div className="order-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs font-bold text-slate-600">
                 Dokumente werden geladen...
               </div>
-            ) : selectedDocsList.length > 0 ? (
-              <div id="mp-candidate-docs" className="order-2 scroll-mt-4">
-                <p className="text-xs font-black text-slate-400 uppercase mb-3">Bearbeitete PDFs (anklicken zum Ansehen)</p>
-                <div className="space-y-2">{renderMarketplaceDocButtons()}</div>
-              </div>
             ) : (
-              <div className="order-2 rounded-xl border border-amber-100 bg-amber-50/70 p-4 text-xs font-medium leading-relaxed text-slate-700">
-                <p className="font-black uppercase tracking-wide text-slate-500">PDF-Dokumente</p>
-                <p className="mt-2">
-                  Im Marktplatz werden nur <span className="font-semibold text-slate-800">vom Recruiter-Team bearbeitete</span> PDFs angezeigt. Derzeit sind keine solchen Dokumente freigegeben.
-                </p>
-              </div>
+              selectedDocsList.length > 0 && (
+                <div id="mp-candidate-docs" className="order-2 scroll-mt-4">
+                  <p className="text-xs font-black text-slate-400 uppercase mb-3">Dokumente (anklicken zum Ansehen)</p>
+                  <div className="space-y-2">{renderMarketplaceDocButtons()}</div>
+                </div>
+              )
             )}
 
             {(selectedCandidate.address || selectedCandidate.zipCode || selectedCandidate.phoneNumber) && (
