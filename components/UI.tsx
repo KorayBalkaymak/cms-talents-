@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
@@ -151,7 +152,7 @@ export const Modal: React.FC<{
   contentRef?: React.Ref<HTMLDivElement>;
 }> = ({ isOpen, onClose, title, children, contentRef }) => {
   if (!isOpen) return null;
-  return (
+  const modal = (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 sm:items-center sm:p-4">
       {/* max-sm: feste Sheet-Höhe, damit flex-1 + overflow-y auf iOS zuverlässig scrollt */}
       <div className="flex h-[min(92dvh,100dvh)] max-h-[min(92dvh,100dvh)] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl border border-slate-200 bg-white shadow-xl sm:h-auto sm:max-h-[90dvh] sm:rounded-xl">
@@ -170,6 +171,10 @@ export const Modal: React.FC<{
       </div>
     </div>
   );
+  if (typeof document !== 'undefined') {
+    return createPortal(modal, document.body);
+  }
+  return modal;
 };
 
 export const Toast: React.FC<{ message: string, type: 'success' | 'error', onClose: () => void }> = ({ message, type, onClose }) => {

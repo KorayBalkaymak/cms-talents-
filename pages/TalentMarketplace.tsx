@@ -628,7 +628,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col gap-10" style={{ contain: 'paint' }}>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col gap-10">
         <div className="w-full rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50/90 via-white to-slate-50/80 p-4 shadow-sm ring-1 ring-orange-100/60 sm:p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
@@ -913,7 +913,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               </div>
             ) : (
               selectedDocsList.length > 0 && (
-                <div id="mp-candidate-docs" className="scroll-mt-4 hidden lg:block">
+                <div id="mp-candidate-docs" className="scroll-mt-4">
                   <p className="text-xs font-black text-slate-400 uppercase mb-3">Bearbeitete PDFs (anklicken zum Ansehen)</p>
                   <div className="space-y-2">{renderMarketplaceDocButtons()}</div>
                 </div>
@@ -950,13 +950,6 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
                 <p className="text-sm text-slate-700 [overflow-wrap:anywhere] break-words [word-break:break-word] max-sm:break-all max-sm:max-h-[min(45vh,18rem)] max-sm:overflow-y-auto sm:max-h-none">
                   {anonymizeCandidateText(selectedCandidate.about, selectedCandidate, selectedCandidateCodeName)}
                 </p>
-              </div>
-            )}
-
-            {!loadingSelectedDocs && selectedDocsList.length > 0 && (
-              <div id="mp-candidate-docs-mobile" className="border-t border-slate-200 pt-5 lg:hidden">
-                <p className="text-xs font-black text-slate-400 uppercase mb-3">Bearbeitete PDFs (anklicken zum Ansehen)</p>
-                <div className="space-y-2">{renderMarketplaceDocButtons()}</div>
               </div>
             )}
 
