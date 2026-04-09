@@ -868,21 +868,6 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               {selectedCandidate.birthYear && <div className="bg-slate-50 p-4 rounded-xl"><p className="text-xs font-black text-slate-400 uppercase">Geburtsjahr</p><p className="text-lg font-bold text-slate-900">{selectedCandidate.birthYear}</p></div>}
             </div>
 
-            {(selectedCandidate.address || selectedCandidate.zipCode || selectedCandidate.phoneNumber) && (
-              <div className="bg-slate-50 p-4 rounded-xl">
-                <p className="text-xs font-black text-slate-400 uppercase mb-2">Kontakt / Adresse</p>
-                <div className="space-y-1 text-slate-700">
-                  {selectedCandidate.address && <p>{selectedCandidate.address}</p>}
-                  {(selectedCandidate.zipCode || selectedCandidate.city) && <p>{[selectedCandidate.zipCode, selectedCandidate.city].filter(Boolean).join(' ')}</p>}
-                  {selectedCandidate.phoneNumber && <p><a href={`tel:${selectedCandidate.phoneNumber}`} className="text-orange-600 hover:underline">{selectedCandidate.phoneNumber}</a></p>}
-                </div>
-              </div>
-            )}
-
-            {selectedCandidate.about && <div className="bg-slate-50 p-4 rounded-xl"><p className="text-xs font-black text-slate-400 uppercase mb-2">Über</p><p className="break-words [overflow-wrap:anywhere] text-slate-700">{anonymizeCandidateText(selectedCandidate.about, selectedCandidate, selectedCandidateCodeName)}</p></div>}
-            {(selectedCandidate.skills?.length ?? 0) > 0 && <div><p className="text-xs font-black text-slate-400 uppercase mb-3">Skills</p><div className="flex flex-wrap gap-2">{selectedCandidate.skills.map(skill => <Badge key={skill} variant="orange">{highlightText(skill, debouncedSearch)}</Badge>)}</div></div>}
-            {(selectedCandidate.boostedKeywords?.length ?? 0) > 0 && <div><p className="text-xs font-black text-slate-400 uppercase mb-3">Spezialisierungen</p><div className="flex flex-wrap gap-2">{selectedCandidate.boostedKeywords.map(kw => <Badge key={kw} variant="dark">{kw}</Badge>)}</div></div>}
-
             {loadingSelectedDocs ? (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs font-bold text-slate-600">
                 Dokumente werden geladen...
@@ -900,6 +885,21 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
                 </div>
               </div>
             )}
+
+            {(selectedCandidate.address || selectedCandidate.zipCode || selectedCandidate.phoneNumber) && (
+              <div className="bg-slate-50 p-4 rounded-xl">
+                <p className="text-xs font-black text-slate-400 uppercase mb-2">Kontakt / Adresse</p>
+                <div className="space-y-1 text-slate-700">
+                  {selectedCandidate.address && <p>{selectedCandidate.address}</p>}
+                  {(selectedCandidate.zipCode || selectedCandidate.city) && <p>{[selectedCandidate.zipCode, selectedCandidate.city].filter(Boolean).join(' ')}</p>}
+                  {selectedCandidate.phoneNumber && <p><a href={`tel:${selectedCandidate.phoneNumber}`} className="text-orange-600 hover:underline">{selectedCandidate.phoneNumber}</a></p>}
+                </div>
+              </div>
+            )}
+
+            {selectedCandidate.about && <div className="bg-slate-50 p-4 rounded-xl"><p className="text-xs font-black text-slate-400 uppercase mb-2">Über</p><p className="break-words [overflow-wrap:anywhere] text-slate-700">{anonymizeCandidateText(selectedCandidate.about, selectedCandidate, selectedCandidateCodeName)}</p></div>}
+            {(selectedCandidate.skills?.length ?? 0) > 0 && <div><p className="text-xs font-black text-slate-400 uppercase mb-3">Skills</p><div className="flex flex-wrap gap-2">{selectedCandidate.skills.map(skill => <Badge key={skill} variant="orange">{highlightText(skill, debouncedSearch)}</Badge>)}</div></div>}
+            {(selectedCandidate.boostedKeywords?.length ?? 0) > 0 && <div><p className="text-xs font-black text-slate-400 uppercase mb-3">Spezialisierungen</p><div className="flex flex-wrap gap-2">{selectedCandidate.boostedKeywords.map(kw => <Badge key={kw} variant="dark">{kw}</Badge>)}</div></div>}
 
             <div className="rounded-xl border border-orange-100 bg-orange-50/50 p-4">
               <Button
@@ -959,17 +959,28 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
 
       {/* PDF-Viewer: Dokument im gleichen Fenster anzeigen (keine weiße Seite) */}
       {pdfViewerUrl && (
-        <div className="fixed inset-0 z-[100] flex flex-col bg-slate-900">
-          <div className="flex items-center justify-between px-4 py-3 bg-slate-800 border-b border-slate-700 shrink-0">
-            <span className="text-white font-bold truncate pr-4">{pdfViewerTitle}</span>
+        <div className="fixed inset-0 z-[100] flex flex-col bg-slate-900 pb-[env(safe-area-inset-bottom)]">
+          <div className="flex flex-wrap items-center justify-end gap-2 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] bg-slate-800 border-b border-slate-700 shrink-0">
+            <span className="text-white font-bold truncate min-w-0 flex-1 basis-full sm:basis-auto sm:flex-none">{pdfViewerTitle}</span>
+            <a
+              href={pdfViewerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg bg-orange-600 px-3 py-2 text-xs font-bold uppercase tracking-wide text-white hover:bg-orange-500 shrink-0"
+            >
+              In neuem Tab
+            </a>
             <Button variant="ghost" size="sm" className="text-white hover:bg-slate-700 shrink-0" onClick={closePdfViewer}>
               Schließen
             </Button>
           </div>
+          <p className="md:hidden text-center text-[11px] leading-snug text-slate-400 px-3 py-2 bg-slate-950/80 border-b border-slate-800">
+            Zeigt die Vorschau nichts? „In neuem Tab“ öffnet die PDF zuverlässig auf dem Handy.
+          </p>
           <iframe
             src={pdfViewerUrl}
             title={pdfViewerTitle}
-            className="flex-1 w-full min-h-0 border-0"
+            className="flex-1 w-full min-h-0 border-0 touch-pan-y"
           />
         </div>
       )}
