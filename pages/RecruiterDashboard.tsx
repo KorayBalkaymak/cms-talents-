@@ -1,6 +1,20 @@
 
 import React, { useState, useEffect, useMemo, useDeferredValue, useCallback, useRef } from 'react';
-import { User, UserRole, CandidateProfile, CandidateStatus, CandidateDocuments, CandidateDocumentsForRecruiter, CandidateInquiry, RegisteredUserListItem, RecruiterAvailabilityEvent, RecruiterTeamMessage, getActiveInquiryEditing, getActiveRecruiterEditing } from '../types';
+import {
+  User,
+  UserRole,
+  CandidateProfile,
+  CandidateStatus,
+  CandidateDocuments,
+  CandidateDocumentsForRecruiter,
+  CandidateInquiry,
+  MatchResult,
+  RegisteredUserListItem,
+  RecruiterAvailabilityEvent,
+  RecruiterTeamMessage,
+  getActiveInquiryEditing,
+  getActiveRecruiterEditing,
+} from '../types';
 import { CmsLogoHeroBadge } from '../components/CmsLogoHeroBadge';
 import { Button, Avatar, Badge, Modal, Tabs, EmptyState, Input, Select, Textarea, FileUpload } from '../components/UI';
 import HourlyRateCalculator from '../components/HourlyRateCalculator';
@@ -149,6 +163,30 @@ function parseMarketplaceInquiryDetails(message: string | undefined): { label: s
     if (hit) fromLines.push({ label: hit.label, value: line.slice(hit.prefix.length).trim() });
   }
   return fromLines.length >= 2 ? fromLines : null;
+}
+
+/** Suchstring aus Marktplatz-Anfrage (Suchprofil, Position, … oder Freitext) für Abgleich mit Talent-Profilen. */
+function buildInquiryMatchingQuery(inq: CandidateInquiry): string {
+  const raw = (inq.message || '').trim();
+  if (!raw) return '';
+  const rows = parseMarketplaceInquiryDetails(raw);
+  if (rows && rows.length > 0) {
+    const priority = ['Suchprofil', 'Position (Kunde)', 'Projektstandort', 'Projektlaufzeit', 'Budget (EUR)', 'Firma'];
+    const byLabel = new Map(rows.map((r) => [r.label, r.value]));
+    const parts: string[] = [];
+    for (const label of priority) {
+      const v = byLabel.get(label)?.trim();
+      if (v) parts.push(v);
+    }
+    for (const r of rows) {
+      if (!priority.includes(r.label)) {
+        const v = r.value?.trim();
+        if (v) parts.push(v);
+      }
+    }
+    return [...new Set(parts)].join(' ');
+  }
+  return raw;
 }
 
 /** Rotes Ausrufezeichen im Kreis – gleiche Logik wie „Bearbeiten nötig: seit 3+ Tagen offen“ (nicht bei freigegeben + aktiv). */
@@ -794,6 +832,20 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     }
     return list.slice(0, 50);
   }, [matchingQuery, visibleCandidates, deferredSearchTerm]);
+
+  const inquiryMatchById = useMemo(() => {
+    const m = new Map<string, { query: string; ranked: MatchResult[] }>();
+    for (const inq of inquiries) {
+      const q = buildInquiryMatchingQuery(inq);
+      if (!q.trim()) continue;
+      let ranked = rankCandidates(visibleCandidates, q).filter((r) => r.score > 0);
+      if (inq.candidateUserId) {
+        ranked = ranked.filter((r) => r.candidate.userId !== inq.candidateUserId);
+      }
+      m.set(inq.id, { query: q, ranked: ranked.slice(0, 10) });
+    }
+    return m;
+  }, [inquiries, visibleCandidates]);
 
   const filteredCandidateSubmittedCount = useMemo(
     () =>
@@ -1776,6 +1828,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       const created = new Date(inq.createdAt);
                       const initials = contactInitialsFromName(inq.contactName);
                       const inquiryDetailRows = parseMarketplaceInquiryDetails(inq.message);
+                      const matchInfo = inquiryMatchById.get(inq.id);
                       return (
                         <li key={inq.id}>
                           <article className="group relative overflow-x-clip rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm transition-all duration-200 hover:border-slate-300/90 hover:shadow-md sm:p-5">
@@ -1841,6 +1894,50 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                         <p className="text-sm leading-relaxed text-slate-600">{inq.message}</p>
                                       </div>
                                     )
+                                  ) : null}
+                                  {matchInfo ? (
+                                    <div className="rounded-xl border border-violet-200/80 bg-gradient-to-br from-violet-50/50 via-white to-slate-50/90 px-3 py-3 shadow-sm ring-1 ring-violet-100/60">
+                                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-900/80">
+                                        Passende Kandidaten zur Anfrage
+                                      </p>
+                                      {matchInfo.ranked.length === 0 ? (
+                                        <p className="text-xs font-medium leading-relaxed text-slate-600">
+                                          Keine automatischen Treffer im sichtbaren Talent-Pool – Begriffe in der Anfrage prüfen oder unter Talents manuell suchen.
+                                        </p>
+                                      ) : (
+                                        <ul className="flex flex-col gap-2">
+                                          {matchInfo.ranked.map(({ candidate: c, score }) => {
+                                            const sugName =
+                                              `${c.firstName} ${c.lastName}`.trim() || c.candidateNumber || 'Kandidat';
+                                            return (
+                                              <li
+                                                key={c.userId}
+                                                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/90 bg-white/95 px-2.5 py-2 shadow-sm"
+                                              >
+                                                <div className="min-w-0 flex-1">
+                                                  <p className="truncate text-sm font-semibold text-slate-900">{sugName}</p>
+                                                  <p className="truncate text-[11px] text-slate-500">
+                                                    {displayProfession(c)} · {c.industry}
+                                                  </p>
+                                                </div>
+                                                <div className="flex shrink-0 items-center gap-2">
+                                                  <Badge variant="slate">Score {score}</Badge>
+                                                  <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="primary"
+                                                    className="h-8 text-[10px] font-black"
+                                                    onClick={() => void handleViewCandidate(c)}
+                                                  >
+                                                    Profil
+                                                  </Button>
+                                                </div>
+                                              </li>
+                                            );
+                                          })}
+                                        </ul>
+                                      )}
+                                    </div>
                                   ) : null}
                                   <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2">
                                     <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Bezogen auf Talent</p>
