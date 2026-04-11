@@ -1459,7 +1459,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         </div>
 
         <header className="relative z-10 flex min-h-0 flex-col gap-3 border-b border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_1px_0_rgba(15,23,42,0.04)] backdrop-blur-sm sm:px-6 md:min-h-[4.25rem] md:flex-row md:items-center md:justify-between md:gap-4 md:py-3">
-          <div className="order-2 flex min-w-0 w-full flex-1 flex-col gap-3 md:order-1 md:flex-row md:items-center md:gap-5">
+          {/* Mobil: Tabs zuerst (sofort sichtbar), Suche darunter — vorher war die Suche order-1 und verdrängte die Tab-Leiste nach unten. */}
+          <div className="order-1 flex min-w-0 w-full flex-1 flex-col gap-3 md:order-1 md:flex-row md:items-center md:gap-5">
             <div className="hidden shrink-0 md:block">
               <h1 className="text-lg font-semibold tracking-tight text-slate-900">Dashboard</h1>
               <p className="text-xs font-medium text-slate-500">Recruiting · CMS Talents</p>
@@ -1469,7 +1470,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               aria-hidden
             />
             <nav
-              className="flex min-w-0 w-full flex-1 touch-pan-x flex-nowrap items-center gap-1 overflow-x-auto overflow-y-hidden overscroll-x-contain rounded-2xl border border-slate-200/70 bg-gradient-to-b from-white to-slate-50/90 p-1 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.1)] ring-1 ring-slate-900/[0.04] [-ms-overflow-style:none] [scrollbar-width:none] md:flex-wrap md:overflow-x-visible md:overflow-y-visible [&::-webkit-scrollbar]:hidden"
+              className="flex min-w-0 w-full flex-1 touch-pan-x flex-nowrap items-center gap-1 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-px-2 rounded-2xl border border-slate-200/70 bg-gradient-to-b from-white to-slate-50/90 p-1 pb-1.5 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.1)] ring-1 ring-slate-900/[0.04] [-ms-overflow-style:none] [scrollbar-width:thin] md:flex-wrap md:overflow-x-visible md:overflow-y-visible md:pb-1 md:[scrollbar-width:none] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300/90 md:[&::-webkit-scrollbar]:hidden"
               aria-label="Hauptnavigation"
             >
               <button
@@ -1492,7 +1493,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
                 }`}
               >
-                Externe Interessen
+                <span className="hidden sm:inline">Externe </span>
+                Interessen
               </button>
               <button
                 type="button"
@@ -1514,7 +1516,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
                 }`}
               >
-                Kandidat hinzufügen
+                <span className="hidden sm:inline">Kandidat hinzufügen</span>
+                <span className="sm:hidden">+ Kandidat</span>
               </button>
               <button
                 type="button"
@@ -1541,7 +1544,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </nav>
           </div>
           <div
-            className={`relative order-1 w-full min-w-0 md:order-2 md:max-w-sm md:flex-1 lg:max-w-md ${activeView === 'calculator' || activeView === 'planner' ? 'hidden' : ''}`}
+            className={`relative order-2 w-full min-w-0 md:order-2 md:max-w-sm md:flex-1 lg:max-w-md ${activeView === 'calculator' || activeView === 'planner' ? 'hidden' : ''}`}
           >
             <input
               type="search"
