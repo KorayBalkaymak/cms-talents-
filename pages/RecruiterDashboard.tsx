@@ -327,9 +327,14 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   }, [onRefreshCandidates]);
 
   const initialInquiriesLoadAttempts = useRef(0);
+  const inquiriesRequestSeq = useRef(0);
 
   const applyLoadedInquiries = useCallback((list: CandidateInquiry[]) => {
-    setInquiries(list);
+    setInquiries((prev) => {
+      // Mobile: Ein späterer leerer Request darf bereits geladene Daten nicht überschreiben.
+      if (list.length === 0 && prev.length > 0) return prev;
+      return list;
+    });
     initialInquiriesLoadAttempts.current += 1;
     if (list.length > 0 || initialInquiriesLoadAttempts.current >= 2) {
       setHasSettledInitialInquiriesLoad(true);
@@ -337,12 +342,16 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   }, []);
 
   const loadInquiries = useCallback(async () => {
+    const requestSeq = ++inquiriesRequestSeq.current;
     setIsLoadingInquiries(true);
     try {
       const list = await candidateService.getInquiries();
+      if (requestSeq !== inquiriesRequestSeq.current) return;
       applyLoadedInquiries(list);
     } finally {
-      setIsLoadingInquiries(false);
+      if (requestSeq === inquiriesRequestSeq.current) {
+        setIsLoadingInquiries(false);
+      }
     }
   }, [applyLoadedInquiries]);
 
@@ -366,10 +375,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     let cancelled = false;
     let initialRetryId: number | null = null;
     const safeLoad = async () => {
+      const requestSeq = ++inquiriesRequestSeq.current;
       setIsLoadingInquiries(true);
       try {
         const list = await candidateService.getInquiries();
         if (!cancelled) {
+          if (requestSeq !== inquiriesRequestSeq.current) return;
           applyLoadedInquiries(list);
           if (list.length === 0 && initialInquiriesLoadAttempts.current < 2) {
             initialRetryId = window.setTimeout(() => {
@@ -378,7 +389,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           }
         }
       } finally {
-        if (!cancelled) setIsLoadingInquiries(false);
+        if (!cancelled && requestSeq === inquiriesRequestSeq.current) setIsLoadingInquiries(false);
       }
     };
     void safeLoad();
