@@ -250,6 +250,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [plannerSelectedDate, setPlannerSelectedDate] = useState(() => toLocalDateKey(new Date()));
+  const plannerChatScrollRef = useRef<HTMLDivElement>(null);
+  const plannerResumeRefreshAt = useRef(0);
 
   useEffect(() => {
     if (!selectedCandidate) return;
@@ -420,6 +422,39 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       window.clearInterval(id);
     };
   }, [activeView]);
+
+  /** Handy: nach Tab-Wechsel / App-Rückkehr Kalender & Chat neu laden (sonst veralteter Stand). */
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (activeView !== 'planner') return;
+      const now = Date.now();
+      if (now - plannerResumeRefreshAt.current < 1500) return;
+      plannerResumeRefreshAt.current = now;
+      void loadPlannerData();
+    };
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    window.addEventListener('online', refresh);
+    return () => {
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('online', refresh);
+    };
+  }, [activeView, loadPlannerData]);
+
+  /** Chat: neueste Nachrichten unten anzeigen (mobil sonst „alter“ Stand sichtbar). */
+  useEffect(() => {
+    if (activeView !== 'planner') return;
+    const el = plannerChatScrollRef.current;
+    if (!el) return;
+    const run = () => {
+      el.scrollTop = el.scrollHeight;
+    };
+    run();
+    const id = window.requestAnimationFrame(run);
+    return () => window.cancelAnimationFrame(id);
+  }, [activeView, plannerMessages, plannerLoading]);
 
   const handleCreatePlannerEvent = async () => {
     setPlannerError(null);
@@ -1806,10 +1841,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </div>
           ) : activeView === 'planner' ? (
             <div className="space-y-4">
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div className="border-b border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-5 py-4 text-white">
-                  <h3 className="text-sm font-black uppercase tracking-widest">Verfügbarkeitskalender & Team-Chat</h3>
-                  <p className="mt-1 text-xs font-medium text-slate-300">
+              <div className="overflow-x-clip rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="border-b border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-4 py-3 text-white sm:px-5 sm:py-4">
+                  <h3 className="text-xs font-black uppercase tracking-widest sm:text-sm">Verfügbarkeitskalender & Team-Chat</h3>
+                  <p className="mt-1 text-[11px] font-medium text-slate-300 sm:text-xs">
                     Gemeinsame Übersicht für Aufgaben, Termine und schnelle Abstimmung aller Recruiter.
                   </p>
                 </div>
@@ -1820,10 +1855,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 )}
                 <div className="grid grid-cols-1 gap-4 p-4">
                   <section className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-                    <div className="mx-auto w-full max-w-5xl rounded-2xl border border-[#1b2a47] bg-[#101B31] p-4 shadow-sm">
-                      <div className="mb-4 flex items-center justify-between">
-                        <h4 className="text-3xl font-black capitalize tracking-tight text-white">{plannerMonthLabel}</h4>
-                        <div className="flex items-center gap-2">
+                    <div className="mx-auto w-full max-w-5xl rounded-2xl border border-[#1b2a47] bg-[#101B31] p-2 shadow-sm sm:p-4">
+                      <div className="mb-3 flex flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between">
+                        <h4 className="text-xl font-black capitalize tracking-tight text-white sm:text-3xl">{plannerMonthLabel}</h4>
+                        <div className="flex shrink-0 items-center gap-2">
                           <button
                             type="button"
                             className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
@@ -1843,9 +1878,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-7 gap-2">
+                      <div className="w-full overflow-x-auto overflow-y-visible [-webkit-overflow-scrolling:touch]">
+                        <div className="min-w-[300px] sm:min-w-0">
+                      <div className="grid grid-cols-7 gap-0.5 sm:gap-2">
                         {PLANNER_WEEKDAY_LABELS.map((d) => (
-                          <div key={d} className="rounded-lg py-2 text-center text-sm font-black tracking-wide text-slate-200">{d}</div>
+                          <div key={d} className="rounded-lg py-1.5 text-center text-[10px] font-black tracking-wide text-slate-200 sm:py-2 sm:text-sm">{d}</div>
                         ))}
                         {plannerCalendarDays.map((cell) => {
                           const events = plannerEventsByDate.get(cell.key) || [];
@@ -1858,7 +1895,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                 setPlannerSelectedDate(cell.key);
                                 setPlannerEventForm((s) => ({ ...s, scheduledDate: cell.key, scheduledTime: s.scheduledTime || '09:00' }));
                               }}
-                              className={`min-h-[78px] rounded-2xl border p-2 text-left transition ${
+                              className={`min-h-[52px] rounded-xl border p-1 text-left transition sm:min-h-[78px] sm:rounded-2xl sm:p-2 ${
                                 isSelected
                                   ? 'border-orange-300 bg-white shadow-sm ring-2 ring-orange-200'
                                   : cell.inMonth
@@ -1867,7 +1904,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               }`}
                             >
                               <div className="mb-1 flex items-center justify-between">
-                                <span className={`text-sm font-black ${cell.isToday ? 'text-orange-600' : 'text-slate-800'}`}>
+                                <span className={`text-[11px] font-black sm:text-sm ${cell.isToday ? 'text-orange-600' : 'text-slate-800'}`}>
                                   {cell.date.getDate()}
                                 </span>
                                 {events.length > 0 ? (
@@ -1887,6 +1924,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             </button>
                           );
                         })}
+                      </div>
+                        </div>
                       </div>
                     </div>
 
@@ -1971,7 +2010,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   </section>
 
                   <section className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-4">
-                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div className="overflow-x-clip rounded-2xl border border-slate-200 bg-white shadow-sm">
                       <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-900 to-slate-800 px-4 py-3 text-white">
                         <div>
                           <h4 className="text-sm font-black uppercase tracking-widest">Recruiter-Teamchat</h4>
@@ -1979,7 +2018,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         </div>
                       </div>
                       <div className="bg-gradient-to-b from-slate-50 to-white p-3">
-                        <div className="max-h-[64vh] space-y-2 overflow-y-auto pr-1">
+                        <div
+                          ref={plannerChatScrollRef}
+                          className="max-h-[min(50vh,420px)] space-y-2 overflow-y-auto overflow-x-hidden overscroll-y-contain pr-1 sm:max-h-[64vh]"
+                        >
                           {plannerLoading && plannerMessages.length === 0 ? (
                             <p className="py-6 text-center text-xs font-semibold text-slate-500">Chat wird geladen…</p>
                           ) : plannerMessages.length === 0 ? (
