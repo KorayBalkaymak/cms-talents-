@@ -2360,9 +2360,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 <div className="relative">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-orange-400/95">Intelligente Zuordnung</p>
                   <h2 className="mt-2 text-xl font-bold tracking-tight text-white sm:text-2xl">KI-Matching</h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
-                    Passende Kandidaten werden zu offenen Rollen und Kundenanforderungen vorgeschlagen.
-                  </p>
                 </div>
               </div>
               <div className="space-y-5 p-4 sm:p-6">
