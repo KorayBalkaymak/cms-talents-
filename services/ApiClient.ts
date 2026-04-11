@@ -234,12 +234,24 @@ function isCustomerAttachmentsColumnMissing(message?: string): boolean {
   return m.includes('customer_attachments') && (m.includes('column') || m.includes('schema'));
 }
 
+/** Nur echte „Tabelle fehlt“-Fälle – nicht RLS/Permission (die erwähnen oft auch den Tabellennamen). */
 function isRecruiterPlannerSchemaMissing(message?: string): boolean {
-  const m = (message || '').toLowerCase();
+  const t = (message || '').toLowerCase();
+  const looksLikeMissingRelation =
+    t.includes('does not exist') ||
+    t.includes('could not find the table') ||
+    t.includes('could not find the relation') ||
+    t.includes('undefined_table') ||
+    t.includes('42p01');
+  if (
+    looksLikeMissingRelation &&
+    (t.includes('recruiter_chat_messages') || t.includes('recruiter_availability_events'))
+  ) {
+    return true;
+  }
   return (
-    m.includes('recruiter_chat_messages') ||
-    m.includes('recruiter_availability_events') ||
-    (m.includes('schema cache') && (m.includes('chat') || m.includes('availability')))
+    t.includes('schema cache') &&
+    (t.includes('recruiter_chat_messages') || t.includes('recruiter_availability_events'))
   );
 }
 
