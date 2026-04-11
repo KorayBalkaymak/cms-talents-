@@ -47,6 +47,12 @@ const SECTION_RENDER_HINT: React.CSSProperties = {
 
 const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavigate, onSave, onLogout }) => {
   const [formData, setFormData] = useState<CandidateProfile>(profile);
+  /** Freies Tippen der Berufserfahrung (ohne sofortiges Zurücksetzen auf 0 wie bei type=number). */
+  const [experienceYearsInput, setExperienceYearsInput] = useState(() =>
+    profile.experienceYears !== undefined && profile.experienceYears !== null
+      ? String(profile.experienceYears)
+      : ''
+  );
   const [documents, setDocuments] = useState<CandidateDocuments>({
     userId: profile.userId,
     certificates: [],
@@ -69,6 +75,11 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
   // Nach Speichern liefert der Parent die Server-Antwort (z. B. isPublished false) — Formular angleichen
   useEffect(() => {
     setFormData(profile);
+    setExperienceYearsInput(
+      profile.experienceYears !== undefined && profile.experienceYears !== null
+        ? String(profile.experienceYears)
+        : ''
+    );
   }, [profile.userId, profile.updatedAt]);
 
   // Load documents on mount
@@ -98,6 +109,31 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
       return;
     }
     setFormData(prev => ({ ...prev, [name]: Number.parseInt(value, 10) || 0 }));
+  };
+
+  const handleExperienceYearsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 3);
+    setExperienceYearsInput(digits);
+    if (digits === '') {
+      setFormData((prev) => ({ ...prev, experienceYears: 0 }));
+    } else {
+      const n = Number.parseInt(digits, 10);
+      if (Number.isFinite(n)) {
+        setFormData((prev) => ({ ...prev, experienceYears: Math.min(99, Math.max(0, n)) }));
+      }
+    }
+  };
+
+  const handleExperienceYearsBlur = () => {
+    if (experienceYearsInput.trim() === '') {
+      setExperienceYearsInput('0');
+      setFormData((prev) => ({ ...prev, experienceYears: 0 }));
+      return;
+    }
+    const n = Number.parseInt(experienceYearsInput.replace(/\D/g, ''), 10);
+    const clamped = Number.isFinite(n) ? Math.min(99, Math.max(0, n)) : 0;
+    setExperienceYearsInput(String(clamped));
+    setFormData((prev) => ({ ...prev, experienceYears: clamped }));
   };
 
   const currentWorkUmkreisOption = (() => {
@@ -597,12 +633,14 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
                   <RequiredBadge />
                 </label>
                 <Input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
                   name="experienceYears"
-                  value={formData.experienceYears}
-                  onChange={handleNumberChange}
-                  min="0"
-                  max="50"
+                  value={experienceYearsInput}
+                  onChange={handleExperienceYearsChange}
+                  onBlur={handleExperienceYearsBlur}
+                  placeholder="z. B. 5"
                   className="h-9 rounded-xl text-sm sm:h-10"
                 />
               </div>
