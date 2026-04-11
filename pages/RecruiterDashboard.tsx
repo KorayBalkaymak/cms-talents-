@@ -1575,15 +1575,15 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-slate-50/50 p-3 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:p-6 sm:pb-8"
         >
           {activeView === 'inquiries' ? (
-            <div className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)]">
-              <div className="relative overflow-hidden border-b border-white/10 bg-gradient-to-br from-slate-900 via-[#0f172a] to-slate-950 px-5 py-6 sm:px-8 sm:py-8">
+            <div className="overflow-x-clip rounded-3xl border border-slate-200/90 bg-white shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)]">
+              <div className="relative overflow-x-clip border-b border-white/10 bg-gradient-to-br from-slate-900 via-[#0f172a] to-slate-950 px-4 py-4 sm:px-8 sm:py-8">
                 <div className="pointer-events-none absolute -right-16 -top-24 h-48 w-48 rounded-full bg-orange-500/15 blur-3xl" aria-hidden />
                 <div className="pointer-events-none absolute -bottom-20 -left-10 h-40 w-40 rounded-full bg-sky-500/10 blur-3xl" aria-hidden />
                 <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                   <div className="min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-orange-400/95">Talent-Marktplatz</p>
                     <h2 className="mt-2 text-xl font-bold tracking-tight text-white sm:text-2xl">Externe Interessen</h2>
-                    <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-400">
+                    <p className="mt-2 hidden max-w-xl text-sm leading-relaxed text-slate-400 sm:block">
                       Anfragen von Kunden und Interessenten zu Profilen im Marktplatz – zentral bearbeiten, kontaktieren und zuordnen.
                     </p>
                   </div>
@@ -1653,16 +1653,16 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       const inquiryDetailRows = parseMarketplaceInquiryDetails(inq.message);
                       return (
                         <li key={inq.id}>
-                          <article className="group relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm transition-all duration-200 hover:border-slate-300/90 hover:shadow-md sm:p-5">
+                          <article className="group relative overflow-x-clip rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm transition-all duration-200 hover:border-slate-300/90 hover:shadow-md sm:p-5">
                             <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:justify-between lg:gap-6">
-                              <div className="flex min-w-0 flex-1 gap-4">
+                              <div className="flex min-h-0 min-w-0 w-full flex-1 gap-4">
                                 <div
                                   className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 text-sm font-bold text-white shadow-md shadow-orange-500/25 ring-1 ring-white/20"
                                   aria-hidden
                                 >
                                   {initials}
                                 </div>
-                                <div className="min-w-0 flex-1 space-y-3">
+                                <div className="min-h-0 min-w-0 flex-1 space-y-3 [overflow-wrap:anywhere]">
                                   <div className="flex flex-wrap items-start justify-between gap-2">
                                     <div>
                                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Interessent</p>
@@ -1692,10 +1692,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                       {inq.contactPhone}
                                     </span>
                                   </div>
-                                  <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2">
-                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Bezogen auf Talent</p>
-                                    <p className="mt-0.5 font-semibold text-slate-800">{candidateLabel}</p>
-                                  </div>
                                   {inq.message ? (
                                     inquiryDetailRows ? (
                                       <div className="rounded-xl border border-orange-100/90 bg-gradient-to-br from-orange-50/50 via-white to-slate-50/80 px-3 py-3 shadow-sm ring-1 ring-orange-100/50">
@@ -1721,6 +1717,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                       </div>
                                     )
                                   ) : null}
+                                  <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2">
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Bezogen auf Talent</p>
+                                    <p className="mt-0.5 font-semibold text-slate-800">{candidateLabel}</p>
+                                  </div>
                                   {(inq.customerAttachments?.length ?? 0) > 0 ? (
                                     <div className="rounded-xl border border-sky-100/90 bg-gradient-to-br from-sky-50/80 via-white to-slate-50/80 px-3 py-3 shadow-sm ring-1 ring-sky-100/60">
                                       <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-sky-900/80">
