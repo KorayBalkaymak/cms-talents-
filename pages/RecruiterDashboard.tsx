@@ -416,7 +416,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     void poll();
     const id = window.setInterval(() => {
       void poll();
-    }, 10000);
+    }, 4000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
@@ -440,6 +440,24 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       document.removeEventListener('visibilitychange', refresh);
       window.removeEventListener('focus', refresh);
       window.removeEventListener('online', refresh);
+    };
+  }, [activeView, loadPlannerData]);
+
+  /** Echtzeit: neue Chat-Zeilen von anderen Recruiter-Sessions sofort laden (benötigt Realtime in Supabase). */
+  useEffect(() => {
+    if (activeView !== 'planner') return;
+    const channel = supabase
+      .channel('recruiter-team-chat')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'recruiter_chat_messages' },
+        () => {
+          void loadPlannerData();
+        }
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
     };
   }, [activeView, loadPlannerData]);
 
@@ -508,8 +526,14 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     if (!msg) return;
     try {
       setPlannerMessageSending(true);
-      await candidateService.createRecruiterTeamMessage(msg);
+      const created = await candidateService.createRecruiterTeamMessage(msg);
       setPlannerMessageDraft('');
+      setPlannerMessages((prev) => {
+        if (prev.some((m) => m.id === created.id)) return prev;
+        return [...prev, created].sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      });
       await loadPlannerData();
     } catch (e) {
       setPlannerError(e instanceof Error ? e.message : 'Nachricht konnte nicht gesendet werden.');

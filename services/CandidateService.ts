@@ -229,8 +229,8 @@ class CandidateService {
     return await api.getRecruiterTeamMessages(limit);
   }
 
-  async createRecruiterTeamMessage(message: string): Promise<void> {
-    await api.createRecruiterTeamMessage(message);
+  async createRecruiterTeamMessage(message: string): Promise<RecruiterTeamMessage> {
+    return await api.createRecruiterTeamMessage(message);
   }
 }
 

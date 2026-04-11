@@ -668,6 +668,53 @@ class ApiClient {
     return (data as DocumentRow | null) ?? null;
   }
 
+  /**
+   * Einzelnes PDF-Slot aus candidate_documents JSONB (edited_* oder Basis).
+   * Abweichende Keys (fileName), doppelt codierter JSON-String, normales Objekt.
+   */
+  private parsePdfSlot(raw: unknown): { name: string; data: string } | null {
+    let v: unknown = raw;
+    if (v == null) return null;
+
+    if (typeof v === 'string') {
+      const t = v.trim();
+      if (!t) return null;
+      try {
+        v = JSON.parse(t);
+      } catch {
+        return null;
+      }
+      if (typeof v === 'string') {
+        try {
+          v = JSON.parse(v);
+        } catch {
+          return null;
+        }
+      }
+    }
+
+    if (typeof v !== 'object' || v === null || Array.isArray(v)) return null;
+    const o = v as Record<string, unknown>;
+    const dataRaw = o.data ?? o.content;
+    const nameRaw = o.name ?? o.fileName ?? o.filename;
+    if (typeof dataRaw !== 'string' || !dataRaw.trim()) return null;
+    const name =
+      typeof nameRaw === 'string' && nameRaw.trim()
+        ? nameRaw.trim()
+        : 'Dokument.pdf';
+    return { name, data: dataRaw };
+  }
+
+  private parsePdfSlotArray(raw: unknown): { name: string; data: string }[] {
+    if (!Array.isArray(raw)) return [];
+    const out: { name: string; data: string }[] = [];
+    for (const item of raw) {
+      const slot = this.parsePdfSlot(item);
+      if (slot) out.push(slot);
+    }
+    return out;
+  }
+
   private documentsToList(
     row: DocumentRow | null | undefined,
     useEdited: boolean
@@ -704,22 +751,17 @@ class ApiClient {
       return items;
     }
 
-    // edited docs for marktplatz
-    if (row.edited_cv_pdf && (row.edited_cv_pdf.data || row.edited_cv_pdf.name)) {
-      items.push({ type: 'cv', name: row.edited_cv_pdf.name?.trim() || 'Lebenslauf.pdf' });
+    // edited docs for marktplatz (nur Slots mit PDF-Daten)
+    const editedCv = this.parsePdfSlot(row.edited_cv_pdf);
+    if (editedCv) {
+      items.push({ type: 'cv', name: editedCv.name });
     }
-    for (let i = 0; i < (row.edited_certificates || []).length; i += 1) {
-      const cert = row.edited_certificates![i];
-      if (cert && (cert.data || cert.name)) {
-        items.push({ type: 'certificate', name: cert.name?.trim() || `Zertifikat-${i + 1}.pdf` });
-      }
-    }
-    for (let i = 0; i < (row.edited_qualifications || []).length; i += 1) {
-      const qual = row.edited_qualifications![i];
-      if (qual && (qual.data || qual.name)) {
-        items.push({ type: 'qualification', name: qual.name?.trim() || `Qualifikation-${i + 1}.pdf` });
-      }
-    }
+    this.parsePdfSlotArray(row.edited_certificates).forEach((cert, i) => {
+      items.push({ type: 'certificate', name: cert.name || `Zertifikat-${i + 1}.pdf` });
+    });
+    this.parsePdfSlotArray(row.edited_qualifications).forEach((qual, i) => {
+      items.push({ type: 'qualification', name: qual.name || `Qualifikation-${i + 1}.pdf` });
+    });
     return items;
   }
 
@@ -727,23 +769,24 @@ class ApiClient {
     row: DocumentRow | null | undefined,
     useEdited: boolean
   ): CandidateDocuments {
-    const source = useEdited
-      ? {
-          cv_pdf: row?.edited_cv_pdf ?? null,
-          certificates: row?.edited_certificates ?? [],
-          qualifications: row?.edited_qualifications ?? [],
-        }
-      : {
-          cv_pdf: row?.cv_pdf ?? null,
-          certificates: row?.certificates ?? [],
-          qualifications: row?.qualifications ?? [],
-        };
-
+    if (!row) {
+      return { userId: '', certificates: [], qualifications: [] };
+    }
+    if (useEdited) {
+      const cvPdf = this.parsePdfSlot(row.edited_cv_pdf) || undefined;
+      return {
+        userId: row.user_id || '',
+        cvPdf,
+        certificates: this.parsePdfSlotArray(row.edited_certificates),
+        qualifications: this.parsePdfSlotArray(row.edited_qualifications),
+      };
+    }
+    const cvPdf = this.parsePdfSlot(row.cv_pdf) || undefined;
     return {
-      userId: row?.user_id || '',
-      cvPdf: source.cv_pdf || undefined,
-      certificates: source.certificates || [],
-      qualifications: source.qualifications || [],
+      userId: row.user_id || '',
+      cvPdf,
+      certificates: this.parsePdfSlotArray(row.certificates),
+      qualifications: this.parsePdfSlotArray(row.qualifications),
     };
   }
 
@@ -784,15 +827,6 @@ class ApiClient {
       }
     });
     return out;
-  }
-
-  /** Liegt in den edited_*-Spalten mindestens ein PDF (data)? */
-  private rowHasEditedPdfData(row: DocumentRow): boolean {
-    const cv = row.edited_cv_pdf;
-    if (cv && String(cv.data || '').trim()) return true;
-    if ((row.edited_certificates || []).some((c) => c && String(c.data || '').trim())) return true;
-    if ((row.edited_qualifications || []).some((q) => q && String(q.data || '').trim())) return true;
-    return false;
   }
 
   private parseInquiryCustomerAttachments(raw: unknown): InquiryCustomerAttachment[] | undefined {
@@ -1839,18 +1873,8 @@ class ApiClient {
       }
     }
 
-    // 3) Legacy: Wenn edited_*-Spalten beim Speichern fehlten, landet die Recruiter-Marktplatz-Version
-    //    in cv_pdf / certificates / qualifications (siehe updateEditedDocuments). edited_* bleiben leer.
-    //    Nur für veröffentlichte Profile und nur wenn edited_* wirklich keinen PDF-Inhalt haben.
-    if (!this.rowHasEditedPdfData(row)) {
-      const fromBase = this.documentRowToDocuments(row, false);
-      if (this.marketplaceDocsHavePayload(fromBase)) {
-        const profile = await this.fetchProfileRow(userId);
-        if (profile?.is_published) {
-          return this.normalizeMarketplaceDocumentNames(fromBase);
-        }
-      }
-    }
+    // Kein Fallback auf cv_pdf / certificates / qualifications: dort liegen Kandidaten-Originale —
+    // der Marktplatz soll ausschließlich recruiter-bearbeitete PDFs (edited_* / lokal) zeigen.
 
     return { userId, certificates: [], qualifications: [] };
   }
@@ -2395,7 +2419,7 @@ class ApiClient {
     return merged.slice(-Math.min(500, Math.max(20, limit)));
   }
 
-  async createRecruiterTeamMessage(message: string): Promise<void> {
+  async createRecruiterTeamMessage(message: string): Promise<RecruiterTeamMessage> {
     const current = await this.getSessionUser();
     if (!current || !isRecruiterRole(current.role)) throw new Error('Keine Berechtigung für diese Aktion.');
     const payload = {
@@ -2403,7 +2427,11 @@ class ApiClient {
       sender_id: current.id,
       sender_label: recruiterClaimLabelFromUser(current),
     };
-    const { error } = await supabase.from('recruiter_chat_messages').insert(payload);
+    const { data, error } = await supabase
+      .from('recruiter_chat_messages')
+      .insert(payload)
+      .select('id,message,created_at,sender_id,sender_label')
+      .single();
     if (error) {
       if (isRecruiterPlannerSchemaMissing(error.message)) {
         const local = this.readLocalRecruiterChatMessages();
@@ -2415,10 +2443,27 @@ class ApiClient {
           senderLabel: payload.sender_label,
         };
         this.writeLocalRecruiterChatMessages([...local, next]);
-        return;
+        return next;
       }
       throw new Error(error.message);
     }
+    const row = data as RecruiterChatMessageRow;
+    const created: RecruiterTeamMessage = {
+      id: row.id,
+      message: row.message,
+      createdAt: row.created_at,
+      senderId: row.sender_id,
+      senderLabel: row.sender_label,
+    };
+    const prev = this.readLocalRecruiterChatMessages();
+    if (!prev.some((m) => m.id === created.id)) {
+      this.writeLocalRecruiterChatMessages(
+        [...prev, created].sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        )
+      );
+    }
+    return created;
   }
 
   async createExternalCandidate(input: {
