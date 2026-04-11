@@ -234,25 +234,21 @@ function isCustomerAttachmentsColumnMissing(message?: string): boolean {
   return m.includes('customer_attachments') && (m.includes('column') || m.includes('schema'));
 }
 
-/** Nur echte „Tabelle fehlt“-Fälle – nicht RLS/Permission (die erwähnen oft auch den Tabellennamen). */
+/** Nur echte „Tabelle fehlt“-Fälle – nicht RLS (die Meldung nennt oft auch die Tabelle). */
 function isRecruiterPlannerSchemaMissing(message?: string): boolean {
   const t = (message || '').toLowerCase();
+  const mentionsPlannerTable =
+    t.includes('recruiter_chat_messages') || t.includes('recruiter_availability_events');
+  if (!mentionsPlannerTable) return false;
   const looksLikeMissingRelation =
     t.includes('does not exist') ||
     t.includes('could not find the table') ||
+    t.includes('could not find table') ||
     t.includes('could not find the relation') ||
+    (t.includes('could not find') && t.includes('schema cache')) ||
     t.includes('undefined_table') ||
     t.includes('42p01');
-  if (
-    looksLikeMissingRelation &&
-    (t.includes('recruiter_chat_messages') || t.includes('recruiter_availability_events'))
-  ) {
-    return true;
-  }
-  return (
-    t.includes('schema cache') &&
-    (t.includes('recruiter_chat_messages') || t.includes('recruiter_availability_events'))
-  );
+  return looksLikeMissingRelation;
 }
 
 function isEditedDocumentsSchemaMissing(message?: string): boolean {
@@ -2439,11 +2435,10 @@ class ApiClient {
       sender_id: current.id,
       sender_label: recruiterClaimLabelFromUser(current),
     };
-    const { data, error } = await supabase
+    const { data: insertedRows, error } = await supabase
       .from('recruiter_chat_messages')
       .insert(payload)
-      .select('id,message,created_at,sender_id,sender_label')
-      .single();
+      .select('id,message,created_at,sender_id,sender_label');
     if (error) {
       if (isRecruiterPlannerSchemaMissing(error.message)) {
         const local = this.readLocalRecruiterChatMessages();
@@ -2459,7 +2454,17 @@ class ApiClient {
       }
       throw new Error(error.message);
     }
-    const row = data as RecruiterChatMessageRow;
+    let row = (insertedRows && insertedRows[0]) as RecruiterChatMessageRow | undefined;
+    if (!row) {
+      const fresh = await this.getRecruiterTeamMessages(80);
+      const match = [...fresh]
+        .reverse()
+        .find((m) => m.senderId === current.id && m.message === payload.message);
+      if (match) {
+        return match;
+      }
+      throw new Error('Nachricht wurde gespeichert, die Anzeige konnte nicht geladen werden. Bitte „Kalender & Chat“ kurz wechseln oder die Seite neu laden.');
+    }
     const created: RecruiterTeamMessage = {
       id: row.id,
       message: row.message,
