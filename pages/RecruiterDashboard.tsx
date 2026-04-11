@@ -2366,20 +2366,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 </div>
               </div>
               <div className="space-y-5 p-4 sm:p-6">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Offene Rollen</p>
-                    <p className="mt-1.5 text-xs font-medium leading-relaxed text-slate-700">
-                      Rolle, Tech-Stack und Rahmenbedingungen beschreiben – Treffer werden nach Skills, Branche und Profil gewichtet.
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Kundenanforderungen</p>
-                    <p className="mt-1.5 text-xs font-medium leading-relaxed text-slate-700">
-                      Freitext aus Briefing oder Ausschreibung einfügen; optional die Vorschlagsliste mit der Suche oben eingrenzen.
-                    </p>
-                  </div>
-                </div>
                 <Textarea
                   label="Rolle oder Anforderung"
                   labelClassName="text-slate-800"
