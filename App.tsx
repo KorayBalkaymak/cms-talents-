@@ -30,6 +30,31 @@ const resolveInitialPath = () => {
   return '#/';
 };
 
+/** Aktueller Routenpfad (ohne #), direkt aus der URL – vermeidet weiße Screens, wenn React-State kurz hinter dem Hash zurückliegt. */
+function getRoutePathFromWindow(): string {
+  if (window.location.pathname === '/verify-email') {
+    return '/verify-email';
+  }
+  const rawHash = window.location.hash.slice(1);
+  if (rawHash && rawHash !== '/') {
+    const normalized = rawHash.startsWith('/') ? rawHash : `/${rawHash}`;
+    return normalized.split('?')[0];
+  }
+  let pathname = window.location.pathname;
+  if (pathname.endsWith('/') && pathname.length > 1) pathname = pathname.slice(0, -1);
+  if (pathname && pathname !== '/' && pathname !== '/index.html') {
+    return pathname.split('?')[0];
+  }
+  return '/';
+}
+
+const RoutePending: React.FC = () => (
+  <div className="flex min-h-screen flex-col items-center justify-center bg-[#fafafa] px-6">
+    <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-orange-600" aria-hidden />
+    <p className="mt-4 text-sm font-medium text-slate-600">Weiterleitung…</p>
+  </div>
+);
+
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [currentPath, setCurrentPath] = useState(resolveInitialPath());
@@ -121,7 +146,8 @@ const App: React.FC = () => {
 
   // Load public candidates again when someone opens the marketplace directly.
   useEffect(() => {
-    if (!currentPath.startsWith('/talents')) return;
+    const routePath = getRoutePathFromWindow();
+    if (!routePath.startsWith('/talents')) return;
     if (user && (user.role === UserRole.RECRUITER || user.role === UserRole.ADMIN)) return;
     const published = allCandidates.filter(c => c.isPublished && c.status === CandidateStatus.ACTIVE);
     if (published.length === 0) {
@@ -131,7 +157,7 @@ const App: React.FC = () => {
 
   // Refresh recruiter dashboard periodically so deleted records disappear quickly.
   useEffect(() => {
-    const path = currentPath.replace('#', '') || '/';
+    const path = getRoutePathFromWindow();
     const isRecruiterView = path === '/recruiter/dashboard';
     const canSeeAll = !!user && (user.role === UserRole.RECRUITER || user.role === UserRole.ADMIN);
     if (!isRecruiterView || !canSeeAll) return;
@@ -291,14 +317,14 @@ const App: React.FC = () => {
   }
 
   const renderRoute = () => {
-    const path = currentPath.replace('#', '') || '/';
+    const path = getRoutePathFromWindow();
 
     if (path === '/') return <LandingPage onNavigate={navigate} user={user} />;
 
     if (path === '/candidate/auth') {
       if (user && user.role === UserRole.CANDIDATE) {
         navigate('/candidate/profile');
-        return null;
+        return <RoutePending />;
       }
       return <CandidateAuth onAuthSuccess={async (u) => { await handleAuthSuccess(u); navigate('/candidate/profile'); }} />;
     }
@@ -306,7 +332,7 @@ const App: React.FC = () => {
     if (path === '/candidate/profile') {
       if (!user || user.role !== UserRole.CANDIDATE) {
         navigate('/candidate/auth');
-        return null;
+        return <RoutePending />;
       }
       const profile = allCandidates.find(c => c.userId === user.id);
       if (!profile) {
@@ -348,15 +374,22 @@ const App: React.FC = () => {
     if (path === '/recruiter/auth') {
       if (user && (user.role === UserRole.RECRUITER || user.role === UserRole.ADMIN)) {
         navigate('/recruiter/dashboard');
-        return null;
+        return <RoutePending />;
       }
-      return <RecruiterAuth onAuthSuccess={(u) => { setUser(u); navigate('/recruiter/dashboard'); }} />;
+      return (
+        <RecruiterAuth
+          onAuthSuccess={async (u) => {
+            await handleAuthSuccess(u);
+            navigate('/recruiter/dashboard');
+          }}
+        />
+      );
     }
 
     if (path === '/recruiter/dashboard') {
       if (!user || (user.role !== UserRole.RECRUITER && user.role !== UserRole.ADMIN)) {
         navigate('/recruiter/auth');
-        return null;
+        return <RoutePending />;
       }
       return (
         <RecruiterDashboard
