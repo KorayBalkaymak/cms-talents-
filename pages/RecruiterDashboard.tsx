@@ -1458,7 +1458,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           </button>
         </div>
 
-        <header className="relative z-10 flex flex-col gap-3 border-b border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_1px_0_rgba(15,23,42,0.04)] backdrop-blur-sm sm:px-6 md:h-[4.25rem] md:flex-row md:items-center md:justify-between md:gap-4 md:py-0">
+        <header className="relative z-10 flex min-h-0 flex-col gap-3 border-b border-slate-200/80 bg-white/95 px-4 py-3 shadow-[0_1px_0_rgba(15,23,42,0.04)] backdrop-blur-sm sm:px-6 md:min-h-[4.25rem] md:flex-row md:items-center md:justify-between md:gap-4 md:py-3">
           <div className="order-2 flex min-w-0 w-full flex-1 flex-col gap-3 md:order-1 md:flex-row md:items-center md:gap-5">
             <div className="hidden shrink-0 md:block">
               <h1 className="text-lg font-semibold tracking-tight text-slate-900">Dashboard</h1>
@@ -1469,13 +1469,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               aria-hidden
             />
             <nav
-              className="flex min-w-0 w-full flex-1 flex-wrap items-center gap-1 rounded-2xl border border-slate-200/70 bg-gradient-to-b from-white to-slate-50/90 p-1 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.1)] ring-1 ring-slate-900/[0.04]"
+              className="flex min-w-0 w-full flex-1 touch-pan-x flex-nowrap items-center gap-1 overflow-x-auto overflow-y-hidden overscroll-x-contain rounded-2xl border border-slate-200/70 bg-gradient-to-b from-white to-slate-50/90 p-1 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.1)] ring-1 ring-slate-900/[0.04] [-ms-overflow-style:none] [scrollbar-width:none] md:flex-wrap md:overflow-x-visible md:overflow-y-visible [&::-webkit-scrollbar]:hidden"
               aria-label="Hauptnavigation"
             >
               <button
                 type="button"
                 onClick={() => setActiveView('talents')}
-                className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
+                className={`inline-flex shrink-0 min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'talents'
                     ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
                     : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
@@ -1486,7 +1486,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               <button
                 type="button"
                 onClick={() => setActiveView('inquiries')}
-                className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
+                className={`inline-flex shrink-0 min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'inquiries'
                     ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
                     : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
@@ -1497,7 +1497,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               <button
                 type="button"
                 onClick={() => setActiveView('planner')}
-                className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
+                className={`inline-flex shrink-0 min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'planner'
                     ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
                     : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
@@ -1508,7 +1508,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               <button
                 type="button"
                 onClick={() => setActiveView('external')}
-                className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
+                className={`inline-flex shrink-0 min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'external'
                     ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
                     : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
@@ -1519,7 +1519,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               <button
                 type="button"
                 onClick={() => setActiveView('users')}
-                className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
+                className={`inline-flex shrink-0 min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'users'
                     ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
                     : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
@@ -1530,7 +1530,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               <button
                 type="button"
                 onClick={() => setActiveView('calculator')}
-                className={`inline-flex min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
+                className={`inline-flex shrink-0 min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'calculator'
                     ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
                     : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
