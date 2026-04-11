@@ -231,6 +231,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [recruiterEditingHeartbeatCandidateId, setRecruiterEditingHeartbeatCandidateId] = useState<string | null>(null);
   const [inquiries, setInquiries] = useState<CandidateInquiry[]>([]);
   const [isLoadingInquiries, setIsLoadingInquiries] = useState(false);
+  const [hasSettledInitialInquiriesLoad, setHasSettledInitialInquiriesLoad] = useState(false);
   const [registeredUsers, setRegisteredUsers] = useState<RegisteredUserListItem[]>([]);
   const [loadingRegisteredUsers, setLoadingRegisteredUsers] = useState(false);
   const [registeredUsersError, setRegisteredUsersError] = useState<string | null>(null);
@@ -325,15 +326,25 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     return () => window.clearInterval(id);
   }, [onRefreshCandidates]);
 
+  const initialInquiriesLoadAttempts = useRef(0);
+
+  const applyLoadedInquiries = useCallback((list: CandidateInquiry[]) => {
+    setInquiries(list);
+    initialInquiriesLoadAttempts.current += 1;
+    if (list.length > 0 || initialInquiriesLoadAttempts.current >= 2) {
+      setHasSettledInitialInquiriesLoad(true);
+    }
+  }, []);
+
   const loadInquiries = useCallback(async () => {
     setIsLoadingInquiries(true);
     try {
       const list = await candidateService.getInquiries();
-      setInquiries(list);
+      applyLoadedInquiries(list);
     } finally {
       setIsLoadingInquiries(false);
     }
-  }, []);
+  }, [applyLoadedInquiries]);
 
   /** Nach Auth-Hydration / Token-Refresh erneut laden (mobil: erster Fetch oft vor gültigem JWT). */
   useEffect(() => {
@@ -353,11 +364,19 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   /** Externe Interessen: schneller Poll in dieser Ansicht + Reload bei Tab-/App-Rückkehr (Handy/Tablet/Desktop). */
   useEffect(() => {
     let cancelled = false;
+    let initialRetryId: number | null = null;
     const safeLoad = async () => {
       setIsLoadingInquiries(true);
       try {
         const list = await candidateService.getInquiries();
-        if (!cancelled) setInquiries(list);
+        if (!cancelled) {
+          applyLoadedInquiries(list);
+          if (list.length === 0 && initialInquiriesLoadAttempts.current < 2) {
+            initialRetryId = window.setTimeout(() => {
+              if (!cancelled) void safeLoad();
+            }, 900);
+          }
+        }
       } finally {
         if (!cancelled) setIsLoadingInquiries(false);
       }
@@ -367,9 +386,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     const id = window.setInterval(safeLoad, pollMs);
     return () => {
       cancelled = true;
+      if (initialRetryId !== null) window.clearTimeout(initialRetryId);
       window.clearInterval(id);
     };
-  }, [activeView]);
+  }, [activeView, applyLoadedInquiries]);
 
   const inquiriesResumeRefreshAt = useRef(0);
   useEffect(() => {
@@ -1791,7 +1811,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   </div>
                 )}
 
-                {isLoadingInquiries && inquiries.length === 0 ? (
+                {!hasSettledInitialInquiriesLoad || (isLoadingInquiries && inquiries.length === 0) ? (
                   <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
                     <div className="h-10 w-10 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" aria-hidden />
                     <p className="mt-4 text-sm font-semibold text-slate-700">Anfragen werden geladen…</p>
