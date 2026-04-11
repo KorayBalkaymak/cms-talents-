@@ -10,6 +10,7 @@ import { documentService } from '../services/DocumentService';
 import { recruiterRoleFromEmail } from '../services/ApiClient';
 import { COPPER_PANEL } from '../constants/copperTheme';
 import { supabase } from '../utils/supabase';
+import { rankCandidates } from '../services/SearchService';
 
 interface RecruiterDashboardProps {
   user: User;
@@ -169,7 +170,11 @@ function StaleNeedsAttentionIcon({ title }: { title: string }) {
 const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidates, isInitialLoading = false, onAdminAction, onUpdateCandidate, onRefreshCandidates, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [onlyStaleUnedited, setOnlyStaleUnedited] = useState(false);
-  const [activeView, setActiveView] = useState<'talents' | 'inquiries' | 'planner' | 'external' | 'users' | 'calculator'>('talents');
+  const [activeView, setActiveView] = useState<
+    'talents' | 'inquiries' | 'planner' | 'external' | 'users' | 'calculator' | 'matching'
+  >('talents');
+  const [matchingRoleBrief, setMatchingRoleBrief] = useState('');
+  const [matchingQuery, setMatchingQuery] = useState<string | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
   const [candidateDocs, setCandidateDocs] = useState<CandidateDocumentsForRecruiter | null>(null);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
@@ -758,6 +763,37 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         u.id.toLowerCase().includes(term)
     );
   }, [registeredUsers, deferredSearchTerm]);
+
+  const runMatchingSearch = useCallback(() => {
+    const q = matchingRoleBrief.trim();
+    setMatchingQuery(q.length ? q : null);
+  }, [matchingRoleBrief]);
+
+  const matchingRankedResults = useMemo(() => {
+    if (!matchingQuery?.trim()) return [];
+    const ranked = rankCandidates(visibleCandidates, matchingQuery);
+    const term = deferredSearchTerm.trim().toLowerCase();
+    let list = ranked.filter((r) => r.score > 0);
+    if (term) {
+      list = list.filter((r) => {
+        const c = r.candidate;
+        const hay = [
+          c.firstName,
+          c.lastName,
+          c.industry,
+          c.profession || '',
+          ...(c.skills || []),
+          c.about || '',
+          c.city,
+          c.candidateNumber || '',
+        ]
+          .join(' ')
+          .toLowerCase();
+        return hay.includes(term);
+      });
+    }
+    return list.slice(0, 50);
+  }, [matchingQuery, visibleCandidates, deferredSearchTerm]);
 
   const filteredCandidateSubmittedCount = useMemo(
     () =>
@@ -1419,6 +1455,22 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </button>
             <button
               type="button"
+              onClick={() => setActiveView('matching')}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
+                activeView === 'matching'
+                  ? 'border-l-[3px] border-orange-500 bg-white/[0.07] pl-[9px] text-white ring-1 ring-white/10'
+                  : 'border-l-[3px] border-transparent pl-3 text-slate-400 hover:bg-white/[0.04] hover:text-slate-100'
+              }`}
+            >
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${activeView === 'matching' ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-800 text-slate-500'}`}>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                </svg>
+              </span>
+              <span className="leading-snug">KI-Matching</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveView('planner')}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
                 activeView === 'planner'
@@ -1557,6 +1609,18 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               </button>
               <button
                 type="button"
+                onClick={() => setActiveView('matching')}
+                className={`inline-flex shrink-0 min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
+                  activeView === 'matching'
+                    ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
+                    : 'border border-transparent text-slate-600 hover:border-slate-200/80 hover:bg-white hover:text-slate-900'
+                }`}
+              >
+                <span className="hidden sm:inline">KI-Matching</span>
+                <span className="sm:hidden">KI</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveView('planner')}
                 className={`inline-flex shrink-0 min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'planner'
@@ -1611,7 +1675,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               placeholder={
                 activeView === 'users'
                   ? 'Nutzer: E-Mail, Name…'
-                  : 'Suchen nach Name, Branche, Skills…'
+                  : activeView === 'matching'
+                    ? 'Vorschläge nach Name, Branche, Skills filtern…'
+                    : 'Suchen nach Name, Branche, Skills…'
               }
               className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-10 pr-4 text-xs font-bold text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/10 md:h-10 md:py-1.5"
               value={searchTerm}
@@ -2285,6 +2351,99 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   Kandidat freigeben
                 </Button>
               </div>
+            </div>
+          ) : activeView === 'matching' ? (
+            <div className="overflow-x-clip rounded-3xl border border-slate-200/90 bg-white shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)]">
+              <div className="relative overflow-x-clip border-b border-white/10 bg-gradient-to-br from-slate-900 via-[#0f172a] to-slate-950 px-4 py-4 sm:px-8 sm:py-8">
+                <div className="pointer-events-none absolute -right-16 -top-24 h-48 w-48 rounded-full bg-orange-500/15 blur-3xl" aria-hidden />
+                <div className="pointer-events-none absolute -bottom-20 -left-10 h-40 w-40 rounded-full bg-violet-500/10 blur-3xl" aria-hidden />
+                <div className="relative">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-orange-400/95">Intelligente Zuordnung</p>
+                  <h2 className="mt-2 text-xl font-bold tracking-tight text-white sm:text-2xl">KI-Matching</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
+                    Passende Kandidaten werden zu offenen Rollen und Kundenanforderungen vorgeschlagen.
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-5 p-4 sm:p-6">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Offene Rollen</p>
+                    <p className="mt-1.5 text-xs font-medium leading-relaxed text-slate-700">
+                      Rolle, Tech-Stack und Rahmenbedingungen beschreiben – Treffer werden nach Skills, Branche und Profil gewichtet.
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Kundenanforderungen</p>
+                    <p className="mt-1.5 text-xs font-medium leading-relaxed text-slate-700">
+                      Freitext aus Briefing oder Ausschreibung einfügen; optional die Vorschlagsliste mit der Suche oben eingrenzen.
+                    </p>
+                  </div>
+                </div>
+                <Textarea
+                  label="Rolle oder Anforderung"
+                  labelClassName="text-slate-800"
+                  className="min-h-[120px] border-slate-200 bg-white text-slate-900 placeholder:text-slate-400"
+                  value={matchingRoleBrief}
+                  onChange={(e) => setMatchingRoleBrief(e.target.value)}
+                  placeholder="z. B. Senior Entwickler React/TypeScript, Automotive, remote möglich, Englisch fließend…"
+                  rows={5}
+                />
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button type="button" variant="primary" className="h-11 text-xs font-black sm:h-10" onClick={runMatchingSearch}>
+                    Passende Talente vorschlagen
+                  </Button>
+                  <Button type="button" variant="secondary" className="h-11 text-xs font-bold sm:h-10" onClick={() => setActiveView('inquiries')}>
+                    Zu externen Interessen
+                  </Button>
+                </div>
+              </div>
+              {matchingQuery !== null && (
+                <div className="border-t border-slate-200 bg-slate-50/50 px-4 py-5 sm:px-6">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">Trefferliste</h3>
+                  <p className="mt-1 text-xs font-medium text-slate-500">
+                    Sortierung nach Relevanz zur Anforderung (Score). Klick öffnet das Profil.
+                  </p>
+                  {matchingRankedResults.length === 0 ? (
+                    <div className="mt-4">
+                      <EmptyState
+                        title={matchingQuery.trim() ? 'Keine passenden Profile' : 'Anforderung fehlt'}
+                        description={
+                          matchingQuery.trim()
+                            ? 'Formulieren Sie konkrete Skills, Branchen oder Orte – oder wechseln Sie zur Talents-Ansicht.'
+                            : 'Geben Sie oben eine Rolle oder Anforderung ein und starten Sie die Vorschläge erneut.'
+                        }
+                      />
+                    </div>
+                  ) : (
+                    <ul className="mt-4 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
+                      {matchingRankedResults.map(({ candidate: c, score }) => {
+                        const name = `${c.firstName} ${c.lastName}`.trim() || c.candidateNumber || 'Kandidat';
+                        return (
+                          <li key={c.userId} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-slate-900">{name}</p>
+                              <p className="mt-0.5 text-xs font-medium text-slate-600">
+                                {displayProfession(c)} · {c.industry}
+                                {c.city ? ` · ${c.city}` : ''}
+                              </p>
+                              {c.skills?.length ? (
+                                <p className="mt-1 line-clamp-2 text-[11px] text-slate-500">{c.skills.slice(0, 8).join(' · ')}</p>
+                              ) : null}
+                            </div>
+                            <div className="flex shrink-0 flex-row items-center gap-2 sm:flex-col sm:items-end">
+                              <Badge variant="slate">Score {score}</Badge>
+                              <Button type="button" size="sm" variant="primary" className="h-9 text-[11px] font-black" onClick={() => void handleViewCandidate(c)}>
+                                Profil öffnen
+                              </Button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
           ) : activeView === 'users' ? (
             <div className="overflow-hidden rounded-2xl border border-orange-200/40 bg-[#101B31] shadow-sm">
