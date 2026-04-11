@@ -2138,13 +2138,21 @@ class ApiClient {
   async getCandidateInquiries(): Promise<CandidateInquiry[]> {
     const local = this.readLocalInquiries();
     try {
-      // getUser() triggert ggf. einen Netzwerk-Refresh und kann auf Mobilgeräten kurz null liefern,
-      // obwohl die Session bereits aus dem Storage da ist — dann würden Anfragen als [] erscheinen.
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.user) {
-        return [];
+      // Mobile Browser hydratisieren die Supabase-Session gelegentlich leicht verzögert.
+      // Ohne Retry würde der erste Recruiter-Fetch als "leer" enden, obwohl Daten vorhanden sind.
+      let sessionUserId: string | null = null;
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          sessionUserId = session.user.id;
+          break;
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 250));
+      }
+      if (!sessionUserId) {
+        return local;
       }
 
       const { data, error } = await supabase
@@ -2170,6 +2178,11 @@ class ApiClient {
       const merged = Array.from(byId.values()).sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
+      try {
+        window.localStorage.setItem(LOCAL_INQUIRIES_KEY, JSON.stringify(merged.slice(0, 300)));
+      } catch {
+        // ignore local cache write errors
+      }
       return merged.slice(0, 300);
     } catch (e) {
       console.warn('[ApiClient] getCandidateInquiries failed, using local cache', e);
