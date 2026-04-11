@@ -327,7 +327,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   }, [onRefreshCandidates]);
 
   const initialInquiriesLoadAttempts = useRef(0);
-  const inquiriesRequestSeq = useRef(0);
+  const isInquiriesLoadInFlight = useRef(false);
+  const pendingInquiriesReload = useRef(false);
 
   const applyLoadedInquiries = useCallback((list: CandidateInquiry[]) => {
     setInquiries((prev) => {
@@ -342,14 +343,21 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   }, []);
 
   const loadInquiries = useCallback(async () => {
-    const requestSeq = ++inquiriesRequestSeq.current;
+    if (isInquiriesLoadInFlight.current) {
+      pendingInquiriesReload.current = true;
+      return;
+    }
+    isInquiriesLoadInFlight.current = true;
     setIsLoadingInquiries(true);
     try {
       const list = await candidateService.getInquiries();
-      if (requestSeq !== inquiriesRequestSeq.current) return;
       applyLoadedInquiries(list);
     } finally {
-      if (requestSeq === inquiriesRequestSeq.current) {
+      isInquiriesLoadInFlight.current = false;
+      if (pendingInquiriesReload.current) {
+        pendingInquiriesReload.current = false;
+        void loadInquiries();
+      } else {
         setIsLoadingInquiries(false);
       }
     }
@@ -375,21 +383,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     let cancelled = false;
     let initialRetryId: number | null = null;
     const safeLoad = async () => {
-      const requestSeq = ++inquiriesRequestSeq.current;
-      setIsLoadingInquiries(true);
-      try {
-        const list = await candidateService.getInquiries();
-        if (!cancelled) {
-          if (requestSeq !== inquiriesRequestSeq.current) return;
-          applyLoadedInquiries(list);
-          if (list.length === 0 && initialInquiriesLoadAttempts.current < 2) {
-            initialRetryId = window.setTimeout(() => {
-              if (!cancelled) void safeLoad();
-            }, 900);
-          }
-        }
-      } finally {
-        if (!cancelled && requestSeq === inquiriesRequestSeq.current) setIsLoadingInquiries(false);
+      await loadInquiries();
+      if (!cancelled && inquiries.length === 0 && initialInquiriesLoadAttempts.current < 2) {
+        initialRetryId = window.setTimeout(() => {
+          if (!cancelled) void safeLoad();
+        }, 900);
       }
     };
     void safeLoad();
@@ -400,7 +398,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       if (initialRetryId !== null) window.clearTimeout(initialRetryId);
       window.clearInterval(id);
     };
-  }, [activeView, applyLoadedInquiries]);
+  }, [activeView, inquiries.length, loadInquiries]);
 
   const inquiriesResumeRefreshAt = useRef(0);
   useEffect(() => {
