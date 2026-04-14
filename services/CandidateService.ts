@@ -232,6 +232,10 @@ class CandidateService {
   async createRecruiterTeamMessage(message: string): Promise<RecruiterTeamMessage> {
     return await api.createRecruiterTeamMessage(message);
   }
+
+  async deleteRecruiterTeamMessage(messageId: string): Promise<void> {
+    await api.deleteRecruiterTeamMessage(messageId);
+  }
 }
 
 export const candidateService = new CandidateService();

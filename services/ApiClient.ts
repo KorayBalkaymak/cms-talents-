@@ -123,6 +123,9 @@ type ExternalCandidateRow = {
   cv_pdf: { name: string; data: string } | null;
   certificates: { name: string; data: string }[] | null;
   qualifications: { name: string; data: string }[] | null;
+  edited_cv_pdf?: { name: string; data: string } | null;
+  edited_certificates?: { name: string; data: string }[] | null;
+  edited_qualifications?: { name: string; data: string }[] | null;
   is_published: boolean;
   created_at: string;
   updated_at: string;
@@ -220,6 +223,16 @@ function isExternalCandidatesWorkFieldsSchemaMissing(message?: string): boolean 
   return t.includes("work_radius_km") || t.includes("work_area");
 }
 
+function isExternalEditedDocumentsSchemaMissing(message?: string): boolean {
+  const t = (message || '').toLowerCase();
+  return (
+    (t.includes('edited_cv_pdf') ||
+      t.includes('edited_certificates') ||
+      t.includes('edited_qualifications')) &&
+    (t.includes('column') || t.includes('schema cache'))
+  );
+}
+
 function isCandidateInquiriesSchemaMissing(message?: string): boolean {
   const text = (message || '').toLowerCase();
   return (
@@ -249,6 +262,12 @@ function isRecruiterPlannerSchemaMissing(message?: string): boolean {
     t.includes('undefined_table') ||
     t.includes('42p01');
   return looksLikeMissingRelation;
+}
+
+function recruiterPlannerSetupError(): Error {
+  return new Error(
+    'Kalender & Team-Chat sind in Supabase noch nicht vollständig eingerichtet. Bitte das Planner/Chat-SQL inkl. Realtime im Supabase SQL Editor ausführen.'
+  );
 }
 
 function isEditedDocumentsSchemaMissing(message?: string): boolean {
@@ -371,6 +390,30 @@ class ApiClient {
         ...((row.certificates || []).filter((d) => !!d?.name).map((d) => ({ type: 'certificate', name: d.name }))),
         ...((row.qualifications || []).filter((d) => !!d?.name).map((d) => ({ type: 'qualification', name: d.name }))),
       ],
+    };
+  }
+
+  private externalCandidateOriginalDocuments(
+    userId: string,
+    row: { cv_pdf?: unknown; certificates?: unknown; qualifications?: unknown }
+  ): CandidateDocuments {
+    return {
+      userId,
+      cvPdf: this.parsePdfSlot(row.cv_pdf) || undefined,
+      certificates: this.parsePdfSlotArray(row.certificates),
+      qualifications: this.parsePdfSlotArray(row.qualifications),
+    };
+  }
+
+  private externalCandidateEditedDocuments(
+    userId: string,
+    row: { edited_cv_pdf?: unknown; edited_certificates?: unknown; edited_qualifications?: unknown }
+  ): CandidateDocuments {
+    return {
+      userId,
+      cvPdf: this.parsePdfSlot(row.edited_cv_pdf) || undefined,
+      certificates: this.parsePdfSlotArray(row.edited_certificates),
+      qualifications: this.parsePdfSlotArray(row.edited_qualifications),
     };
   }
 
@@ -804,6 +847,44 @@ class ApiClient {
     if ((docs.certificates || []).some((c) => c?.data && String(c.data).trim())) return true;
     if ((docs.qualifications || []).some((q) => q?.data && String(q.data).trim())) return true;
     return false;
+  }
+
+  private async backfillEditedDocumentsToServer(userId: string, data: CandidateDocuments): Promise<void> {
+    const role = await this.getEffectiveSessionRole();
+    if (!role || !isRecruiterRole(role) || !this.marketplaceDocsHavePayload(data)) return;
+
+    const now = new Date().toISOString();
+
+    if (userId.startsWith('external:')) {
+      const externalId = userId.slice('external:'.length);
+      const { error } = await supabase
+        .from('external_candidates')
+        .update({
+          edited_cv_pdf: data.cvPdf || null,
+          edited_certificates: data.certificates || [],
+          edited_qualifications: data.qualifications || [],
+          updated_at: now,
+        })
+        .eq('id', externalId);
+      if (!error) {
+        this.writeLocalEditedDocuments(userId, data);
+      }
+      return;
+    }
+
+    const { error } = await supabase.from('candidate_documents').upsert(
+      {
+        user_id: userId,
+        edited_cv_pdf: data.cvPdf || null,
+        edited_certificates: data.certificates || [],
+        edited_qualifications: data.qualifications || [],
+        updated_at: now,
+      },
+      { onConflict: 'user_id' }
+    );
+    if (!error) {
+      this.writeLocalEditedDocuments(userId, data);
+    }
   }
 
   private normalizeMarketplaceDocumentNames(docs: CandidateDocuments): CandidateDocuments {
@@ -1817,17 +1898,7 @@ class ApiClient {
         .eq('id', externalId)
         .maybeSingle();
       if (data) {
-        const row = data as {
-          cv_pdf?: { name: string; data: string } | null;
-          certificates?: { name: string; data: string }[] | null;
-          qualifications?: { name: string; data: string }[] | null;
-        };
-        return {
-          userId,
-          cvPdf: row.cv_pdf || undefined,
-          certificates: row.certificates || [],
-          qualifications: row.qualifications || [],
-        };
+        return this.externalCandidateOriginalDocuments(userId, data as Record<string, unknown>);
       }
     }
     const profile = await this.fetchProfileRow(userId);
@@ -1854,7 +1925,30 @@ class ApiClient {
 
   async getMarketplaceDocuments(userId: string): Promise<CandidateDocuments | undefined> {
     if (userId.startsWith('external:')) {
-      return this.getDocuments(userId);
+      const externalId = userId.slice('external:'.length);
+      const { data, error } = await supabase
+        .from('external_candidates')
+        .select('edited_cv_pdf,edited_certificates,edited_qualifications')
+        .eq('id', externalId)
+        .maybeSingle();
+
+      if (!error && data) {
+        const edited = this.externalCandidateEditedDocuments(userId, data as Record<string, unknown>);
+        if (this.marketplaceDocsHavePayload(edited)) {
+          return this.normalizeMarketplaceDocumentNames(edited);
+        }
+      }
+
+      if (error && !isExternalEditedDocumentsSchemaMissing(error.message)) {
+        return { userId, certificates: [], qualifications: [] };
+      }
+
+      const localEdited = this.readLocalEditedDocuments(userId);
+      if (localEdited && this.marketplaceDocsHavePayload(localEdited)) {
+        return this.normalizeMarketplaceDocumentNames(localEdited);
+      }
+
+      return { userId, certificates: [], qualifications: [] };
     }
     const row = await this.fetchDocumentRow(userId);
     if (!row) {
@@ -1897,17 +1991,7 @@ class ApiClient {
         .eq('id', externalId)
         .maybeSingle();
       if (data) {
-        const row = data as {
-          cv_pdf?: { name: string; data: string } | null;
-          certificates?: { name: string; data: string }[] | null;
-          qualifications?: { name: string; data: string }[] | null;
-        };
-        return {
-          userId,
-          cvPdf: row.cv_pdf || undefined,
-          certificates: row.certificates || [],
-          qualifications: row.qualifications || [],
-        };
+        return this.externalCandidateOriginalDocuments(userId, data as Record<string, unknown>);
       }
     }
 
@@ -1923,26 +2007,30 @@ class ApiClient {
 
   async getDocumentsForRecruiter(userId: string): Promise<CandidateDocumentsForRecruiter | undefined> {
     if (userId.startsWith('external:')) {
-      // Externe Kandidaten haben derzeit nur „Originale“ (ohne separate edited-Spalten).
       const externalId = userId.slice('external:'.length);
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('external_candidates')
-        .select('cv_pdf,certificates,qualifications')
+        .select('cv_pdf,certificates,qualifications,edited_cv_pdf,edited_certificates,edited_qualifications')
         .eq('id', externalId)
         .maybeSingle();
-      if (!data) return undefined;
-      const row = data as {
-        cv_pdf?: { name: string; data: string } | null;
-        certificates?: { name: string; data: string }[] | null;
-        qualifications?: { name: string; data: string }[] | null;
-      };
-      const original: CandidateDocuments = {
-        userId,
-        cvPdf: row.cv_pdf || undefined,
-        certificates: row.certificates || [],
-        qualifications: row.qualifications || [],
-      };
-      const edited = this.readLocalEditedDocuments(userId) || original;
+      if (error && !isExternalEditedDocumentsSchemaMissing(error.message)) return undefined;
+      const row =
+        (data as Record<string, unknown> | null) ||
+        ((await supabase
+          .from('external_candidates')
+          .select('cv_pdf,certificates,qualifications')
+          .eq('id', externalId)
+          .maybeSingle()).data as Record<string, unknown> | null);
+      if (!row) return undefined;
+      const original = this.externalCandidateOriginalDocuments(userId, row);
+      const editedFromDb = this.externalCandidateEditedDocuments(userId, row);
+      const localEdited = this.readLocalEditedDocuments(userId);
+      if (!this.marketplaceDocsHavePayload(editedFromDb) && localEdited && this.marketplaceDocsHavePayload(localEdited)) {
+        void this.backfillEditedDocumentsToServer(userId, localEdited);
+      }
+      const edited = this.marketplaceDocsHavePayload(editedFromDb)
+        ? editedFromDb
+        : (localEdited || { userId, certificates: [], qualifications: [] });
       return { userId, original, edited };
     }
 
@@ -1954,9 +2042,16 @@ class ApiClient {
       Object.prototype.hasOwnProperty.call(row as object, 'edited_certificates') ||
       Object.prototype.hasOwnProperty.call(row as object, 'edited_qualifications');
     const original = hasEditedColumns ? dbOriginal : (this.readLocalOriginalDocuments(userId) || dbOriginal);
+    const editedFromDb = hasEditedColumns ? this.documentRowToDocuments(row, true) : null;
+    const localEdited = this.readLocalEditedDocuments(userId);
+    if ((!editedFromDb || !this.marketplaceDocsHavePayload(editedFromDb)) && localEdited && this.marketplaceDocsHavePayload(localEdited)) {
+      void this.backfillEditedDocumentsToServer(userId, localEdited);
+    }
     const edited = hasEditedColumns
-      ? this.documentRowToDocuments(row, true)
-      : (this.readLocalEditedDocuments(userId) || original);
+      ? (this.marketplaceDocsHavePayload(editedFromDb || { userId, certificates: [], qualifications: [] })
+          ? (editedFromDb as CandidateDocuments)
+          : (localEdited || { userId, certificates: [], qualifications: [] }))
+      : (localEdited || original);
     return { userId, original, edited };
   }
 
@@ -1966,11 +2061,25 @@ class ApiClient {
       throw new Error('Keine Berechtigung für das Bearbeiten der Dokumente.');
     }
 
-    // Externe Kandidaten haben keine separaten edited_* DB-Spalten.
-    // Daher bearbeiten wir diese Marktplatz-Version lokal getrennt von den Originalen.
     if (userId.startsWith('external:')) {
-      this.writeLocalEditedDocuments(userId, data);
-      return;
+      const externalId = userId.slice('external:'.length);
+      const now = new Date().toISOString();
+      const payload = {
+        edited_cv_pdf: data.cvPdf || null,
+        edited_certificates: data.certificates || [],
+        edited_qualifications: data.qualifications || [],
+        updated_at: now,
+      };
+      const { error } = await supabase
+        .from('external_candidates')
+        .update(payload)
+        .eq('id', externalId);
+      if (!error) return;
+      if (isExternalEditedDocumentsSchemaMissing(error.message)) {
+        this.writeLocalEditedDocuments(userId, data);
+        return;
+      }
+      throw new Error(error.message);
     }
 
     const now = new Date().toISOString();
@@ -2168,8 +2277,12 @@ class ApiClient {
         return local;
       }
       const remote = (data as InquiryRow[]).map((row) => this.inquiryRowToInquiry(row));
+      // Erfolgreicher Server-Fetch ist die Quelle der Wahrheit.
+      // Lokalen Fallback behalten wir nur für unsynchronisierte local-* Einträge,
+      // damit gelöschte Server-Datensätze nicht auf anderen Geräten "wieder auftauchen".
+      const unsyncedLocal = local.filter((x) => x.id.startsWith('local-'));
       const byId = new Map<string, CandidateInquiry>();
-      for (const x of local) {
+      for (const x of unsyncedLocal) {
         byId.set(x.id, x);
       }
       for (const x of remote) {
@@ -2333,7 +2446,6 @@ class ApiClient {
   async getRecruiterAvailabilityEvents(): Promise<RecruiterAvailabilityEvent[]> {
     const current = await this.getSessionUser();
     if (!current || !isRecruiterRole(current.role)) return [];
-    const local = this.readLocalRecruiterEvents();
     const { data, error } = await supabase
       .from('recruiter_availability_events')
       .select('id,title,scheduled_for,note,created_at,created_by,created_by_label')
@@ -2341,7 +2453,7 @@ class ApiClient {
       .limit(500);
     if (error || !data) {
       if (isRecruiterPlannerSchemaMissing(error?.message)) {
-        return local;
+        throw recruiterPlannerSetupError();
       }
       throw new Error(error?.message || 'Kalender konnte nicht geladen werden.');
     }
@@ -2354,11 +2466,8 @@ class ApiClient {
       createdBy: row.created_by,
       createdByLabel: row.created_by_label,
     }));
-    const merged = [...remote, ...local.filter((x) => x.id.startsWith('local-'))]
-      .sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime())
-      .slice(0, 500);
-    this.writeLocalRecruiterEvents(merged);
-    return merged;
+    this.writeLocalRecruiterEvents(remote);
+    return remote;
   }
 
   async createRecruiterAvailabilityEvent(input: {
@@ -2378,18 +2487,7 @@ class ApiClient {
     const { error } = await supabase.from('recruiter_availability_events').insert(payload);
     if (error) {
       if (isRecruiterPlannerSchemaMissing(error.message)) {
-        const local = this.readLocalRecruiterEvents();
-        const next: RecruiterAvailabilityEvent = {
-          id: `local-${crypto.randomUUID()}`,
-          title: payload.title,
-          scheduledFor: input.scheduledFor,
-          note: input.note?.trim() || undefined,
-          createdAt: new Date().toISOString(),
-          createdBy: current.id,
-          createdByLabel: payload.created_by_label,
-        };
-        this.writeLocalRecruiterEvents([...local, next].sort((a, b) => new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime()));
-        return;
+        throw recruiterPlannerSetupError();
       }
       throw new Error(error.message);
     }
@@ -2401,9 +2499,7 @@ class ApiClient {
     const { error } = await supabase.from('recruiter_availability_events').delete().eq('id', eventId);
     if (error) {
       if (isRecruiterPlannerSchemaMissing(error.message)) {
-        const local = this.readLocalRecruiterEvents().filter((x) => x.id !== eventId);
-        this.writeLocalRecruiterEvents(local);
-        return;
+        throw recruiterPlannerSetupError();
       }
       throw new Error(error.message);
     }
@@ -2412,7 +2508,6 @@ class ApiClient {
   async getRecruiterTeamMessages(limit = 200): Promise<RecruiterTeamMessage[]> {
     const current = await this.getSessionUser();
     if (!current || !isRecruiterRole(current.role)) return [];
-    const local = this.readLocalRecruiterChatMessages();
     const { data, error } = await supabase
       .from('recruiter_chat_messages')
       .select('id,message,created_at,sender_id,sender_label')
@@ -2420,7 +2515,7 @@ class ApiClient {
       .limit(Math.min(500, Math.max(20, limit)));
     if (error || !data) {
       if (isRecruiterPlannerSchemaMissing(error?.message)) {
-        return local.slice(-Math.min(500, Math.max(20, limit)));
+        throw recruiterPlannerSetupError();
       }
       throw new Error(error?.message || 'Chat konnte nicht geladen werden.');
     }
@@ -2433,11 +2528,8 @@ class ApiClient {
         senderLabel: row.sender_label,
       }))
       .reverse();
-    const merged = [...remote, ...local.filter((x) => x.id.startsWith('local-'))]
-      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-      .slice(-500);
-    this.writeLocalRecruiterChatMessages(merged);
-    return merged.slice(-Math.min(500, Math.max(20, limit)));
+    this.writeLocalRecruiterChatMessages(remote);
+    return remote.slice(-Math.min(500, Math.max(20, limit)));
   }
 
   async createRecruiterTeamMessage(message: string): Promise<RecruiterTeamMessage> {
@@ -2454,16 +2546,7 @@ class ApiClient {
       .select('id,message,created_at,sender_id,sender_label');
     if (error) {
       if (isRecruiterPlannerSchemaMissing(error.message)) {
-        const local = this.readLocalRecruiterChatMessages();
-        const next: RecruiterTeamMessage = {
-          id: `local-${crypto.randomUUID()}`,
-          message: payload.message,
-          createdAt: new Date().toISOString(),
-          senderId: current.id,
-          senderLabel: payload.sender_label,
-        };
-        this.writeLocalRecruiterChatMessages([...local, next]);
-        return next;
+        throw recruiterPlannerSetupError();
       }
       throw new Error(error.message);
     }
@@ -2494,6 +2577,22 @@ class ApiClient {
       );
     }
     return created;
+  }
+
+  async deleteRecruiterTeamMessage(messageId: string): Promise<void> {
+    const current = await this.getSessionUser();
+    if (!current || !isRecruiterRole(current.role)) throw new Error('Keine Berechtigung für diese Aktion.');
+
+    const { error } = await supabase.from('recruiter_chat_messages').delete().eq('id', messageId);
+    if (error) {
+      if (isRecruiterPlannerSchemaMissing(error.message)) {
+        throw recruiterPlannerSetupError();
+      }
+      throw new Error(error.message || 'Nachricht konnte nicht gelöscht werden.');
+    }
+
+    const next = this.readLocalRecruiterChatMessages().filter((m) => m.id !== messageId);
+    this.writeLocalRecruiterChatMessages(next);
   }
 
   async createExternalCandidate(input: {

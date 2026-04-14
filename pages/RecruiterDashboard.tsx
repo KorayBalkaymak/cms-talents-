@@ -289,6 +289,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   });
   const [plannerMessageDraft, setPlannerMessageDraft] = useState('');
   const [plannerMessageSending, setPlannerMessageSending] = useState(false);
+  const [plannerDeletingMessageId, setPlannerDeletingMessageId] = useState<string | null>(null);
   const [plannerCurrentMonth, setPlannerCurrentMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -362,6 +363,18 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       }
     }
   }, [applyLoadedInquiries]);
+
+  const openDashboardView = useCallback(
+    (view: 'talents' | 'inquiries' | 'planner' | 'external' | 'users' | 'calculator' | 'matching') => {
+      setActiveView(view);
+      if (view === 'inquiries') {
+        setHasSettledInitialInquiriesLoad(false);
+        initialInquiriesLoadAttempts.current = 0;
+        void loadInquiries();
+      }
+    },
+    [loadInquiries]
+  );
 
   /** Nach Auth-Hydration / Token-Refresh erneut laden (mobil: erster Fetch oft vor gültigem JWT). */
   useEffect(() => {
@@ -519,10 +532,17 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   useEffect(() => {
     if (activeView !== 'planner') return;
     const channel = supabase
-      .channel('recruiter-team-chat')
+      .channel('recruiter-planner-sync')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'recruiter_chat_messages' },
+        { event: '*', schema: 'public', table: 'recruiter_chat_messages' },
+        () => {
+          void loadPlannerData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'recruiter_availability_events' },
         () => {
           void loadPlannerData();
         }
@@ -611,6 +631,20 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       setPlannerError(e instanceof Error ? e.message : 'Nachricht konnte nicht gesendet werden.');
     } finally {
       setPlannerMessageSending(false);
+    }
+  };
+
+  const handleDeletePlannerMessage = async (msg: RecruiterTeamMessage) => {
+    setPlannerError(null);
+    if (!window.confirm('Diese Chat-Nachricht wirklich löschen?')) return;
+    try {
+      setPlannerDeletingMessageId(msg.id);
+      await candidateService.deleteRecruiterTeamMessage(msg.id);
+      setPlannerMessages((prev) => prev.filter((x) => x.id !== msg.id));
+    } catch (e) {
+      setPlannerError(e instanceof Error ? e.message : 'Nachricht konnte nicht gelöscht werden.');
+    } finally {
+      setPlannerDeletingMessageId(null);
     }
   };
 
@@ -1050,7 +1084,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const publishDisabledReason = (c: CandidateProfile | null) => {
     if (!c) return 'Bitte Kandidat öffnen.';
     if (isPublishing) return 'Bitte warten…';
-    if (!candidateDocs?.original?.cvPdf) return 'Bitte zuerst einen Lebenslauf hochladen.';
+    if (!candidateDocs?.edited?.cvPdf) return 'Bitte zuerst einen bearbeiteten Lebenslauf für den Marktplatz speichern.';
     return null;
   };
 
@@ -1065,10 +1099,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         if (selectedCandidate?.userId === c.userId) setCandidateDocs(docs || null);
       }
 
-      if (!docs?.original?.cvPdf) {
-        setDocError('Bitte zuerst einen Lebenslauf hochladen.');
+      if (!docs?.edited?.cvPdf) {
+        setDocError('Bitte zuerst einen bearbeiteten Lebenslauf für den Marktplatz speichern.');
         return;
       }
+
+      // Vor der Freigabe sicherstellen, dass die Marktplatz-Version serverseitig persistiert ist.
+      await candidateService.updateEditedDocuments(c.userId, docs.edited);
 
       // Ensure CV review flag exists (so Recruiter can always "Freigeben" after reviewing).
       if (!c.cvReviewedAt) {
@@ -1520,7 +1557,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </button>
             <button
               type="button"
-              onClick={() => setActiveView('inquiries')}
+              onClick={() => openDashboardView('inquiries')}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
                 activeView === 'inquiries'
                   ? 'border-l-[3px] border-orange-500 bg-white/[0.07] pl-[9px] text-white ring-1 ring-white/10'
@@ -1629,7 +1666,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       </aside>
 
       {/* Main Content - SCALED DOWN */}
-      <main className="flex h-screen min-h-0 flex-1 flex-col overflow-hidden">
+      <main className="flex min-h-[100dvh] min-h-0 flex-1 flex-col overflow-x-hidden md:h-screen md:overflow-hidden">
         {/* Mobil: Logo + Titel + Logout (Sidebar fehlt) */}
         <div
           className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-800 bg-slate-900 px-3 py-2.5 md:hidden"
@@ -1678,7 +1715,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               </button>
               <button
                 type="button"
-                onClick={() => setActiveView('inquiries')}
+                onClick={() => openDashboardView('inquiries')}
                 className={`inline-flex shrink-0 min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'inquiries'
                     ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
@@ -1777,9 +1814,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           </div>
         </header>
 
-        <div
-          className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-slate-50/50 p-3 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:p-6 sm:pb-8"
-        >
+        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-visible bg-slate-50/50 p-3 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] md:overflow-y-auto sm:p-6 sm:pb-8">
           {activeView === 'inquiries' ? (
             <div className="overflow-x-clip rounded-3xl border border-slate-200/90 bg-white shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)]">
               <div className="relative overflow-x-clip border-b border-white/10 bg-gradient-to-br from-slate-900 via-[#0f172a] to-slate-950 px-4 py-4 sm:px-8 sm:py-8">
@@ -1789,11 +1824,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   <div className="min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-orange-400/95">Talent-Marktplatz</p>
                     <h2 className="mt-2 text-xl font-bold tracking-tight text-white sm:text-2xl">Externe Interessen</h2>
-                    <p className="mt-2 hidden max-w-xl text-sm leading-relaxed text-slate-400 sm:block">
+                  <p className="mt-2 max-w-xl text-xs leading-relaxed text-slate-400 sm:text-sm">
                       Anfragen von Kunden und Interessenten zu Profilen im Marktplatz – zentral bearbeiten, kontaktieren und zuordnen.
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <span
                       className={`inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white backdrop-blur-sm ${
                         isLoadingInquiries ? 'animate-pulse' : ''
@@ -1804,6 +1839,15 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         ? 'Wird geladen…'
                         : `${inquiries.length} Anfrage${inquiries.length === 1 ? '' : 'n'}`}
                     </span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-9 !border-white/15 !bg-white/5 !px-3 !text-[11px] !font-black !text-white hover:!bg-white/10"
+                      onClick={() => void loadInquiries()}
+                    >
+                      Aktualisieren
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -2245,6 +2289,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           ) : plannerMessages.map((msg) => {
                             const displayMessage = (msg.message || '').replace(/^📅\s*/u, '');
                             const isPlannerNotice = /^Neuer Termin:/i.test(displayMessage.trim());
+                            const canDeleteMessage = isAdmin || msg.senderId === user.id;
                             return (
                             <div
                               key={msg.id}
@@ -2263,9 +2308,21 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                   </span>
                                   <span className="text-[11px] font-black text-slate-700">{msg.senderLabel}</span>
                                 </div>
-                                <span className="text-[10px] font-semibold text-slate-400">
-                                  {new Date(msg.createdAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] font-semibold text-slate-400">
+                                    {new Date(msg.createdAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}
+                                  </span>
+                                  {canDeleteMessage && (
+                                    <button
+                                      type="button"
+                                      className="text-[10px] font-black uppercase tracking-wide text-rose-600 transition-colors hover:text-rose-700 disabled:cursor-not-allowed disabled:text-slate-300"
+                                      disabled={plannerDeletingMessageId === msg.id}
+                                      onClick={() => void handleDeletePlannerMessage(msg)}
+                                    >
+                                      {plannerDeletingMessageId === msg.id ? 'Löscht…' : 'Löschen'}
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                               <p className={`whitespace-pre-wrap break-words text-xs leading-relaxed ${isPlannerNotice ? 'text-emerald-900 font-semibold' : 'text-slate-700'}`}>
                                 {displayMessage}
@@ -2502,7 +2559,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   <Button type="button" variant="primary" className="h-11 text-xs font-black sm:h-10" onClick={runMatchingSearch}>
                     Passende Talente vorschlagen
                   </Button>
-                  <Button type="button" variant="secondary" className="h-11 text-xs font-bold sm:h-10" onClick={() => setActiveView('inquiries')}>
+                  <Button type="button" variant="secondary" className="h-11 text-xs font-bold sm:h-10" onClick={() => openDashboardView('inquiries')}>
                     Zu externen Interessen
                   </Button>
                 </div>
@@ -3812,15 +3869,15 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         {/* --- FULLSCREEN DOCUMENT PREVIEW MODAL --- */}
         {previewDoc && (
           <div className="fixed inset-0 z-[60] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setPreviewDoc(null)}>
-            <div className="bg-white w-full max-w-5xl h-[85vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-              <div className="h-14 border-b border-slate-100 flex items-center justify-between px-6 bg-slate-50">
-                <h3 className="font-bold text-slate-700 truncate">{previewDoc.name}</h3>
-                <div className="flex gap-4">
+            <div className="flex h-[100dvh] w-full max-w-none flex-col overflow-hidden bg-white shadow-2xl sm:h-[85vh] sm:max-w-5xl sm:rounded-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex min-h-14 flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-4 py-3 sm:px-6">
+                <h3 className="min-w-0 flex-1 truncate font-bold text-slate-700">{previewDoc.name}</h3>
+                <div className="flex shrink-0 gap-4">
                   <a href={previewDoc.data} download={previewDoc.name} className="text-xs font-black text-orange-600 hover:underline">HERUNTERLADEN</a>
                   <button onClick={() => setPreviewDoc(null)} className="text-xs font-black text-slate-400 hover:text-slate-600">SCHLIESSEN</button>
                 </div>
               </div>
-              <div className="flex-1 bg-slate-200 p-4">
+              <div className="flex-1 bg-slate-200 p-2 sm:p-4">
                 <iframe src={previewDoc.data} className="w-full h-full rounded-xl bg-white shadow-sm" title="Preview" />
               </div>
             </div>
