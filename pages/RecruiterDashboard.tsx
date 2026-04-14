@@ -213,6 +213,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   >('talents');
   const [matchingRoleBrief, setMatchingRoleBrief] = useState('');
   const [matchingQuery, setMatchingQuery] = useState<string | null>(null);
+  const [matchingInquiryId, setMatchingInquiryId] = useState<string | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
   const [candidateDocs, setCandidateDocs] = useState<CandidateDocumentsForRecruiter | null>(null);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
@@ -883,6 +884,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
   const runMatchingSearch = useCallback(() => {
     const q = matchingRoleBrief.trim();
+    setMatchingInquiryId(null);
     setMatchingQuery(q.length ? q : null);
   }, [matchingRoleBrief]);
 
@@ -925,6 +927,37 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     }
     return m;
   }, [inquiries, visibleCandidates]);
+
+  const selectableInquiryMatches = useMemo(
+    () =>
+      inquiries
+        .filter((inq) => {
+          const q = buildInquiryMatchingQuery(inq);
+          return q.trim().length > 0;
+        })
+        .slice(0, 12),
+    [inquiries]
+  );
+
+  const activeMatchingFromInquiry = useMemo(
+    () => (matchingInquiryId ? inquiries.find((inq) => inq.id === matchingInquiryId) || null : null),
+    [matchingInquiryId, inquiries]
+  );
+
+  const applyInquiryToMatching = useCallback((inq: CandidateInquiry) => {
+    const q = buildInquiryMatchingQuery(inq).trim();
+    setMatchingInquiryId(inq.id);
+    setMatchingRoleBrief(q);
+    setMatchingQuery(q || null);
+  }, []);
+
+  useEffect(() => {
+    if (activeView !== 'matching') return;
+    if (matchingQuery?.trim()) return;
+    const first = selectableInquiryMatches[0];
+    if (!first) return;
+    applyInquiryToMatching(first);
+  }, [activeView, matchingQuery, selectableInquiryMatches, applyInquiryToMatching]);
 
   const filteredCandidateSubmittedCount = useMemo(
     () =>
@@ -1995,7 +2028,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                         </p>
                                       ) : (
                                         <ul className="flex flex-col gap-2">
-                                          {matchInfo.ranked.map(({ candidate: c, score }) => {
+                                          {matchInfo.ranked.map(({ candidate: c, score, reasons }) => {
                                             const sugName =
                                               `${c.firstName} ${c.lastName}`.trim() || c.candidateNumber || 'Kandidat';
                                             return (
@@ -2008,6 +2041,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                                   <p className="truncate text-[11px] text-slate-500">
                                                     {displayProfession(c)} · {c.industry}
                                                   </p>
+                                                  {score > 0 && reasons?.length ? (
+                                                    <p className="mt-1 line-clamp-2 text-[11px] text-violet-700">
+                                                      {reasons.join(' • ')}
+                                                    </p>
+                                                  ) : null}
                                                 </div>
                                                 <div className="flex shrink-0 items-center gap-2">
                                                   <Badge variant="slate">Score {score}</Badge>
@@ -2562,44 +2600,88 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 </div>
               </div>
               <div className="space-y-5 p-4 sm:p-6">
-                <Textarea
-                  label="Rolle oder Anforderung"
-                  labelClassName="text-slate-800"
-                  className="min-h-[120px] border-slate-200 bg-white text-slate-900 placeholder:text-slate-400"
-                  value={matchingRoleBrief}
-                  onChange={(e) => setMatchingRoleBrief(e.target.value)}
-                  placeholder="z. B. Senior Entwickler React/TypeScript, Automotive, remote möglich, Englisch fließend…"
-                  rows={5}
-                />
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button type="button" variant="primary" className="h-11 text-xs font-black sm:h-10" onClick={runMatchingSearch}>
-                    Passende Talente vorschlagen
-                  </Button>
-                  <Button type="button" variant="secondary" className="h-11 text-xs font-bold sm:h-10" onClick={() => openDashboardView('inquiries')}>
-                    Zu externen Interessen
-                  </Button>
+                <div className="rounded-2xl border border-violet-200/70 bg-violet-50/60 p-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-violet-700">Externe Interessen als Quelle</p>
+                      <h3 className="mt-1 text-sm font-black text-slate-900">Anfrage auswählen und automatisch matchen</h3>
+                    </div>
+                    <Button type="button" variant="secondary" className="h-9 text-[11px] font-bold" onClick={() => openDashboardView('inquiries')}>
+                      Externe Interessen öffnen
+                    </Button>
+                  </div>
+                  {selectableInquiryMatches.length === 0 ? (
+                    <p className="mt-3 text-sm text-slate-600">
+                      Noch keine geeignete Anfrage gefunden. Sobald externe Interessen mit Suchprofil oder Projektdetails eingehen, erscheinen sie hier.
+                    </p>
+                  ) : (
+                    <div className="mt-4 grid grid-cols-1 gap-2 lg:grid-cols-2">
+                      {selectableInquiryMatches.map((inq) => {
+                        const details = parseMarketplaceInquiryDetails(inq.message);
+                        const summary =
+                          details?.find((row) => row.label === 'Suchprofil')?.value ||
+                          details?.find((row) => row.label === 'Position (Kunde)')?.value ||
+                          buildInquiryMatchingQuery(inq);
+                        const isActive = inq.id === matchingInquiryId;
+                        return (
+                          <button
+                            key={inq.id}
+                            type="button"
+                            onClick={() => applyInquiryToMatching(inq)}
+                            className={`rounded-xl border px-3 py-3 text-left transition ${
+                              isActive
+                                ? 'border-violet-300 bg-white shadow-sm ring-2 ring-violet-200'
+                                : 'border-white/80 bg-white/80 hover:border-violet-200 hover:bg-white'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-bold text-slate-900">{inq.contactName}</p>
+                                <p className="mt-0.5 text-[11px] text-slate-500">
+                                  {new Date(inq.createdAt).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })}
+                                </p>
+                              </div>
+                              {isActive ? <Badge variant="slate">Aktiv</Badge> : null}
+                            </div>
+                            <p className="mt-2 line-clamp-3 text-[12px] text-slate-700">{summary}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
+                {activeMatchingFromInquiry ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500">Aktive Analyse</p>
+                    <p className="mt-2 text-sm font-bold text-slate-900">
+                      Anfrage von {activeMatchingFromInquiry.contactName}
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                      {matchingQuery?.trim() || 'Keine auswertbaren Projektdetails in der Anfrage gefunden.'}
+                    </p>
+                  </div>
+                ) : null}
               </div>
-              {matchingQuery !== null && (
+              {activeMatchingFromInquiry ? (
                 <div className="border-t border-slate-200 bg-slate-50/50 px-4 py-5 sm:px-6">
                   <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">Trefferliste</h3>
                   <p className="mt-1 text-xs font-medium text-slate-500">
-                    Sortierung nach Relevanz zur Anforderung (Score). Klick öffnet das Profil.
+                    {`Analyse aus externer Anfrage von ${activeMatchingFromInquiry.contactName}. Sortierung nach Relevanz und begründeten Treffern.`}
                   </p>
                   {matchingRankedResults.length === 0 ? (
                     <div className="mt-4">
                       <EmptyState
-                        title={matchingQuery.trim() ? 'Keine passenden Profile' : 'Anforderung fehlt'}
+                        title="Wir haben aktuell keinen passenden Kandidaten"
                         description={
-                          matchingQuery.trim()
-                            ? 'Formulieren Sie konkrete Skills, Branchen oder Orte – oder wechseln Sie zur Talents-Ansicht.'
-                            : 'Geben Sie oben eine Rolle oder Anforderung ein und starten Sie die Vorschläge erneut.'
+                          matchingQuery?.trim()
+                            ? 'Zur aktuellen externen Anfrage gibt es im sichtbaren Talent-Pool gerade keinen ausreichend passenden Kandidaten.'
+                            : 'Die Anfrage enthaelt noch zu wenig auswertbare Details fuer einen automatischen Vorschlag.'
                         }
                       />
                     </div>
                   ) : (
                     <ul className="mt-4 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
-                      {matchingRankedResults.map(({ candidate: c, score }) => {
+                      {matchingRankedResults.map(({ candidate: c, score, reasons }) => {
                         const name = `${c.firstName} ${c.lastName}`.trim() || c.candidateNumber || 'Kandidat';
                         return (
                           <li key={c.userId} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -2611,6 +2693,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               </p>
                               {c.skills?.length ? (
                                 <p className="mt-1 line-clamp-2 text-[11px] text-slate-500">{c.skills.slice(0, 8).join(' · ')}</p>
+                              ) : null}
+                              {score > 0 ? (
+                                <p className="mt-1 line-clamp-2 text-[11px] text-violet-700">
+                                  {reasons?.length
+                                    ? reasons.join(' • ')
+                                    : 'Passende Ueberschneidungen in Skill, Profil oder Branche gefunden.'}
+                                </p>
                               ) : null}
                             </div>
                             <div className="flex shrink-0 flex-row items-center gap-2 sm:flex-col sm:items-end">
@@ -2624,6 +2713,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       })}
                     </ul>
                   )}
+                </div>
+              ) : selectableInquiryMatches.length === 0 ? (
+                <div className="border-t border-slate-200 bg-slate-50/50 px-4 py-8 sm:px-6">
+                  <EmptyState
+                    title="Noch keine externen Interessen"
+                    description="Sobald Anfragen eingehen, analysiert das KI-Matching diese automatisch und schlägt passende Kandidaten vor."
+                  />
                 </div>
               )}
             </div>

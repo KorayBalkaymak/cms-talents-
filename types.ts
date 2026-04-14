@@ -222,6 +222,7 @@ export interface AuditLog {
 export interface MatchResult {
   candidate: CandidateProfile;
   score: number;
+  reasons?: string[];
 }
 
 // =====================================================
