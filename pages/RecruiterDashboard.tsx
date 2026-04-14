@@ -2721,7 +2721,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     description="Sobald Anfragen eingehen, analysiert das KI-Matching diese automatisch und schlägt passende Kandidaten vor."
                   />
                 </div>
-              )}
+              ) : null}
             </div>
           ) : activeView === 'users' ? (
             <div className="overflow-hidden rounded-2xl border border-orange-200/40 bg-[#101B31] shadow-sm">
