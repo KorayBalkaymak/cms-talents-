@@ -689,6 +689,22 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     [plannerEventsByDate, plannerSelectedDate]
   );
 
+  useEffect(() => {
+    if (activeView !== 'planner') return;
+    if (plannerEvents.length === 0) return;
+    if (plannerEventsByDate.has(plannerSelectedDate)) return;
+
+    const todayKey = toLocalDateKey(new Date());
+    const sortedKeys = Array.from(plannerEventsByDate.keys()).sort();
+    const nextKey = sortedKeys.find((key) => key >= todayKey) || sortedKeys[sortedKeys.length - 1];
+    if (!nextKey || nextKey === plannerSelectedDate) return;
+
+    setPlannerSelectedDate(nextKey);
+    const d = new Date(`${nextKey}T00:00:00`);
+    setPlannerCurrentMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+    setPlannerEventForm((s) => ({ ...s, scheduledDate: nextKey || s.scheduledDate }));
+  }, [activeView, plannerEvents.length, plannerEventsByDate, plannerSelectedDate]);
+
   const handleRecruiterEditingClaim = async (cand: CandidateProfile) => {
     const editing = getActiveRecruiterEditing(cand);
     setClaimError(null);
