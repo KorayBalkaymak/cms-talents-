@@ -1,5 +1,4 @@
--- Kopie von migrations/20260414113000_recruiter_chat_delete_own_policy.sql
--- Im Supabase-Dashboard: SQL -> New query -> einfügen -> Run
+-- Recruiter duerfen nur eigene Team-Chat-Nachrichten loeschen
 
 drop policy if exists "Recruiter can delete chat messages" on public.recruiter_chat_messages;
 

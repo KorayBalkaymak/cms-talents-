@@ -2289,7 +2289,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           ) : plannerMessages.map((msg) => {
                             const displayMessage = (msg.message || '').replace(/^📅\s*/u, '');
                             const isPlannerNotice = /^Neuer Termin:/i.test(displayMessage.trim());
-                            const canDeleteMessage = isAdmin || msg.senderId === user.id;
+                            const canDeleteMessage = msg.senderId === user.id;
                             return (
                             <div
                               key={msg.id}
