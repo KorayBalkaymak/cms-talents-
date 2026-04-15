@@ -55,6 +55,19 @@ const RoutePending: React.FC = () => (
   </div>
 );
 
+async function loadRecruiterCandidatesWithRetry(): Promise<CandidateProfile[]> {
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await candidateService.getAllAdmin();
+    } catch (e) {
+      lastError = e;
+      await new Promise((resolve) => window.setTimeout(resolve, 250 * (attempt + 1)));
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Recruiter-Kandidaten konnten nicht geladen werden.');
+}
+
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [currentPath, setCurrentPath] = useState(resolveInitialPath());
@@ -99,7 +112,7 @@ const App: React.FC = () => {
         try {
           if (initialUser && (initialUser.role === UserRole.RECRUITER || initialUser.role === UserRole.ADMIN)) {
             setIsRecruiterCandidatesLoading(true);
-            const list = await candidateService.getAllAdmin();
+            const list = await loadRecruiterCandidatesWithRetry();
             setAllCandidates(list);
           } else {
             const list = await candidateService.getAll();
@@ -165,7 +178,7 @@ const App: React.FC = () => {
     let cancelled = false;
     const tick = async () => {
       try {
-        const list = await candidateService.getAllAdmin();
+        const list = await loadRecruiterCandidatesWithRetry();
         if (!cancelled) setAllCandidates(list);
       } catch {
         // ignore transient errors
@@ -238,7 +251,7 @@ const App: React.FC = () => {
     } else if (loggedInUser.role === UserRole.RECRUITER || loggedInUser.role === UserRole.ADMIN) {
       setIsRecruiterCandidatesLoading(true);
       try {
-        const list = await candidateService.getAllAdmin();
+        const list = await loadRecruiterCandidatesWithRetry();
         setAllCandidates(list);
       } finally {
         setIsRecruiterCandidatesLoading(false);
@@ -282,7 +295,7 @@ const App: React.FC = () => {
     performerId?: string
   ) => {
     await candidateService.adminAction(userId, action, newStatus, performerId || user?.id);
-    const list = await candidateService.getAllAdmin();
+    const list = await loadRecruiterCandidatesWithRetry();
     setAllCandidates(list);
     showToast(
       action === 'delete'
@@ -298,7 +311,7 @@ const App: React.FC = () => {
   };
 
   const refreshCandidatesForRecruiter = async () => {
-    const list = await candidateService.getAllAdmin();
+    const list = await loadRecruiterCandidatesWithRetry();
     setAllCandidates(list);
   };
 

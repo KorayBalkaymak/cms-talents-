@@ -95,6 +95,12 @@ function contactInitialsFromName(name: string): string {
   return (parts[0]?.slice(0, 2) || '?').toUpperCase();
 }
 
+function looksLikeMarketplaceCodenameCandidate(candidate: CandidateProfile): boolean {
+  const first = (candidate.firstName || '').trim().toLowerCase();
+  const last = (candidate.lastName || '').trim().toUpperCase();
+  return first === 'talent' && /^(KT|EXT)-[A-Z0-9]+$/.test(last);
+}
+
 /** Erkennt die strukturierte Marktplatz-Anfrage (TalentMarketplace.submitInquiry), ein- oder mehrzeilig. */
 const MARKETPLACE_INQUIRY_FIELDS: { prefix: string; label: string }[] = [
   { prefix: 'Firma:', label: 'Firma' },
@@ -304,6 +310,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     const fresh = candidates.find((c) => c.userId === selectedCandidate.userId);
     if (fresh) setSelectedCandidate(fresh);
   }, [candidates, selectedCandidate]);
+
+  useEffect(() => {
+    if (!onRefreshCandidates) return;
+    const hasMarketplaceAliases = candidates.some(looksLikeMarketplaceCodenameCandidate);
+    if (!hasMarketplaceAliases) return;
+    void onRefreshCandidates();
+  }, [candidates, onRefreshCandidates]);
 
   // Heartbeat deaktivieren, wenn das Modal / die Auswahl gewechselt oder geschlossen wird.
   useEffect(() => {
