@@ -2113,7 +2113,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                   ) : null}
                                 </div>
                               </div>
-                              <div className="flex shrink-0 flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:flex-wrap lg:w-52 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                              <div className="flex shrink-0 flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:flex-wrap lg:w-72 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
                                 <Button
                                   type="button"
                                   size="sm"
@@ -2130,7 +2130,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                   type="button"
                                   size="sm"
                                   variant="primary"
-                                  className="h-9 w-full justify-center text-[11px] font-black sm:flex-1 lg:w-full"
+                                  className="min-h-[2.75rem] w-full justify-center whitespace-normal px-3 py-2 text-center text-[11px] font-black leading-tight sm:flex-1 lg:w-full"
                                   disabled={!inquiryMatchingQuery}
                                   onClick={() => openInquiryInMatching(inq)}
                                   title={
