@@ -2113,7 +2113,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                   ) : null}
                                 </div>
                               </div>
-                              <div className="flex shrink-0 flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:flex-wrap lg:w-72 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                              <div className="flex shrink-0 flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:flex-wrap lg:w-60 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
                                 <Button
                                   type="button"
                                   size="sm"
