@@ -2140,7 +2140,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                       : 'Diese Anfrage enthält noch zu wenig auswertbare Angaben'
                                   }
                                 >
-                                  Kandidat vorschlagen
+                                  Passenden Kandidaten vorschlagen
                                 </Button>
                                 <Button
                                   type="button"
