@@ -377,6 +377,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     [loadInquiries]
   );
 
+  const openMatchingView = useCallback(() => {
+    setMatchingInquiryId(null);
+    setMatchingRoleBrief('');
+    setMatchingQuery(null);
+    setActiveView('matching');
+  }, []);
+
   /** Nach Auth-Hydration / Token-Refresh erneut laden (mobil: erster Fetch oft vor gültigem JWT). */
   useEffect(() => {
     const {
@@ -958,14 +965,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     },
     [applyInquiryToMatching]
   );
-
-  useEffect(() => {
-    if (activeView !== 'matching') return;
-    if (matchingQuery?.trim()) return;
-    const first = selectableInquiryMatches[0];
-    if (!first) return;
-    applyInquiryToMatching(first);
-  }, [activeView, matchingQuery, selectableInquiryMatches, applyInquiryToMatching]);
 
   const filteredCandidateSubmittedCount = useMemo(
     () =>
@@ -1630,7 +1629,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </button>
             <button
               type="button"
-              onClick={() => setActiveView('matching')}
+              onClick={openMatchingView}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
                 activeView === 'matching'
                   ? 'border-l-[3px] border-orange-500 bg-white/[0.07] pl-[9px] text-white ring-1 ring-white/10'
@@ -1784,7 +1783,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               </button>
               <button
                 type="button"
-                onClick={() => setActiveView('matching')}
+                onClick={openMatchingView}
                 className={`inline-flex shrink-0 min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'matching'
                     ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
@@ -2140,7 +2139,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                       : 'Diese Anfrage enthält noch zu wenig auswertbare Angaben'
                                   }
                                 >
-                                  Passenden Kandidaten vorschlagen
+                                  Passende Kandidaten vorschlagen
                                 </Button>
                                 <Button
                                   type="button"
