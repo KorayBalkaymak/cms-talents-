@@ -1431,10 +1431,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         cvPdf: externalDocs.cvPdf,
         certificates: externalDocs.certificates,
         qualifications: externalDocs.qualifications,
-        isPublished: true,
+        isPublished: false,
       });
       if (onRefreshCandidates) await onRefreshCandidates();
-      setExternalSuccess('Kandidat wurde erstellt und für den Marktplatz freigegeben.');
+      setExternalSuccess('Kandidat wurde erstellt und bei Talents hinzugefügt.');
       setExternalForm((prev) => ({
         ...prev,
         firstName: '',
