@@ -2619,6 +2619,9 @@ class ApiClient {
   }): Promise<CandidateProfile> {
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
+    const editedCvPdf = input.cvPdf || null;
+    const editedCertificates = input.certificates || [];
+    const editedQualifications = input.qualifications || [];
     const row: ExternalCandidateRow = {
       id,
       candidate_number: input.candidateNumber?.trim() || `EXT-${id.slice(0, 8).toUpperCase()}`,
@@ -2644,6 +2647,9 @@ class ApiClient {
       cv_pdf: input.cvPdf || null,
       certificates: input.certificates || [],
       qualifications: input.qualifications || [],
+      edited_cv_pdf: editedCvPdf,
+      edited_certificates: editedCertificates,
+      edited_qualifications: editedQualifications,
       is_published: !!input.isPublished,
       created_at: now,
       updated_at: now,
@@ -2670,6 +2676,9 @@ class ApiClient {
       cv_pdf: row.cv_pdf,
       certificates: row.certificates,
       qualifications: row.qualifications,
+      edited_cv_pdf: editedCvPdf,
+      edited_certificates: editedCertificates,
+      edited_qualifications: editedQualifications,
       is_published: row.is_published,
       created_at: row.created_at,
       updated_at: row.updated_at,
@@ -2682,6 +2691,12 @@ class ApiClient {
       insertPayload = noProfession;
       const retryProf = await supabase.from('external_candidates').insert(insertPayload);
       if (!retryProf.error) {
+        this.writeLocalEditedDocuments(`external:${row.id}`, {
+          userId: `external:${row.id}`,
+          cvPdf: editedCvPdf || undefined,
+          certificates: editedCertificates,
+          qualifications: editedQualifications,
+        });
         return this.externalRowToCandidate(row);
       }
       insertError = retryProf.error;
@@ -2691,14 +2706,46 @@ class ApiClient {
       insertPayload = noWork;
       const retryWork = await supabase.from('external_candidates').insert(insertPayload);
       if (!retryWork.error) {
+        this.writeLocalEditedDocuments(`external:${row.id}`, {
+          userId: `external:${row.id}`,
+          cvPdf: editedCvPdf || undefined,
+          certificates: editedCertificates,
+          qualifications: editedQualifications,
+        });
         return this.externalRowToCandidate(row);
       }
       insertError = retryWork.error;
+    }
+    if (insertError && isExternalEditedDocumentsSchemaMissing(insertError.message)) {
+      const {
+        edited_cv_pdf: _dropEditedCv,
+        edited_certificates: _dropEditedCerts,
+        edited_qualifications: _dropEditedQuals,
+        ...payloadWithoutEditedDocs
+      } = insertPayload;
+      insertPayload = payloadWithoutEditedDocs;
+      const retryEdited = await supabase.from('external_candidates').insert(insertPayload);
+      if (!retryEdited.error) {
+        this.writeLocalEditedDocuments(`external:${row.id}`, {
+          userId: `external:${row.id}`,
+          cvPdf: editedCvPdf || undefined,
+          certificates: editedCertificates,
+          qualifications: editedQualifications,
+        });
+        return this.externalRowToCandidate(row);
+      }
+      insertError = retryEdited.error;
     }
     if (insertError && isExternalCandidatesNamesSchemaMissing(insertError.message)) {
       const { first_name: _fn, last_name: _ln, ...payloadNoNames } = insertPayload;
       const retry = await supabase.from('external_candidates').insert(payloadNoNames);
       if (!retry.error) {
+        this.writeLocalEditedDocuments(`external:${row.id}`, {
+          userId: `external:${row.id}`,
+          cvPdf: editedCvPdf || undefined,
+          certificates: editedCertificates,
+          qualifications: editedQualifications,
+        });
         return this.externalRowToCandidate(row);
       }
       insertError = retry.error;
@@ -2707,10 +2754,22 @@ class ApiClient {
       // Fallback: lokal speichern, falls Tabelle noch nicht in DB existiert.
       const local = this.readLocalExternalCandidates();
       const candidate = this.externalRowToCandidate(row);
+      this.writeLocalEditedDocuments(`external:${row.id}`, {
+        userId: `external:${row.id}`,
+        cvPdf: editedCvPdf || undefined,
+        certificates: editedCertificates,
+        qualifications: editedQualifications,
+      });
       this.writeLocalExternalCandidates([candidate, ...local]);
       return candidate;
     }
 
+    this.writeLocalEditedDocuments(`external:${row.id}`, {
+      userId: `external:${row.id}`,
+      cvPdf: editedCvPdf || undefined,
+      certificates: editedCertificates,
+      qualifications: editedQualifications,
+    });
     return this.externalRowToCandidate(row);
   }
 }
