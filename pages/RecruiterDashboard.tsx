@@ -2130,7 +2130,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                   type="button"
                                   size="sm"
                                   variant="primary"
-                                  className="h-9 w-full justify-center text-[11px] font-black sm:flex-1 lg:w-full"
+                                  className="min-h-[3rem] w-full justify-center whitespace-normal px-3 py-2 text-center text-[11px] font-black leading-tight sm:flex-1 lg:w-full"
                                   disabled={!inquiryMatchingQuery}
                                   onClick={() => openInquiryInMatching(inq)}
                                   title={
