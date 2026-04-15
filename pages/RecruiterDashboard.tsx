@@ -951,6 +951,14 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     setMatchingQuery(q || null);
   }, []);
 
+  const openInquiryInMatching = useCallback(
+    (inq: CandidateInquiry) => {
+      applyInquiryToMatching(inq);
+      setActiveView('matching');
+    },
+    [applyInquiryToMatching]
+  );
+
   useEffect(() => {
     if (activeView !== 'matching') return;
     if (matchingQuery?.trim()) return;
@@ -1950,6 +1958,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       const created = new Date(inq.createdAt);
                       const initials = contactInitialsFromName(inq.contactName);
                       const inquiryDetailRows = parseMarketplaceInquiryDetails(inq.message);
+                      const inquiryMatchingQuery = buildInquiryMatchingQuery(inq).trim();
                       const matchInfo = inquiryMatchById.get(inq.id);
                       return (
                         <li key={inq.id}>
@@ -2117,6 +2126,21 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                   title={isMine ? 'Bearbeitung beenden' : 'Bearbeitung melden'}
                                 >
                                   {isMine ? 'Bearbeitung beenden' : 'Ich bearbeite'}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="primary"
+                                  className="h-9 w-full justify-center text-[11px] font-black sm:flex-1 lg:w-full"
+                                  disabled={!inquiryMatchingQuery}
+                                  onClick={() => openInquiryInMatching(inq)}
+                                  title={
+                                    inquiryMatchingQuery
+                                      ? 'Zur KI-Matching-Ansicht für diese Anfrage wechseln'
+                                      : 'Diese Anfrage enthält noch zu wenig auswertbare Angaben'
+                                  }
+                                >
+                                  Kandidat vorschlagen
                                 </Button>
                                 <Button
                                   type="button"
