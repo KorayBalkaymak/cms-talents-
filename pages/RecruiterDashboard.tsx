@@ -38,6 +38,36 @@ const DASHBOARD_VIEWS = new Set<DashboardView>([
   'matching',
 ]);
 
+const PDFJS_VERSION = '5.4.149';
+const PDFJS_CDN_BASE = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}`;
+
+type PdfJsTextItem = { str?: string };
+type PdfJsPage = {
+  getTextContent: () => Promise<{ items: PdfJsTextItem[] }>;
+};
+type PdfJsDocument = {
+  numPages: number;
+  getPage: (pageNumber: number) => Promise<PdfJsPage>;
+  destroy?: () => Promise<void> | void;
+};
+type PdfJsModule = {
+  GlobalWorkerOptions: { workerSrc: string };
+  getDocument: (params: { data: Uint8Array; useWorkerFetch?: boolean; isEvalSupported?: boolean }) => { promise: Promise<PdfJsDocument> };
+};
+
+let pdfJsModulePromise: Promise<PdfJsModule> | null = null;
+
+async function loadPdfJs(): Promise<PdfJsModule> {
+  if (!pdfJsModulePromise) {
+    pdfJsModulePromise = import(/* @vite-ignore */ `${PDFJS_CDN_BASE}/build/pdf.mjs`).then((mod) => {
+      const pdfjs = mod as PdfJsModule;
+      pdfjs.GlobalWorkerOptions.workerSrc = `${PDFJS_CDN_BASE}/build/pdf.worker.mjs`;
+      return pdfjs;
+    });
+  }
+  return pdfJsModulePromise;
+}
+
 function dashboardViewFromUrl(): DashboardView {
   const hash = window.location.hash || '';
   const queryStart = hash.indexOf('?');
@@ -216,47 +246,72 @@ function uniqueNonEmpty(parts: string[]): string[] {
   return out;
 }
 
-function extractReadablePdfText(dataUrl: string | undefined): string {
-  if (!dataUrl || typeof window === 'undefined' || typeof window.atob !== 'function') return '';
+function dataUrlToUint8Array(dataUrl: string | undefined): Uint8Array | null {
+  if (!dataUrl || typeof window === 'undefined' || typeof window.atob !== 'function') return null;
   const comma = dataUrl.indexOf(',');
   const base64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
-  if (!base64 || base64.length > 2_500_000) return '';
+  if (!base64) return null;
   try {
     const binary = window.atob(base64);
-    const chunks = binary
-      .replace(/\0/g, ' ')
-      .match(/[A-Za-zÀ-ž0-9][A-Za-zÀ-ž0-9\s.,;:+#&/@()_-]{2,}/g);
-    if (!chunks) return '';
-    return uniqueNonEmpty(
-      chunks
-        .map((chunk) => chunk.replace(/\\([()\\])/g, '$1').replace(/\s+/g, ' ').trim())
-        .filter((chunk) => {
-          const lower = chunk.toLowerCase();
-          if (chunk.length < 3 || chunk.length > 160) return false;
-          if (/^(obj|endobj|stream|endstream|xref|trailer|startxref|filter|length|type|page|font)$/i.test(chunk)) return false;
-          if (lower.includes('flatedecode') || lower.includes('adobe') || lower.includes('pdf')) return false;
-          return /[a-zÀ-ž]{3,}/i.test(chunk);
-        })
-    )
-      .slice(0, 80)
-      .join(' ');
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
   } catch {
-    return '';
+    return null;
   }
 }
 
-function buildInquiryAttachmentText(inq: CandidateInquiry): { names: string[]; extractedText: string } {
-  const attachments = inq.customerAttachments || [];
-  const names = uniqueNonEmpty(attachments.map((a) => a.name || ''));
-  const extractedText = uniqueNonEmpty(attachments.map((a) => extractReadablePdfText(a.data))).join(' ').slice(0, 12000);
-  return { names, extractedText };
+async function extractPdfText(dataUrl: string | undefined): Promise<string> {
+  const bytes = dataUrlToUint8Array(dataUrl);
+  if (!bytes) return '';
+  const pdfjs = await loadPdfJs();
+  const pdf = await pdfjs.getDocument({ data: bytes, useWorkerFetch: false, isEvalSupported: false }).promise;
+  try {
+    const pages: string[] = [];
+    const maxPages = Math.min(pdf.numPages, 20);
+    for (let pageNumber = 1; pageNumber <= maxPages; pageNumber += 1) {
+      const page = await pdf.getPage(pageNumber);
+      const content = await page.getTextContent();
+      const text = content.items
+        .map((item) => item.str || '')
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (text) pages.push(text);
+    }
+    return uniqueNonEmpty(pages).join(' ').slice(0, 20000);
+  } finally {
+    await pdf.destroy?.();
+  }
 }
 
-function buildInquiryAnalysis(inq: CandidateInquiry): {
+function inquiryAttachmentKey(inq: CandidateInquiry, index: number): string {
+  const attachment = inq.customerAttachments?.[index];
+  return `${inq.id}:${index}:${attachment?.name || 'pdf'}:${attachment?.data?.length || 0}`;
+}
+
+function buildInquiryAttachmentText(
+  inq: CandidateInquiry,
+  pdfTextByAttachmentKey: Record<string, string> = {}
+): { names: string[]; extractedText: string; hasPendingPdfText: boolean } {
+  const attachments = inq.customerAttachments || [];
+  const names = uniqueNonEmpty(attachments.map((a) => a.name || ''));
+  const texts = attachments.map((_, idx) => pdfTextByAttachmentKey[inquiryAttachmentKey(inq, idx)] || '');
+  const extractedText = uniqueNonEmpty(texts).join(' ').slice(0, 20000);
+  return { names, extractedText, hasPendingPdfText: attachments.length > 0 && !extractedText.trim() };
+}
+
+function buildInquiryAnalysis(
+  inq: CandidateInquiry,
+  pdfTextByAttachmentKey: Record<string, string> = {}
+): {
   query: string;
   sourcePreview: string;
   attachmentNames: string[];
   hasPdfText: boolean;
+  hasPendingPdfText: boolean;
 } {
   const raw = (inq.message || '').trim();
   const rows = parseMarketplaceInquiryDetails(raw);
@@ -275,7 +330,7 @@ function buildInquiryAnalysis(inq: CandidateInquiry): {
     structuredParts.push(raw);
   }
 
-  const { names, extractedText } = buildInquiryAttachmentText(inq);
+  const { names, extractedText, hasPendingPdfText } = buildInquiryAttachmentText(inq, pdfTextByAttachmentKey);
   const attachmentKeywords = names.map((name) => name.replace(/\.[a-z0-9]{2,5}$/i, '').replace(/[_-]+/g, ' '));
   const query = uniqueNonEmpty([...structuredParts, extractedText, ...attachmentKeywords]).join(' ');
   const sourcePreview = uniqueNonEmpty([...structuredParts, extractedText ? `PDF-Text: ${extractedText}` : '', ...attachmentKeywords]).join(' ');
@@ -284,7 +339,24 @@ function buildInquiryAnalysis(inq: CandidateInquiry): {
     sourcePreview,
     attachmentNames: names,
     hasPdfText: extractedText.trim().length > 0,
+    hasPendingPdfText,
   };
+}
+
+function inquiryPdfTextSummary(
+  inq: CandidateInquiry,
+  statusByAttachmentKey: Record<string, 'loading' | 'ready' | 'empty' | 'error'>
+): { total: number; loading: number; ready: number; empty: number; error: number } {
+  const attachments = inq.customerAttachments || [];
+  const summary = { total: attachments.length, loading: 0, ready: 0, empty: 0, error: 0 };
+  attachments.forEach((_, idx) => {
+    const status = statusByAttachmentKey[inquiryAttachmentKey(inq, idx)];
+    if (status === 'ready') summary.ready += 1;
+    else if (status === 'empty') summary.empty += 1;
+    else if (status === 'error') summary.error += 1;
+    else summary.loading += 1;
+  });
+  return summary;
 }
 
 /** Rotes Ausrufezeichen im Kreis – gleiche Logik wie „Bearbeiten nötig: seit 3+ Tagen offen“ (nicht bei freigegeben + aktiv). */
@@ -309,6 +381,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [activeView, setActiveView] = useState<DashboardView>(() => dashboardViewFromUrl());
   const [matchingQuery, setMatchingQuery] = useState<string | null>(null);
   const [matchingInquiryId, setMatchingInquiryId] = useState<string | null>(null);
+  const [pdfTextByAttachmentKey, setPdfTextByAttachmentKey] = useState<Record<string, string>>({});
+  const [pdfTextStatusByAttachmentKey, setPdfTextStatusByAttachmentKey] = useState<Record<string, 'loading' | 'ready' | 'empty' | 'error'>>({});
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
   const [candidateDocs, setCandidateDocs] = useState<CandidateDocumentsForRecruiter | null>(null);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
@@ -1032,10 +1106,37 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const inquiryAnalysisById = useMemo(() => {
     const m = new Map<string, ReturnType<typeof buildInquiryAnalysis>>();
     for (const inq of inquiries) {
-      m.set(inq.id, buildInquiryAnalysis(inq));
+      m.set(inq.id, buildInquiryAnalysis(inq, pdfTextByAttachmentKey));
     }
     return m;
-  }, [inquiries]);
+  }, [inquiries, pdfTextByAttachmentKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const jobs: Array<Promise<void>> = [];
+    for (const inq of inquiries) {
+      (inq.customerAttachments || []).forEach((attachment, idx) => {
+        const key = inquiryAttachmentKey(inq, idx);
+        if (pdfTextStatusByAttachmentKey[key] === 'loading' || pdfTextStatusByAttachmentKey[key] === 'ready' || pdfTextStatusByAttachmentKey[key] === 'empty') return;
+        setPdfTextStatusByAttachmentKey((prev) => ({ ...prev, [key]: 'loading' }));
+        const job = extractPdfText(attachment.data)
+          .then((text) => {
+            if (cancelled) return;
+            const cleanText = text.trim();
+            setPdfTextByAttachmentKey((prev) => (cleanText ? { ...prev, [key]: cleanText } : prev));
+            setPdfTextStatusByAttachmentKey((prev) => ({ ...prev, [key]: cleanText ? 'ready' : 'empty' }));
+          })
+          .catch((error) => {
+            console.warn('[RecruiterDashboard] PDF text extraction failed', attachment.name, error);
+            if (!cancelled) setPdfTextStatusByAttachmentKey((prev) => ({ ...prev, [key]: 'error' }));
+          });
+        jobs.push(job);
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [inquiries, pdfTextStatusByAttachmentKey]);
 
   const matchingRankedResults = useMemo(() => {
     if (!matchingQuery?.trim()) return [];
@@ -1094,18 +1195,25 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   );
 
   const activeInquiryAnalysis = useMemo(
-    () => (activeMatchingFromInquiry ? inquiryAnalysisById.get(activeMatchingFromInquiry.id) || buildInquiryAnalysis(activeMatchingFromInquiry) : null),
-    [activeMatchingFromInquiry, inquiryAnalysisById]
+    () => (activeMatchingFromInquiry ? inquiryAnalysisById.get(activeMatchingFromInquiry.id) || buildInquiryAnalysis(activeMatchingFromInquiry, pdfTextByAttachmentKey) : null),
+    [activeMatchingFromInquiry, inquiryAnalysisById, pdfTextByAttachmentKey]
   );
 
   const applyInquiryToMatching = useCallback(
     (inq: CandidateInquiry) => {
-      const q = (inquiryAnalysisById.get(inq.id)?.query || buildInquiryAnalysis(inq).query).trim();
+      const q = (inquiryAnalysisById.get(inq.id)?.query || buildInquiryAnalysis(inq, pdfTextByAttachmentKey).query).trim();
       setMatchingInquiryId(inq.id);
       setMatchingQuery(q || null);
     },
-    [inquiryAnalysisById]
+    [inquiryAnalysisById, pdfTextByAttachmentKey]
   );
+
+  useEffect(() => {
+    if (activeView !== 'matching') return;
+    if (!activeMatchingFromInquiry) return;
+    const q = activeInquiryAnalysis?.query?.trim() || '';
+    setMatchingQuery(q || null);
+  }, [activeView, activeMatchingFromInquiry, activeInquiryAnalysis?.query]);
 
   const openInquiryInMatching = useCallback(
     (inq: CandidateInquiry) => {
@@ -2114,8 +2222,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       const created = new Date(inq.createdAt);
                       const initials = contactInitialsFromName(inq.contactName);
                       const inquiryDetailRows = parseMarketplaceInquiryDetails(inq.message);
-                      const inquiryAnalysis = inquiryAnalysisById.get(inq.id) || buildInquiryAnalysis(inq);
+                      const inquiryAnalysis = inquiryAnalysisById.get(inq.id) || buildInquiryAnalysis(inq, pdfTextByAttachmentKey);
                       const inquiryMatchingQuery = inquiryAnalysis.query.trim();
+                      const pdfTextSummary = inquiryPdfTextSummary(inq, pdfTextStatusByAttachmentKey);
                       const matchInfo = inquiryMatchById.get(inq.id);
                       return (
                         <li key={inq.id}>
@@ -2190,7 +2299,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                       </p>
                                       {inquiryAnalysis.attachmentNames.length > 0 ? (
                                         <p className="mb-2 text-[11px] font-semibold text-violet-800">
-                                          PDF-Quelle: {inquiryAnalysis.hasPdfText ? 'Text wurde mit ausgewertet' : 'Dateinamen wurden mit ausgewertet'}
+                                          PDF-Quelle:{' '}
+                                          {pdfTextSummary.loading > 0
+                                            ? 'Text wird gerade gelesen'
+                                            : inquiryAnalysis.hasPdfText
+                                              ? 'Text wurde mit ausgewertet'
+                                              : 'Kein lesbarer Text gefunden'}
                                         </p>
                                       ) : null}
                                       {matchInfo.ranked.length === 0 ? (
@@ -2804,7 +2918,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     <div className="mt-4 grid grid-cols-1 gap-2 lg:grid-cols-2">
                       {selectableInquiryMatches.map((inq) => {
                         const details = parseMarketplaceInquiryDetails(inq.message);
-                        const analysis = inquiryAnalysisById.get(inq.id) || buildInquiryAnalysis(inq);
+                        const analysis = inquiryAnalysisById.get(inq.id) || buildInquiryAnalysis(inq, pdfTextByAttachmentKey);
+                        const pdfTextSummary = inquiryPdfTextSummary(inq, pdfTextStatusByAttachmentKey);
                         const summary =
                           details?.find((row) => row.label === 'Suchprofil')?.value ||
                           details?.find((row) => row.label === 'Position (Kunde)')?.value ||
@@ -2834,7 +2949,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             <p className="mt-2 line-clamp-3 text-[12px] text-slate-700">{summary}</p>
                             {analysis.attachmentNames.length > 0 ? (
                               <p className="mt-2 text-[11px] font-semibold text-violet-700">
-                                {analysis.hasPdfText ? 'PDF-Text analysiert' : 'PDF-Dateiname analysiert'} · {analysis.attachmentNames.slice(0, 2).join(', ')}
+                                {pdfTextSummary.loading > 0
+                                  ? 'PDF wird gelesen'
+                                  : analysis.hasPdfText
+                                    ? 'PDF-Text analysiert'
+                                    : 'PDF ohne lesbaren Text'}{' '}
+                                · {analysis.attachmentNames.slice(0, 2).join(', ')}
                               </p>
                             ) : null}
                           </button>
@@ -2858,9 +2978,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           Kunden-PDFs in der Analyse
                         </p>
                         <p className="mt-1 text-xs font-semibold text-slate-700">
-                          {activeInquiryAnalysis.hasPdfText
-                            ? 'Der lesbare PDF-Text wurde als Matching-Quelle verwendet.'
-                            : 'Der Browser konnte keinen lesbaren PDF-Text extrahieren; die Dateinamen wurden als Signal verwendet.'}
+                          {activeMatchingFromInquiry && inquiryPdfTextSummary(activeMatchingFromInquiry, pdfTextStatusByAttachmentKey).loading > 0
+                            ? 'Die PDF wird gerade gelesen. Die Treffer aktualisieren sich automatisch, sobald der Text extrahiert wurde.'
+                            : activeInquiryAnalysis.hasPdfText
+                              ? 'Der PDF-Text wurde gelesen und zusammen mit den ausgefüllten Feldern als Matching-Quelle verwendet.'
+                              : 'In dieser PDF wurde kein maschinenlesbarer Text gefunden. Bei gescannten PDFs ist OCR nötig.'}
                         </p>
                         <p className="mt-1 text-xs text-slate-500">{activeInquiryAnalysis.attachmentNames.join(' · ')}</p>
                       </div>
