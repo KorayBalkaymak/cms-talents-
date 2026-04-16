@@ -11,6 +11,8 @@ import RecruiterDashboard from './pages/RecruiterDashboard';
 import VerifyEmail from './pages/VerifyEmail';
 import { Toast, Button } from './components/UI';
 
+const RECRUITER_CANDIDATES_CACHE_KEY = 'cms_talents_recruiter_candidates_snapshot';
+
 const resolveInitialPath = () => {
   if (window.location.pathname === '/verify-email') {
     return '/verify-email';
@@ -55,6 +57,24 @@ const RoutePending: React.FC = () => (
   </div>
 );
 
+function readRecruiterCandidatesCache(): CandidateProfile[] {
+  try {
+    const raw = window.localStorage.getItem(RECRUITER_CANDIDATES_CACHE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeRecruiterCandidatesCache(list: CandidateProfile[]): void {
+  try {
+    window.localStorage.setItem(RECRUITER_CANDIDATES_CACHE_KEY, JSON.stringify(list.slice(0, 500)));
+  } catch {
+    // Cache ist nur fuer Sofortanzeige; Fehler ignorieren.
+  }
+}
+
 async function loadPublicCandidatesWithRetry(): Promise<CandidateProfile[]> {
   let lastList: CandidateProfile[] = [];
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -94,6 +114,8 @@ const App: React.FC = () => {
       await authService.ensureInit();
 
       const initialUser = authService.getCurrentUser();
+      const isInitialRecruiter =
+        !!initialUser && (initialUser.role === UserRole.RECRUITER || initialUser.role === UserRole.ADMIN);
 
       // If we have a user, validate against Supabase and get profile data.
       if (initialUser) {
@@ -118,13 +140,20 @@ const App: React.FC = () => {
         }
       }
 
+      if (isInitialRecruiter) {
+        const cached = readRecruiterCandidatesCache();
+        if (cached.length > 0) setAllCandidates(cached);
+      }
+
       // Show UI immediately; load public candidate list in the background.
       setIsLoading(false);
       const loadInitialCandidates = async () => {
         try {
-          if (initialUser && (initialUser.role === UserRole.RECRUITER || initialUser.role === UserRole.ADMIN)) {
-            setIsRecruiterCandidatesLoading(true);
+          if (isInitialRecruiter) {
+            const hasCachedCandidates = readRecruiterCandidatesCache().length > 0;
+            setIsRecruiterCandidatesLoading(!hasCachedCandidates);
             const list = await loadRecruiterCandidatesWithRetry();
+            writeRecruiterCandidatesCache(list);
             setAllCandidates(list);
           } else {
             setIsMarketplaceLoading(true);
@@ -205,7 +234,10 @@ const App: React.FC = () => {
     const tick = async () => {
       try {
         const list = await loadRecruiterCandidatesWithRetry();
-        if (!cancelled) setAllCandidates(list);
+        if (!cancelled) {
+          writeRecruiterCandidatesCache(list);
+          setAllCandidates(list);
+        }
       } catch {
         // ignore transient errors
       }
@@ -278,6 +310,7 @@ const App: React.FC = () => {
       setIsRecruiterCandidatesLoading(true);
       try {
         const list = await loadRecruiterCandidatesWithRetry();
+        writeRecruiterCandidatesCache(list);
         setAllCandidates(list);
       } finally {
         setIsRecruiterCandidatesLoading(false);
@@ -322,6 +355,7 @@ const App: React.FC = () => {
   ) => {
     await candidateService.adminAction(userId, action, newStatus, performerId || user?.id);
     const list = await loadRecruiterCandidatesWithRetry();
+    writeRecruiterCandidatesCache(list);
     setAllCandidates(list);
     showToast(
       action === 'delete'
@@ -338,6 +372,7 @@ const App: React.FC = () => {
 
   const refreshCandidatesForRecruiter = async () => {
     const list = await loadRecruiterCandidatesWithRetry();
+    writeRecruiterCandidatesCache(list);
     setAllCandidates(list);
   };
 
