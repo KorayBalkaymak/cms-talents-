@@ -236,6 +236,8 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const [generalInquiryLoading, setGeneralInquiryLoading] = useState(false);
   const [generalInquiryError, setGeneralInquiryError] = useState('');
   const [generalInquirySuccess, setGeneralInquirySuccess] = useState('');
+  const [generalInquiryCustomerPdfs, setGeneralInquiryCustomerPdfs] = useState<{ name: string; data: string }[]>([]);
+  const [generalInquiryPdfError, setGeneralInquiryPdfError] = useState('');
   const candidateModalBodyRef = useRef<HTMLDivElement>(null);
 
   // PDF in Modal mit iframe anzeigen (zuverlässig, keine weiße Seite)
@@ -308,6 +310,24 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
       if (result.data && result.name) next.push({ name: result.name, data: result.data });
     }
     setInquiryCustomerPdfs(next);
+  };
+
+  const handleGeneralInquiryCustomerPdfs = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const remaining = MAX_INQUIRY_CUSTOMER_PDFS - generalInquiryCustomerPdfs.length;
+    if (remaining <= 0) return;
+    setGeneralInquiryPdfError('');
+    const toAdd = Math.min(files.length, remaining);
+    const next = [...generalInquiryCustomerPdfs];
+    for (let i = 0; i < toAdd; i += 1) {
+      const result = await documentService.uploadPdf(files[i]);
+      if (!result.success) {
+        setGeneralInquiryPdfError(result.error || 'PDF konnte nicht verarbeitet werden.');
+        break;
+      }
+      if (result.data && result.name) next.push({ name: result.name, data: result.data });
+    }
+    setGeneralInquiryCustomerPdfs(next);
   };
 
   const selectedCandidateCodeName = useMemo(
@@ -482,6 +502,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
         contactEmail: email,
         contactPhone: generalInquiryForm.contactPhone.trim(),
         message: structuredMessage,
+        customerAttachments: generalInquiryCustomerPdfs.length ? generalInquiryCustomerPdfs : undefined,
       });
       setGeneralInquirySuccess('Vielen Dank. Ihre Anfrage wurde an das Recruiter-Team gesendet.');
       setGeneralInquiryForm({
@@ -496,6 +517,8 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
         contactPhone: '',
         searchProfile: '',
       });
+      setGeneralInquiryCustomerPdfs([]);
+      setGeneralInquiryPdfError('');
     } catch (e: any) {
       setGeneralInquiryError(e?.message || 'Anfrage konnte nicht gesendet werden.');
     } finally {
@@ -691,6 +714,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               onClick={() => {
                 setGeneralInquiryError('');
                 setGeneralInquirySuccess('');
+                setGeneralInquiryPdfError('');
                 setShowGeneralInquiryModal(true);
               }}
             >
@@ -843,6 +867,8 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
             setShowGeneralInquiryModal(false);
             setGeneralInquiryError('');
             setGeneralInquirySuccess('');
+            setGeneralInquiryPdfError('');
+            setGeneralInquiryCustomerPdfs([]);
           }
         }}
         title="Suchprofil an den Recruiter senden"
@@ -917,6 +943,20 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
             rows={5}
             className="min-h-[120px] w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
           />
+          <div className="rounded-xl border border-dashed border-orange-300/60 bg-orange-50/40 p-3 sm:p-4">
+            <FileUpload
+              label="PDF-Unterlagen (optional)"
+              accept="application/pdf"
+              multiple
+              onChange={handleGeneralInquiryCustomerPdfs}
+              files={generalInquiryCustomerPdfs}
+              onRemove={(idx) =>
+                setGeneralInquiryCustomerPdfs((prev) => prev.filter((_, i) => i !== idx))
+              }
+              helperText={`Bis zu ${MAX_INQUIRY_CUSTOMER_PDFS} PDFs, je max. 10 MB. Noch ${Math.max(0, MAX_INQUIRY_CUSTOMER_PDFS - generalInquiryCustomerPdfs.length)} möglich.`}
+              error={generalInquiryPdfError || undefined}
+            />
+          </div>
           {generalInquiryError && <p className="text-xs font-bold text-red-600">{generalInquiryError}</p>}
           {generalInquirySuccess && <p className="text-xs font-bold text-emerald-700">{generalInquirySuccess}</p>}
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -928,6 +968,8 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
                 setShowGeneralInquiryModal(false);
                 setGeneralInquiryError('');
                 setGeneralInquirySuccess('');
+                setGeneralInquiryCustomerPdfs([]);
+                setGeneralInquiryPdfError('');
               }}
             >
               Schließen
