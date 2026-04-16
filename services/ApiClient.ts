@@ -2723,7 +2723,9 @@ class ApiClient {
       edited_cv_pdf: null,
       edited_certificates: [],
       edited_qualifications: [],
-      is_published: !!input.isPublished,
+      // Recruiter-added candidates must start in the internal Talents workflow.
+      // Publishing is a separate explicit action after edited marketplace docs are saved.
+      is_published: false,
       created_at: now,
       updated_at: now,
     };
