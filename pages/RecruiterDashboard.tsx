@@ -202,28 +202,89 @@ function parseMarketplaceInquiryDetails(message: string | undefined): { label: s
   return fromLines.length >= 2 ? fromLines : null;
 }
 
-/** Suchstring aus Marktplatz-Anfrage (Suchprofil, Position, … oder Freitext) für Abgleich mit Talent-Profilen. */
-function buildInquiryMatchingQuery(inq: CandidateInquiry): string {
+function uniqueNonEmpty(parts: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const part of parts) {
+    const value = part.replace(/\s+/g, ' ').trim();
+    if (!value) continue;
+    const key = value.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(value);
+  }
+  return out;
+}
+
+function extractReadablePdfText(dataUrl: string | undefined): string {
+  if (!dataUrl || typeof window === 'undefined' || typeof window.atob !== 'function') return '';
+  const comma = dataUrl.indexOf(',');
+  const base64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+  if (!base64 || base64.length > 2_500_000) return '';
+  try {
+    const binary = window.atob(base64);
+    const chunks = binary
+      .replace(/\0/g, ' ')
+      .match(/[A-Za-zÀ-ž0-9][A-Za-zÀ-ž0-9\s.,;:+#&/@()_-]{2,}/g);
+    if (!chunks) return '';
+    return uniqueNonEmpty(
+      chunks
+        .map((chunk) => chunk.replace(/\\([()\\])/g, '$1').replace(/\s+/g, ' ').trim())
+        .filter((chunk) => {
+          const lower = chunk.toLowerCase();
+          if (chunk.length < 3 || chunk.length > 160) return false;
+          if (/^(obj|endobj|stream|endstream|xref|trailer|startxref|filter|length|type|page|font)$/i.test(chunk)) return false;
+          if (lower.includes('flatedecode') || lower.includes('adobe') || lower.includes('pdf')) return false;
+          return /[a-zÀ-ž]{3,}/i.test(chunk);
+        })
+    )
+      .slice(0, 80)
+      .join(' ');
+  } catch {
+    return '';
+  }
+}
+
+function buildInquiryAttachmentText(inq: CandidateInquiry): { names: string[]; extractedText: string } {
+  const attachments = inq.customerAttachments || [];
+  const names = uniqueNonEmpty(attachments.map((a) => a.name || ''));
+  const extractedText = uniqueNonEmpty(attachments.map((a) => extractReadablePdfText(a.data))).join(' ').slice(0, 12000);
+  return { names, extractedText };
+}
+
+function buildInquiryAnalysis(inq: CandidateInquiry): {
+  query: string;
+  sourcePreview: string;
+  attachmentNames: string[];
+  hasPdfText: boolean;
+} {
   const raw = (inq.message || '').trim();
-  if (!raw) return '';
   const rows = parseMarketplaceInquiryDetails(raw);
+  const priority = ['Suchprofil', 'Position (Kunde)', 'Projektstandort', 'Projektlaufzeit', 'Budget (EUR)', 'Firma'];
+  const structuredParts: string[] = [];
   if (rows && rows.length > 0) {
-    const priority = ['Suchprofil', 'Position (Kunde)', 'Projektstandort', 'Projektlaufzeit', 'Budget (EUR)', 'Firma'];
     const byLabel = new Map(rows.map((r) => [r.label, r.value]));
-    const parts: string[] = [];
     for (const label of priority) {
       const v = byLabel.get(label)?.trim();
-      if (v) parts.push(v);
+      if (v) structuredParts.push(v);
     }
     for (const r of rows) {
-      if (!priority.includes(r.label)) {
-        const v = r.value?.trim();
-        if (v) parts.push(v);
-      }
+      if (!priority.includes(r.label) && r.value?.trim()) structuredParts.push(r.value);
     }
-    return [...new Set(parts)].join(' ');
+  } else if (raw) {
+    structuredParts.push(raw);
   }
-  return raw;
+
+  const { names, extractedText } = buildInquiryAttachmentText(inq);
+  const attachmentKeywords = names.map((name) => name.replace(/\.[a-z0-9]{2,5}$/i, '').replace(/[_-]+/g, ' '));
+  const query = uniqueNonEmpty([...structuredParts, extractedText, ...attachmentKeywords]).join(' ');
+  const sourcePreview = uniqueNonEmpty([...structuredParts, extractedText ? `PDF-Text: ${extractedText}` : '', ...attachmentKeywords]).join(' ');
+  return {
+    query,
+    sourcePreview,
+    attachmentNames: names,
+    hasPdfText: extractedText.trim().length > 0,
+  };
 }
 
 /** Rotes Ausrufezeichen im Kreis – gleiche Logik wie „Bearbeiten nötig: seit 3+ Tagen offen“ (nicht bei freigegeben + aktiv). */
@@ -246,7 +307,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [searchTerm, setSearchTerm] = useState('');
   const [onlyStaleUnedited, setOnlyStaleUnedited] = useState(false);
   const [activeView, setActiveView] = useState<DashboardView>(() => dashboardViewFromUrl());
-  const [matchingRoleBrief, setMatchingRoleBrief] = useState('');
   const [matchingQuery, setMatchingQuery] = useState<string | null>(null);
   const [matchingInquiryId, setMatchingInquiryId] = useState<string | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
@@ -422,7 +482,6 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
   const openMatchingView = useCallback(() => {
     setMatchingInquiryId(null);
-    setMatchingRoleBrief('');
     setMatchingQuery(null);
     openDashboardView('matching');
   }, [openDashboardView]);
@@ -970,11 +1029,13 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     );
   }, [dashboardUsers, deferredSearchTerm]);
 
-  const runMatchingSearch = useCallback(() => {
-    const q = matchingRoleBrief.trim();
-    setMatchingInquiryId(null);
-    setMatchingQuery(q.length ? q : null);
-  }, [matchingRoleBrief]);
+  const inquiryAnalysisById = useMemo(() => {
+    const m = new Map<string, ReturnType<typeof buildInquiryAnalysis>>();
+    for (const inq of inquiries) {
+      m.set(inq.id, buildInquiryAnalysis(inq));
+    }
+    return m;
+  }, [inquiries]);
 
   const matchingRankedResults = useMemo(() => {
     if (!matchingQuery?.trim()) return [];
@@ -1005,7 +1066,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const inquiryMatchById = useMemo(() => {
     const m = new Map<string, { query: string; ranked: MatchResult[] }>();
     for (const inq of inquiries) {
-      const q = buildInquiryMatchingQuery(inq);
+      const q = inquiryAnalysisById.get(inq.id)?.query || '';
       if (!q.trim()) continue;
       let ranked = rankCandidates(visibleCandidates, q).filter((r) => r.score > 0);
       if (inq.candidateUserId) {
@@ -1014,17 +1075,17 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       m.set(inq.id, { query: q, ranked: ranked.slice(0, 10) });
     }
     return m;
-  }, [inquiries, visibleCandidates]);
+  }, [inquiries, inquiryAnalysisById, visibleCandidates]);
 
   const selectableInquiryMatches = useMemo(
     () =>
       inquiries
         .filter((inq) => {
-          const q = buildInquiryMatchingQuery(inq);
+          const q = inquiryAnalysisById.get(inq.id)?.query || '';
           return q.trim().length > 0;
         })
         .slice(0, 12),
-    [inquiries]
+    [inquiries, inquiryAnalysisById]
   );
 
   const activeMatchingFromInquiry = useMemo(
@@ -1032,12 +1093,19 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     [matchingInquiryId, inquiries]
   );
 
-  const applyInquiryToMatching = useCallback((inq: CandidateInquiry) => {
-    const q = buildInquiryMatchingQuery(inq).trim();
-    setMatchingInquiryId(inq.id);
-    setMatchingRoleBrief(q);
-    setMatchingQuery(q || null);
-  }, []);
+  const activeInquiryAnalysis = useMemo(
+    () => (activeMatchingFromInquiry ? inquiryAnalysisById.get(activeMatchingFromInquiry.id) || buildInquiryAnalysis(activeMatchingFromInquiry) : null),
+    [activeMatchingFromInquiry, inquiryAnalysisById]
+  );
+
+  const applyInquiryToMatching = useCallback(
+    (inq: CandidateInquiry) => {
+      const q = (inquiryAnalysisById.get(inq.id)?.query || buildInquiryAnalysis(inq).query).trim();
+      setMatchingInquiryId(inq.id);
+      setMatchingQuery(q || null);
+    },
+    [inquiryAnalysisById]
+  );
 
   const openInquiryInMatching = useCallback(
     (inq: CandidateInquiry) => {
@@ -1046,6 +1114,14 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     },
     [applyInquiryToMatching, openDashboardView]
   );
+
+  useEffect(() => {
+    if (activeView !== 'matching') return;
+    if (matchingInquiryId) return;
+    const first = selectableInquiryMatches[0];
+    if (!first) return;
+    applyInquiryToMatching(first);
+  }, [activeView, matchingInquiryId, selectableInquiryMatches, applyInquiryToMatching]);
 
   const filteredCandidateSubmittedCount = useMemo(
     () =>
@@ -2038,7 +2114,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       const created = new Date(inq.createdAt);
                       const initials = contactInitialsFromName(inq.contactName);
                       const inquiryDetailRows = parseMarketplaceInquiryDetails(inq.message);
-                      const inquiryMatchingQuery = buildInquiryMatchingQuery(inq).trim();
+                      const inquiryAnalysis = inquiryAnalysisById.get(inq.id) || buildInquiryAnalysis(inq);
+                      const inquiryMatchingQuery = inquiryAnalysis.query.trim();
                       const matchInfo = inquiryMatchById.get(inq.id);
                       return (
                         <li key={inq.id}>
@@ -2111,6 +2188,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                       <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-900/80">
                                         Passende Kandidaten zur Anfrage
                                       </p>
+                                      {inquiryAnalysis.attachmentNames.length > 0 ? (
+                                        <p className="mb-2 text-[11px] font-semibold text-violet-800">
+                                          PDF-Quelle: {inquiryAnalysis.hasPdfText ? 'Text wurde mit ausgewertet' : 'Dateinamen wurden mit ausgewertet'}
+                                        </p>
+                                      ) : null}
                                       {matchInfo.ranked.length === 0 ? (
                                         <p className="text-xs font-medium leading-relaxed text-slate-600">
                                           Keine automatischen Treffer im sichtbaren Talent-Pool – Begriffe in der Anfrage prüfen oder unter Talents manuell suchen.
@@ -2722,10 +2804,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     <div className="mt-4 grid grid-cols-1 gap-2 lg:grid-cols-2">
                       {selectableInquiryMatches.map((inq) => {
                         const details = parseMarketplaceInquiryDetails(inq.message);
+                        const analysis = inquiryAnalysisById.get(inq.id) || buildInquiryAnalysis(inq);
                         const summary =
                           details?.find((row) => row.label === 'Suchprofil')?.value ||
                           details?.find((row) => row.label === 'Position (Kunde)')?.value ||
-                          buildInquiryMatchingQuery(inq);
+                          analysis.sourcePreview ||
+                          analysis.query;
                         const isActive = inq.id === matchingInquiryId;
                         return (
                           <button
@@ -2748,6 +2832,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               {isActive ? <Badge variant="slate">Aktiv</Badge> : null}
                             </div>
                             <p className="mt-2 line-clamp-3 text-[12px] text-slate-700">{summary}</p>
+                            {analysis.attachmentNames.length > 0 ? (
+                              <p className="mt-2 text-[11px] font-semibold text-violet-700">
+                                {analysis.hasPdfText ? 'PDF-Text analysiert' : 'PDF-Dateiname analysiert'} · {analysis.attachmentNames.slice(0, 2).join(', ')}
+                              </p>
+                            ) : null}
                           </button>
                         );
                       })}
@@ -2761,8 +2850,21 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       Anfrage von {activeMatchingFromInquiry.contactName}
                     </p>
                     <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                      {matchingQuery?.trim() || 'Keine auswertbaren Projektdetails in der Anfrage gefunden.'}
+                      {activeInquiryAnalysis?.sourcePreview || matchingQuery?.trim() || 'Keine auswertbaren Projektdetails in der Anfrage gefunden.'}
                     </p>
+                    {activeInquiryAnalysis?.attachmentNames.length ? (
+                      <div className="mt-3 rounded-xl border border-violet-100 bg-white px-3 py-2">
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-violet-700">
+                          Kunden-PDFs in der Analyse
+                        </p>
+                        <p className="mt-1 text-xs font-semibold text-slate-700">
+                          {activeInquiryAnalysis.hasPdfText
+                            ? 'Der lesbare PDF-Text wurde als Matching-Quelle verwendet.'
+                            : 'Der Browser konnte keinen lesbaren PDF-Text extrahieren; die Dateinamen wurden als Signal verwendet.'}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">{activeInquiryAnalysis.attachmentNames.join(' · ')}</p>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
               </div>

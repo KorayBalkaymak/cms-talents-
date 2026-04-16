@@ -1,6 +1,44 @@
 import React from 'react';
 import { CandidateProfile, MatchResult } from '../types';
 
+const STOP_WORDS = new Set([
+  'aber',
+  'alle',
+  'als',
+  'am',
+  'an',
+  'auch',
+  'auf',
+  'aus',
+  'bei',
+  'bis',
+  'das',
+  'dem',
+  'den',
+  'der',
+  'des',
+  'die',
+  'ein',
+  'eine',
+  'einem',
+  'einen',
+  'einer',
+  'fuer',
+  'für',
+  'im',
+  'in',
+  'ist',
+  'mit',
+  'nach',
+  'oder',
+  'und',
+  'von',
+  'wir',
+  'zu',
+  'zum',
+  'zur',
+]);
+
 export const normalize = (text: string) =>
   text
     .toLowerCase()
@@ -15,7 +53,7 @@ function queryTerms(query: string): string[] {
   return unique(
     normalize(query)
       .split(/\s+/)
-      .filter((term) => term.length >= 2)
+      .filter((term) => term.length >= 2 && !STOP_WORDS.has(term))
   );
 }
 
@@ -32,9 +70,33 @@ function candidateHaystack(candidate: CandidateProfile): string[] {
     candidate.availability || '',
     candidate.languages || '',
     candidate.about || '',
+    candidate.candidateNumber || '',
+    ...(candidate.documents || []).map((doc) => doc.name || ''),
     ...(candidate.skills || []),
     ...(candidate.boostedKeywords || []),
   ];
+}
+
+function extractRequiredExperienceYears(query: string): number | null {
+  const normalized = normalize(query);
+  const patterns = [
+    /(?:mindestens|min\.?|minimum|ab)\s+(\d{1,2})\s*(?:jahre|jahr|j\.|yoe)/i,
+    /(\d{1,2})\s*\+?\s*(?:jahre|jahr|j\.|yoe)\s*(?:erfahrung|experience)?/i,
+  ];
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    if (!match?.[1]) continue;
+    const years = Number(match[1]);
+    if (Number.isFinite(years) && years >= 0) return years;
+  }
+  return null;
+}
+
+function extractQuotedOrLongPhrases(query: string): string[] {
+  const normalized = normalize(query);
+  const quoted = Array.from(normalized.matchAll(/"([^"]{4,80})"/g)).map((m) => m[1]);
+  const separators = normalized.split(/\s*(?:,|;|\n|\||\/)\s*/).filter((p) => p.length >= 4 && p.length <= 80);
+  return unique([...quoted, ...separators]).filter((phrase) => queryTerms(phrase).length >= 1);
 }
 
 function buildMatchReasons(candidate: CandidateProfile, terms: string[]): string[] {
@@ -88,6 +150,8 @@ export const calculateMatchScore = (candidate: CandidateProfile, query: string):
   if (!query) return 0;
 
   const terms = queryTerms(query);
+  const phrases = extractQuotedOrLongPhrases(query);
+  const requiredExperience = extractRequiredExperienceYears(query);
   let score = 0;
 
   terms.forEach((term) => {
@@ -99,11 +163,28 @@ export const calculateMatchScore = (candidate: CandidateProfile, query: string):
     if (includesTerm(candidate.city, term) || includesTerm(candidate.country, term)) score += 2;
     if (includesTerm(candidate.availability, term)) score += 2;
     if (includesTerm(candidate.about, term)) score += 1;
+    if ((candidate.documents || []).some((doc) => includesTerm(doc.name, term))) score += 1;
   });
 
   const normalizedQuery = normalize(query);
-  if (normalizedQuery && candidateHaystack(candidate).some((value) => normalize(value).includes(normalizedQuery))) {
+  const haystack = candidateHaystack(candidate);
+  if (normalizedQuery && haystack.some((value) => normalize(value).includes(normalizedQuery))) {
     score += 3;
+  }
+
+  phrases.forEach((phrase) => {
+    if ((candidate.skills || []).some((s) => normalize(s) === phrase || normalize(s).includes(phrase))) score += 5;
+    if (includesTerm(candidate.profession, phrase)) score += 5;
+    if (includesTerm(candidate.industry, phrase)) score += 4;
+    if (includesTerm(candidate.about, phrase)) score += 2;
+  });
+
+  if (requiredExperience !== null) {
+    if (candidate.experienceYears >= requiredExperience) {
+      score += Math.min(8, 2 + candidate.experienceYears - requiredExperience);
+    } else if (score > 0) {
+      score = Math.max(0, score - 4);
+    }
   }
 
   return score;
