@@ -945,7 +945,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
           />
           <div className="rounded-xl border border-dashed border-orange-300/60 bg-orange-50/40 p-3 sm:p-4">
             <FileUpload
-              label="PDF-Unterlagen (optional)"
+              label="Positionsbeschreibung hochladen (PDF, optional)"
               accept="application/pdf"
               multiple
               onChange={handleGeneralInquiryCustomerPdfs}
@@ -953,7 +953,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               onRemove={(idx) =>
                 setGeneralInquiryCustomerPdfs((prev) => prev.filter((_, i) => i !== idx))
               }
-              helperText={`Bis zu ${MAX_INQUIRY_CUSTOMER_PDFS} PDFs, je max. 10 MB. Noch ${Math.max(0, MAX_INQUIRY_CUSTOMER_PDFS - generalInquiryCustomerPdfs.length)} möglich.`}
+              helperText={`Laden Sie Ihre Positionsbeschreibung oder Projektbeschreibung hoch. Bis zu ${MAX_INQUIRY_CUSTOMER_PDFS} PDFs, je max. 10 MB. Noch ${Math.max(0, MAX_INQUIRY_CUSTOMER_PDFS - generalInquiryCustomerPdfs.length)} möglich.`}
               error={generalInquiryPdfError || undefined}
             />
           </div>
