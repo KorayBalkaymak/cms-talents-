@@ -177,6 +177,7 @@ class CandidateService {
     workArea?: string | null;
     about?: string;
     languages?: string;
+    drivingLicenses?: string[];
     skills?: string[];
     boostedKeywords?: string[];
     cvPdf?: { name: string; data: string };

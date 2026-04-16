@@ -119,6 +119,7 @@ type ExternalCandidateRow = {
   salary_wish_eur: number | null;
   about: string | null;
   languages?: string | null;
+  driving_licenses?: string[] | null;
   skills: string[] | null;
   boosted_keywords: string[] | null;
   cv_pdf: { name: string; data: string } | null;
@@ -387,6 +388,7 @@ class ApiClient {
       workArea: row.work_area ?? null,
       about: row.about || undefined,
       languages: row.languages?.trim() || null,
+      drivingLicenses: Array.isArray(row.driving_licenses) ? row.driving_licenses.filter(Boolean) : [],
       skills: row.skills || [],
       boostedKeywords: row.boosted_keywords || [],
       socialLinks: [],
@@ -2700,6 +2702,7 @@ class ApiClient {
     workArea?: string | null;
     about?: string;
     languages?: string;
+    drivingLicenses?: string[];
     skills?: string[];
     boostedKeywords?: string[];
     cvPdf?: { name: string; data: string };
@@ -2729,6 +2732,7 @@ class ApiClient {
       work_area: input.workArea?.trim() || null,
       about: input.about?.trim() || null,
       languages: input.languages?.trim() || null,
+      driving_licenses: (input.drivingLicenses || []).filter(Boolean),
       skills: (input.skills || []).filter(Boolean),
       boosted_keywords: (input.boostedKeywords || []).filter(Boolean),
       cv_pdf: input.cvPdf || null,
@@ -2760,6 +2764,7 @@ class ApiClient {
       work_area: row.work_area,
       about: row.about,
       languages: row.languages,
+      driving_licenses: row.driving_licenses,
       skills: row.skills,
       boosted_keywords: row.boosted_keywords,
       cv_pdf: row.cv_pdf,
@@ -2792,6 +2797,15 @@ class ApiClient {
         return this.externalRowToCandidate(row);
       }
       insertError = retryWork.error;
+    }
+    if (insertError && isDrivingLicensesColumnMissing(insertError.message)) {
+      const { driving_licenses: _dropDrivingLicenses, ...payloadWithoutDrivingLicenses } = insertPayload;
+      insertPayload = payloadWithoutDrivingLicenses;
+      const retryDriving = await supabase.from('external_candidates').insert(insertPayload);
+      if (!retryDriving.error) {
+        return this.externalRowToCandidate(row);
+      }
+      insertError = retryDriving.error;
     }
     if (insertError && isExternalEditedDocumentsSchemaMissing(insertError.message)) {
       const {

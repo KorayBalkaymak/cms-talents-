@@ -38,6 +38,27 @@ const DASHBOARD_VIEWS = new Set<DashboardView>([
   'matching',
 ]);
 
+const DRIVING_LICENSE_OPTIONS = [
+  'AM',
+  'A1',
+  'A2',
+  'A',
+  'B',
+  'BE',
+  'C1',
+  'C1E',
+  'C',
+  'CE',
+  'D1',
+  'D1E',
+  'D',
+  'DE',
+  'L',
+  'T',
+  'Staplerschein',
+  'Kranschein',
+] as const;
+
 const PDFJS_VERSION = '5.4.149';
 const PDFJS_CDN_BASE = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}`;
 
@@ -431,6 +452,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     about: '',
     languagesRaw: '',
     skillsRaw: '',
+    drivingLicenses: [] as string[],
   });
   const [externalBoostedKeywords, setExternalBoostedKeywords] = useState<string[]>([]);
   const [externalDocs, setExternalDocs] = useState<CandidateDocuments>({
@@ -1682,6 +1704,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         workArea,
         about: externalForm.about.trim() || undefined,
         languages: externalForm.languagesRaw.trim() || undefined,
+        drivingLicenses: externalForm.drivingLicenses,
         skills,
         boostedKeywords: externalBoostedKeywords,
         cvPdf: externalDocs.cvPdf,
@@ -1700,6 +1723,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         profession: '',
         languagesRaw: '',
         skillsRaw: '',
+        drivingLicenses: [],
         experienceYears: '',
         salaryWishEur: '',
         workUmkreis: WORK_UMKREIS_OPTIONS[0] || '+25',
@@ -1721,6 +1745,18 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     setExternalBoostedKeywords((prev) =>
       prev.includes(keyword) ? prev.filter((k) => k !== keyword) : [...prev, keyword]
     );
+  };
+
+  const toggleExternalDrivingLicense = (license: string) => {
+    setExternalForm((prev) => {
+      const current = prev.drivingLicenses || [];
+      return {
+        ...prev,
+        drivingLicenses: current.includes(license)
+          ? current.filter((item) => item !== license)
+          : [...current, license],
+      };
+    });
   };
 
   const handleExternalCvUpload = async (files: FileList | null) => {
@@ -2826,6 +2862,37 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   value={externalForm.about}
                   onChange={(e) => setExternalForm((p) => ({ ...p, about: e.target.value }))}
                 />
+                <div className={`rounded-xl p-3 sm:p-4 ${COPPER_PANEL}`}>
+                  <p className="text-sm font-black text-white">Führerschein (optional)</p>
+                  <p className="mt-1 text-xs font-medium text-white/60">
+                    Wähle alle Führerscheinklassen oder Berechtigungen aus, die der Kandidat besitzt.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {DRIVING_LICENSE_OPTIONS.map((license) => {
+                      const active = externalForm.drivingLicenses.includes(license);
+                      return (
+                        <button
+                          key={license}
+                          type="button"
+                          onClick={() => toggleExternalDrivingLicense(license)}
+                          className={`rounded-lg px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wide transition-colors ${
+                            active
+                              ? 'border border-orange-500/50 bg-gradient-to-b from-orange-500/25 to-orange-600/10 text-white shadow-[0_0_16px_-4px_rgba(234,88,12,0.45)] ring-1 ring-orange-400/30'
+                              : 'border border-white/[0.07] bg-white/[0.03] text-white/70 hover:border-white/15 hover:bg-white/[0.06] hover:text-white'
+                          }`}
+                          aria-pressed={active}
+                        >
+                          {license}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {externalForm.drivingLicenses.length > 0 ? (
+                    <p className="mt-3 text-xs font-semibold text-white/70">
+                      Ausgewählt: {externalForm.drivingLicenses.join(', ')}
+                    </p>
+                  ) : null}
+                </div>
                 <div className={`rounded-xl p-3 sm:p-4 ${COPPER_PANEL}`}>
                   <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.35em] text-white/40">Keywords auswählen</p>
                   <div className="space-y-3">
