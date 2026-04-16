@@ -1317,15 +1317,17 @@ class ApiClient {
       .eq('status', CandidateStatus.ACTIVE)
       .order('created_at', { ascending: false });
 
-    if (error || !data) {
-      return [];
+    let mergedBase: CandidateProfile[] = [];
+    if (!error && data) {
+      const rows = data as ProfileRow[];
+      const docs = await this.loadDocumentIndex(rows.map((row) => row.id));
+      const base = rows.map((row) => this.profileRowToCandidate(row, docs.get(row.id)));
+      const fallbackClaims = await this.readEditingClaimsFromAudit(base.map((c) => c.userId));
+      mergedBase = base.map((c) => this.mergeAuditEditingClaim(c, fallbackClaims.get(c.userId)));
+    } else {
+      console.warn('[ApiClient] Public profiles could not be loaded for marketplace:', error?.message || error);
     }
 
-    const rows = data as ProfileRow[];
-    const docs = await this.loadDocumentIndex(rows.map((row) => row.id));
-    const base = rows.map((row) => this.profileRowToCandidate(row, docs.get(row.id)));
-    const fallbackClaims = await this.readEditingClaimsFromAudit(base.map((c) => c.userId));
-    const mergedBase = base.map((c) => this.mergeAuditEditingClaim(c, fallbackClaims.get(c.userId)));
     const remoteExternal = await this.loadExternalCandidatesRemote();
     const external = (remoteExternal || this.readLocalExternalCandidates()).filter(
       (c) => c.isPublished && c.status === CandidateStatus.ACTIVE

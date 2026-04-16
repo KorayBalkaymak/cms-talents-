@@ -12,6 +12,7 @@ import { User } from '../types';
 
 interface TalentMarketplaceProps {
   candidates: CandidateProfile[];
+  isLoading?: boolean;
   selectedId?: string;
   onNavigate: (path: string) => void;
   user?: User | null;
@@ -189,7 +190,7 @@ const CandidateCard = memo(({ item, search, onSelect, codeName }: { item: MatchI
 CandidateCard.displayName = 'CandidateCard';
 
 const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
-  const { candidates, selectedId, onNavigate } = props;
+  const { candidates, isLoading = false, selectedId, onNavigate } = props;
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filterIndustry, setFilterIndustry] = useState('');
@@ -804,7 +805,14 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
             </div>
           </div>
 
-          {filteredAndRanked.length === 0 ? (
+          {isLoading && candidates.length === 0 ? (
+            <div className="flex min-h-[320px] flex-col items-center justify-center rounded-3xl border border-slate-100 bg-white text-center">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-orange-600" aria-hidden />
+              <p className="mt-4 text-sm font-black uppercase tracking-[0.18em] text-slate-500">
+                Talente werden geladen
+              </p>
+            </div>
+          ) : filteredAndRanked.length === 0 ? (
             <EmptyState
               title="Keine Talente gefunden"
               description={debouncedSearch || filterIndustry || filterExp > 0 || filterAvailability

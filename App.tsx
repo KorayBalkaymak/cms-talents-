@@ -55,6 +55,17 @@ const RoutePending: React.FC = () => (
   </div>
 );
 
+async function loadPublicCandidatesWithRetry(): Promise<CandidateProfile[]> {
+  let lastList: CandidateProfile[] = [];
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const list = await candidateService.getAll();
+    if (list.length > 0) return list;
+    lastList = list;
+    await new Promise((resolve) => window.setTimeout(resolve, 300 * (attempt + 1)));
+  }
+  return lastList;
+}
+
 async function loadRecruiterCandidatesWithRetry(): Promise<CandidateProfile[]> {
   let lastError: unknown = null;
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -75,6 +86,7 @@ const App: React.FC = () => {
   const [allCandidates, setAllCandidates] = useState<CandidateProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRecruiterCandidatesLoading, setIsRecruiterCandidatesLoading] = useState(false);
+  const [isMarketplaceLoading, setIsMarketplaceLoading] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -115,13 +127,15 @@ const App: React.FC = () => {
             const list = await loadRecruiterCandidatesWithRetry();
             setAllCandidates(list);
           } else {
-            const list = await candidateService.getAll();
+            setIsMarketplaceLoading(true);
+            const list = await loadPublicCandidatesWithRetry();
             setAllCandidates(list);
           }
         } catch {
           setAllCandidates([]);
         } finally {
           setIsRecruiterCandidatesLoading(false);
+          setIsMarketplaceLoading(false);
         }
       };
       loadInitialCandidates();
@@ -163,10 +177,22 @@ const App: React.FC = () => {
     if (!routePath.startsWith('/talents')) return;
     if (user && (user.role === UserRole.RECRUITER || user.role === UserRole.ADMIN)) return;
     const published = allCandidates.filter(c => c.isPublished && c.status === CandidateStatus.ACTIVE);
-    if (published.length === 0) {
-      candidateService.getAll().then((list) => setAllCandidates(list));
-    }
-  }, [currentPath, user]);
+    if (published.length > 0) return;
+
+    let cancelled = false;
+    setIsMarketplaceLoading(true);
+    loadPublicCandidatesWithRetry()
+      .then((list) => {
+        if (!cancelled) setAllCandidates(list);
+      })
+      .finally(() => {
+        if (!cancelled) setIsMarketplaceLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentPath, user, allCandidates.length]);
 
   // Refresh recruiter dashboard periodically so deleted records disappear quickly.
   useEffect(() => {
@@ -372,12 +398,12 @@ const App: React.FC = () => {
     }
 
     if (path === '/talents') {
-      return <TalentMarketplace candidates={allCandidates.filter(c => c.isPublished && c.status === CandidateStatus.ACTIVE)} onNavigate={navigate} user={user} />;
+      return <TalentMarketplace candidates={allCandidates.filter(c => c.isPublished && c.status === CandidateStatus.ACTIVE)} isLoading={isMarketplaceLoading} onNavigate={navigate} user={user} />;
     }
 
     if (path.startsWith('/talents/')) {
       const id = path.split('/').pop();
-      return <TalentMarketplace candidates={allCandidates.filter(c => c.isPublished && c.status === CandidateStatus.ACTIVE)} selectedId={id} onNavigate={navigate} user={user} />;
+      return <TalentMarketplace candidates={allCandidates.filter(c => c.isPublished && c.status === CandidateStatus.ACTIVE)} isLoading={isMarketplaceLoading} selectedId={id} onNavigate={navigate} user={user} />;
     }
 
     if (path.startsWith('/verify-email') || window.location.pathname === '/verify-email') {
