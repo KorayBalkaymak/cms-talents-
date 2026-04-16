@@ -26,6 +26,32 @@ import { COPPER_PANEL } from '../constants/copperTheme';
 import { supabase } from '../utils/supabase';
 import { rankCandidates } from '../services/SearchService';
 
+type DashboardView = 'talents' | 'inquiries' | 'planner' | 'external' | 'users' | 'calculator' | 'matching';
+
+const DASHBOARD_VIEWS = new Set<DashboardView>([
+  'talents',
+  'inquiries',
+  'planner',
+  'external',
+  'users',
+  'calculator',
+  'matching',
+]);
+
+function dashboardViewFromUrl(): DashboardView {
+  const hash = window.location.hash || '';
+  const queryStart = hash.indexOf('?');
+  if (queryStart < 0) return 'talents';
+  const view = new URLSearchParams(hash.slice(queryStart + 1)).get('view');
+  return view && DASHBOARD_VIEWS.has(view as DashboardView) ? (view as DashboardView) : 'talents';
+}
+
+function writeDashboardViewToUrl(view: DashboardView): void {
+  const next = `#/recruiter/dashboard?view=${view}`;
+  if (window.location.hash === next) return;
+  window.history.replaceState(null, '', next);
+}
+
 interface RecruiterDashboardProps {
   user: User;
   candidates: CandidateProfile[];
@@ -219,9 +245,7 @@ function StaleNeedsAttentionIcon({ title }: { title: string }) {
 const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidates, isInitialLoading = false, onAdminAction, onUpdateCandidate, onRefreshCandidates, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [onlyStaleUnedited, setOnlyStaleUnedited] = useState(false);
-  const [activeView, setActiveView] = useState<
-    'talents' | 'inquiries' | 'planner' | 'external' | 'users' | 'calculator' | 'matching'
-  >('talents');
+  const [activeView, setActiveView] = useState<DashboardView>(() => dashboardViewFromUrl());
   const [matchingRoleBrief, setMatchingRoleBrief] = useState('');
   const [matchingQuery, setMatchingQuery] = useState<string | null>(null);
   const [matchingInquiryId, setMatchingInquiryId] = useState<string | null>(null);
@@ -384,7 +408,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   }, [applyLoadedInquiries]);
 
   const openDashboardView = useCallback(
-    (view: 'talents' | 'inquiries' | 'planner' | 'external' | 'users' | 'calculator' | 'matching') => {
+    (view: DashboardView) => {
+      writeDashboardViewToUrl(view);
       setActiveView(view);
       if (view === 'inquiries') {
         setHasSettledInitialInquiriesLoad(false);
@@ -399,7 +424,19 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     setMatchingInquiryId(null);
     setMatchingRoleBrief('');
     setMatchingQuery(null);
-    setActiveView('matching');
+    openDashboardView('matching');
+  }, [openDashboardView]);
+
+  useEffect(() => {
+    const syncViewFromUrl = () => {
+      setActiveView(dashboardViewFromUrl());
+    };
+    window.addEventListener('hashchange', syncViewFromUrl);
+    window.addEventListener('popstate', syncViewFromUrl);
+    return () => {
+      window.removeEventListener('hashchange', syncViewFromUrl);
+      window.removeEventListener('popstate', syncViewFromUrl);
+    };
   }, []);
 
   /** Nach Auth-Hydration / Token-Refresh erneut laden (mobil: erster Fetch oft vor gültigem JWT). */
@@ -1005,9 +1042,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const openInquiryInMatching = useCallback(
     (inq: CandidateInquiry) => {
       applyInquiryToMatching(inq);
-      setActiveView('matching');
+      openDashboardView('matching');
     },
-    [applyInquiryToMatching]
+    [applyInquiryToMatching, openDashboardView]
   );
 
   const filteredCandidateSubmittedCount = useMemo(
@@ -1641,7 +1678,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           <nav className="space-y-1">
             <button
               type="button"
-              onClick={() => setActiveView('talents')}
+              onClick={() => openDashboardView('talents')}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
                 activeView === 'talents'
                   ? 'border-l-[3px] border-orange-500 bg-white/[0.07] pl-[9px] text-white ring-1 ring-white/10'
@@ -1689,7 +1726,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </button>
             <button
               type="button"
-              onClick={() => setActiveView('planner')}
+              onClick={() => openDashboardView('planner')}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
                 activeView === 'planner'
                   ? 'border-l-[3px] border-orange-500 bg-white/[0.07] pl-[9px] text-white ring-1 ring-white/10'
@@ -1705,7 +1742,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </button>
             <button
               type="button"
-              onClick={() => setActiveView('external')}
+              onClick={() => openDashboardView('external')}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
                 activeView === 'external'
                   ? 'border-l-[3px] border-orange-500 bg-white/[0.07] pl-[9px] text-white ring-1 ring-white/10'
@@ -1721,7 +1758,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </button>
             <button
               type="button"
-              onClick={() => setActiveView('users')}
+              onClick={() => openDashboardView('users')}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
                 activeView === 'users'
                   ? 'border-l-[3px] border-orange-500 bg-white/[0.07] pl-[9px] text-white ring-1 ring-white/10'
@@ -1737,7 +1774,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             </button>
             <button
               type="button"
-              onClick={() => setActiveView('calculator')}
+              onClick={() => openDashboardView('calculator')}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
                 activeView === 'calculator'
                   ? 'border-l-[3px] border-orange-500 bg-white/[0.07] pl-[9px] text-white ring-1 ring-white/10'
@@ -1804,7 +1841,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             >
               <button
                 type="button"
-                onClick={() => setActiveView('talents')}
+                onClick={() => openDashboardView('talents')}
                 className={`inline-flex shrink-0 min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'talents'
                     ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
@@ -1839,7 +1876,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               </button>
               <button
                 type="button"
-                onClick={() => setActiveView('planner')}
+                onClick={() => openDashboardView('planner')}
                 className={`inline-flex shrink-0 min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'planner'
                     ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
@@ -1850,7 +1887,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               </button>
               <button
                 type="button"
-                onClick={() => setActiveView('external')}
+                onClick={() => openDashboardView('external')}
                 className={`inline-flex shrink-0 min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'external'
                     ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
@@ -1862,7 +1899,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               </button>
               <button
                 type="button"
-                onClick={() => setActiveView('users')}
+                onClick={() => openDashboardView('users')}
                 className={`inline-flex shrink-0 min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'users'
                     ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
@@ -1873,7 +1910,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               </button>
               <button
                 type="button"
-                onClick={() => setActiveView('calculator')}
+                onClick={() => openDashboardView('calculator')}
                 className={`inline-flex shrink-0 min-h-[2rem] items-center justify-center rounded-xl px-3 py-1.5 text-[11px] font-semibold tracking-wide transition-all duration-200 sm:px-3.5 sm:text-xs ${
                   activeView === 'calculator'
                     ? 'border border-blue-950/50 bg-gradient-to-b from-slate-900 to-blue-950 text-white shadow-md shadow-blue-950/35'
