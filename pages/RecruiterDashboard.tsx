@@ -2060,7 +2060,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               aria-hidden
             />
             <nav
-              className="flex min-w-0 w-full flex-1 touch-pan-x flex-nowrap items-center gap-1 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-px-2 rounded-2xl border border-slate-200/70 bg-gradient-to-b from-white to-slate-50/90 p-1 pb-1.5 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.1)] ring-1 ring-slate-900/[0.04] [-ms-overflow-style:none] [scrollbar-width:thin] md:flex-wrap md:overflow-x-visible md:overflow-y-visible md:pb-1 md:[scrollbar-width:none] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300/90 md:[&::-webkit-scrollbar]:hidden"
+              className="flex min-w-0 w-full flex-1 touch-pan-x flex-nowrap items-center gap-1 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-px-2 rounded-2xl border border-slate-200/70 bg-gradient-to-b from-white to-slate-50/90 p-1 pb-1.5 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.1)] ring-1 ring-slate-900/[0.04] [-ms-overflow-style:none] [scrollbar-width:thin] md:hidden [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300/90"
               aria-label="Hauptnavigation"
             >
               <button
