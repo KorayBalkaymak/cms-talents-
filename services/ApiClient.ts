@@ -57,6 +57,7 @@ type ProfileRow = {
   birth_year: string | null;
   about: string | null;
   languages: string | null;
+  driving_licenses?: string[] | null;
   profile_image_url: string | null;
   avatar_seed: string;
   salary_wish_eur: number | null;
@@ -207,6 +208,10 @@ function isProfileSalaryWorkSchemaMissing(message?: string): boolean {
 
 function isProfileLanguagesSchemaMissing(message?: string): boolean {
   return (message || '').toLowerCase().includes("could not find the 'languages' column");
+}
+
+function isProfileDrivingLicensesSchemaMissing(message?: string): boolean {
+  return (message || '').toLowerCase().includes("could not find the 'driving_licenses' column");
 }
 
 function isExternalCandidatesNamesSchemaMissing(message?: string): boolean {
@@ -1000,6 +1005,7 @@ class ApiClient {
       birthYear: row.birth_year || undefined,
       about: normalized.about || undefined,
       languages: row.languages?.trim() || null,
+      drivingLicenses: Array.isArray(row.driving_licenses) ? row.driving_licenses.filter(Boolean) : [],
       skills: row.skills || [],
       boostedKeywords: row.boosted_keywords || [],
       socialLinks: row.social_links || [],
@@ -1069,6 +1075,7 @@ class ApiClient {
       birth_year: null,
       about: null,
       languages: null,
+      driving_licenses: [],
       profile_image_url: null,
       avatar_seed: userId.substring(0, 8),
       status: CandidateStatus.REVIEW,
@@ -1566,6 +1573,9 @@ class ApiClient {
       about: data.about ?? current?.about ?? null,
       languages:
         data.languages !== undefined ? (String(data.languages ?? '').trim() || null) : (current?.languages ?? null),
+      driving_licenses: Array.isArray(data.drivingLicenses)
+        ? data.drivingLicenses.filter((item: unknown): item is string => typeof item === 'string' && item.trim().length > 0)
+        : (current?.driving_licenses ?? []),
       profile_image_url: data.profileImageUrl ?? current?.profile_image_url ?? null,
       avatar_seed: current?.avatar_seed || userId.substring(0, 8),
       status: nextStatus,
@@ -1592,7 +1602,8 @@ class ApiClient {
         isRecruiterEditingSchemaMissing(error.message) ||
         isCandidateNumberSchemaMissing(error.message) ||
         isProfileSalaryWorkSchemaMissing(error.message) ||
-        isProfileLanguagesSchemaMissing(error.message)
+        isProfileLanguagesSchemaMissing(error.message) ||
+        isProfileDrivingLicensesSchemaMissing(error.message)
       ) {
         const {
           salary_wish_eur: _dropSalaryWish,
@@ -1604,6 +1615,7 @@ class ApiClient {
           recruiter_editing_label: _dropLabel,
           recruiter_editing_at: _dropAt,
           languages: _dropLanguages,
+          driving_licenses: _dropDrivingLicenses,
           ...legacyPayload
         } = payload as any;
         // Legacy-Fallback: wenn neue Spalten fehlen, Felder kompatibel in about mit Marker mitschreiben.

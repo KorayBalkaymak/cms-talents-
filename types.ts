@@ -96,6 +96,8 @@ export interface CandidateProfile {
   about?: string;           // OPTIONAL - Kurz-Bio (max 500 chars)
   /** Freitext: gesprochene Sprachen (u. a. extern angelegte Kandidaten). */
   languages?: string | null;
+  /** Ausgewählte Führerscheinklassen / Berechtigungen, z. B. B, BE, C, Staplerschein. */
+  drivingLicenses?: string[];
   skills: string[];         // OPTIONAL - Array, can be empty
   boostedKeywords: string[]; // OPTIONAL - Sichtbarkeits-Booster
   isSubmitted?: boolean;     // OPTIONAL - zur Recruiter-Prüfung eingereicht

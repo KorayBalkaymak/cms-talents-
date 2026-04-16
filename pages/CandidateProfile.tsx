@@ -45,6 +45,27 @@ const SECTION_RENDER_HINT: React.CSSProperties = {
   containIntrinsicSize: '760px',
 };
 
+const DRIVING_LICENSE_OPTIONS = [
+  'AM',
+  'A1',
+  'A2',
+  'A',
+  'B',
+  'BE',
+  'C1',
+  'C1E',
+  'C',
+  'CE',
+  'D1',
+  'D1E',
+  'D',
+  'DE',
+  'L',
+  'T',
+  'Staplerschein',
+  'Kranschein',
+] as const;
+
 const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavigate, onSave, onLogout }) => {
   const [formData, setFormData] = useState<CandidateProfile>(profile);
   /** Freies Tippen der Berufserfahrung (ohne sofortiges Zurücksetzen auf 0 wie bei type=number). */
@@ -182,6 +203,18 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
         ? prev.boostedKeywords.filter(k => k !== keyword)
         : [...prev.boostedKeywords, keyword]
     }));
+  };
+
+  const toggleDrivingLicense = (license: string) => {
+    setFormData((prev) => {
+      const current = prev.drivingLicenses || [];
+      return {
+        ...prev,
+        drivingLicenses: current.includes(license)
+          ? current.filter((item) => item !== license)
+          : [...current, license],
+      };
+    });
   };
 
   const handleCvUpload = async (files: FileList | null) => {
@@ -724,6 +757,40 @@ const CandidateProfilePage: React.FC<CandidateProfileProps> = ({ profile, onNavi
               <p className="mt-1.5 text-xs font-medium text-slate-500">
                 Welche Sprachen du beherrschst – frei formuliert, inkl. Niveau wenn du möchtest.
               </p>
+            </div>
+
+            <div className="relative mt-4 rounded-2xl border border-orange-200/80 bg-white/70 p-4 shadow-sm sm:p-5">
+              <div className="mb-3">
+                <p className="text-sm font-black text-slate-900">Führerschein (optional)</p>
+                <p className="mt-1 text-xs font-medium text-slate-500">
+                  Wähle alle Führerscheinklassen oder Berechtigungen aus, die du besitzt.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {DRIVING_LICENSE_OPTIONS.map((license) => {
+                  const active = (formData.drivingLicenses || []).includes(license);
+                  return (
+                    <button
+                      key={license}
+                      type="button"
+                      onClick={() => toggleDrivingLicense(license)}
+                      className={`rounded-xl border px-3 py-2 text-xs font-black transition-all ${
+                        active
+                          ? 'border-orange-500 bg-orange-500 text-white shadow-md shadow-orange-500/25'
+                          : 'border-orange-200 bg-white text-slate-700 hover:border-orange-400 hover:bg-orange-50'
+                      }`}
+                      aria-pressed={active}
+                    >
+                      {license}
+                    </button>
+                  );
+                })}
+              </div>
+              {(formData.drivingLicenses || []).length > 0 && (
+                <p className="mt-3 text-xs font-semibold text-slate-600">
+                  Ausgewählt: {(formData.drivingLicenses || []).join(', ')}
+                </p>
+              )}
             </div>
           </section>
 

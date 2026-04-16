@@ -73,6 +73,7 @@ class CandidateService {
       industry: '',
       experienceYears: 0,
       availability: '',
+      drivingLicenses: [],
       skills: [],
       boostedKeywords: [],
       socialLinks: []
