@@ -224,6 +224,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const [generalInquiryForm, setGeneralInquiryForm] = useState({
     companyName: '',
     customerPosition: '',
+    projectStart: '',
     projectDuration: '',
     projectLocation: '',
     budget: '',
@@ -464,6 +465,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
     const missing =
       !generalInquiryForm.companyName.trim() ||
       !generalInquiryForm.customerPosition.trim() ||
+      !generalInquiryForm.projectStart.trim() ||
       !generalInquiryForm.projectDuration.trim() ||
       !generalInquiryForm.projectLocation.trim() ||
       !generalInquiryForm.budget.trim() ||
@@ -487,6 +489,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
       const head = [
         `Firma: ${generalInquiryForm.companyName.trim()}`,
         `Position (Kunde): ${generalInquiryForm.customerPosition.trim()}`,
+        `Projektstart: ${generalInquiryForm.projectStart.trim()}`,
         `Projektlaufzeit: ${generalInquiryForm.projectDuration.trim()}`,
         `Projektstandort: ${generalInquiryForm.projectLocation.trim()}`,
         `Budget (EUR): ${generalInquiryForm.budget.trim()} EUR`,
@@ -508,6 +511,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
       setGeneralInquiryForm({
         companyName: '',
         customerPosition: '',
+        projectStart: '',
         projectDuration: '',
         projectLocation: '',
         budget: '',
@@ -889,6 +893,13 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, customerPosition: e.target.value }))}
               placeholder="Ihre Position (z. B. Einkauf, HR, Projektleitung) *"
               className="h-10 sm:col-span-2"
+            />
+            <Input
+              type="date"
+              value={generalInquiryForm.projectStart}
+              onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, projectStart: e.target.value }))}
+              placeholder="Projektstart *"
+              className="h-10"
             />
             <Input
               value={generalInquiryForm.projectDuration}
