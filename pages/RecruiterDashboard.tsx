@@ -2483,7 +2483,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
               <div className="border-b border-[#1b2a47] bg-[#101B31] px-4 py-3">
                 <h3 className="text-sm font-black uppercase tracking-widest text-white">Kandidaten hinzufügen</h3>
                 <p className="mt-1 text-xs font-medium text-white/90">
-                  Manuell Daten erfassen und optional direkt im Marktplatz freigeben. Vor- und Nachname sind nur intern sichtbar – Kunden sehen auf dem Marktplatz einen{' '}
+                  Manuell Daten erfassen und zuerst bei Talents ablegen. Danach werden die Dokumente geprüft/bearbeitet und erst über „Freigeben“ im Marktplatz sichtbar. Vor- und Nachname sind nur intern sichtbar – Kunden sehen auf dem Marktplatz einen{' '}
                   <span className="font-bold text-orange-200">Codenamen</span> (z. B. TX042), nie den echten Namen.
                 </p>
               </div>
@@ -2652,7 +2652,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   />
                 </div>
                 <Button variant="primary" className="h-10 text-xs font-black !bg-slate-900 !text-white hover:!bg-slate-800" isLoading={isCreatingExternal} onClick={handleCreateExternalCandidate}>
-                  Kandidat freigeben
+                  Bei Talents hinzufügen
                 </Button>
               </div>
             </div>

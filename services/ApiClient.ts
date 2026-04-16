@@ -1733,6 +1733,82 @@ class ApiClient {
     const effectivePerformerId = performerId || current.id;
     const now = new Date().toISOString();
 
+    if (userId.startsWith('external:')) {
+      const externalId = userId.slice('external:'.length);
+
+      if (action === 'delete') {
+        const { error } = await supabase.from('external_candidates').delete().eq('id', externalId);
+        if (error) throw new Error(error.message);
+        await supabase.from('audit_log').insert({
+          id: crypto.randomUUID(),
+          action: 'Externen Kandidaten gelöscht',
+          performer_id: effectivePerformerId,
+          target_id: userId,
+          timestamp: now,
+        });
+        return;
+      }
+
+      if (action === 'cv_reviewed') {
+        await supabase.from('audit_log').insert({
+          id: crypto.randomUUID(),
+          action: 'Externer Kandidat: Lebenslauf geprüft',
+          performer_id: effectivePerformerId,
+          target_id: userId,
+          timestamp: now,
+        });
+        return;
+      }
+
+      if (action === 'publish') {
+        const { data, error: readError } = await supabase
+          .from('external_candidates')
+          .select('edited_cv_pdf')
+          .eq('id', externalId)
+          .maybeSingle();
+        if (readError) throw new Error(readError.message);
+        if (!data) throw new Error('Kandidat nicht gefunden.');
+        const editedCv = this.parsePdfSlot((data as Record<string, unknown>).edited_cv_pdf);
+        if (!editedCv?.data?.trim()) {
+          throw new Error('Bitte zuerst einen bearbeiteten Lebenslauf für den Marktplatz speichern.');
+        }
+
+        const { error } = await supabase
+          .from('external_candidates')
+          .update({ is_published: true, updated_at: now })
+          .eq('id', externalId);
+        if (error) throw new Error(error.message);
+        await supabase.from('audit_log').insert({
+          id: crypto.randomUUID(),
+          action: 'Externen Kandidaten veröffentlicht (freigegeben)',
+          performer_id: effectivePerformerId,
+          target_id: userId,
+          timestamp: now,
+        });
+        return;
+      }
+
+      if (action === 'unpublish') {
+        const { error } = await supabase
+          .from('external_candidates')
+          .update({ is_published: false, updated_at: now })
+          .eq('id', externalId);
+        if (error) throw new Error(error.message);
+        await supabase.from('audit_log').insert({
+          id: crypto.randomUUID(),
+          action: 'Externen Kandidaten vom Marktplatz entfernt',
+          performer_id: effectivePerformerId,
+          target_id: userId,
+          timestamp: now,
+        });
+        return;
+      }
+
+      if (action === 'status') {
+        return;
+      }
+    }
+
     if (action === 'delete') {
       await supabase.from('candidate_documents').delete().eq('user_id', userId);
       const { error } = await supabase
@@ -2619,9 +2695,6 @@ class ApiClient {
   }): Promise<CandidateProfile> {
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
-    const editedCvPdf = input.cvPdf || null;
-    const editedCertificates = input.certificates || [];
-    const editedQualifications = input.qualifications || [];
     const row: ExternalCandidateRow = {
       id,
       candidate_number: input.candidateNumber?.trim() || `EXT-${id.slice(0, 8).toUpperCase()}`,
@@ -2647,9 +2720,9 @@ class ApiClient {
       cv_pdf: input.cvPdf || null,
       certificates: input.certificates || [],
       qualifications: input.qualifications || [],
-      edited_cv_pdf: editedCvPdf,
-      edited_certificates: editedCertificates,
-      edited_qualifications: editedQualifications,
+      edited_cv_pdf: null,
+      edited_certificates: [],
+      edited_qualifications: [],
       is_published: !!input.isPublished,
       created_at: now,
       updated_at: now,
@@ -2676,9 +2749,9 @@ class ApiClient {
       cv_pdf: row.cv_pdf,
       certificates: row.certificates,
       qualifications: row.qualifications,
-      edited_cv_pdf: editedCvPdf,
-      edited_certificates: editedCertificates,
-      edited_qualifications: editedQualifications,
+      edited_cv_pdf: null,
+      edited_certificates: [],
+      edited_qualifications: [],
       is_published: row.is_published,
       created_at: row.created_at,
       updated_at: row.updated_at,
@@ -2691,12 +2764,6 @@ class ApiClient {
       insertPayload = noProfession;
       const retryProf = await supabase.from('external_candidates').insert(insertPayload);
       if (!retryProf.error) {
-        this.writeLocalEditedDocuments(`external:${row.id}`, {
-          userId: `external:${row.id}`,
-          cvPdf: editedCvPdf || undefined,
-          certificates: editedCertificates,
-          qualifications: editedQualifications,
-        });
         return this.externalRowToCandidate(row);
       }
       insertError = retryProf.error;
@@ -2706,12 +2773,6 @@ class ApiClient {
       insertPayload = noWork;
       const retryWork = await supabase.from('external_candidates').insert(insertPayload);
       if (!retryWork.error) {
-        this.writeLocalEditedDocuments(`external:${row.id}`, {
-          userId: `external:${row.id}`,
-          cvPdf: editedCvPdf || undefined,
-          certificates: editedCertificates,
-          qualifications: editedQualifications,
-        });
         return this.externalRowToCandidate(row);
       }
       insertError = retryWork.error;
@@ -2726,12 +2787,6 @@ class ApiClient {
       insertPayload = payloadWithoutEditedDocs;
       const retryEdited = await supabase.from('external_candidates').insert(insertPayload);
       if (!retryEdited.error) {
-        this.writeLocalEditedDocuments(`external:${row.id}`, {
-          userId: `external:${row.id}`,
-          cvPdf: editedCvPdf || undefined,
-          certificates: editedCertificates,
-          qualifications: editedQualifications,
-        });
         return this.externalRowToCandidate(row);
       }
       insertError = retryEdited.error;
@@ -2740,12 +2795,6 @@ class ApiClient {
       const { first_name: _fn, last_name: _ln, ...payloadNoNames } = insertPayload;
       const retry = await supabase.from('external_candidates').insert(payloadNoNames);
       if (!retry.error) {
-        this.writeLocalEditedDocuments(`external:${row.id}`, {
-          userId: `external:${row.id}`,
-          cvPdf: editedCvPdf || undefined,
-          certificates: editedCertificates,
-          qualifications: editedQualifications,
-        });
         return this.externalRowToCandidate(row);
       }
       insertError = retry.error;
@@ -2754,22 +2803,10 @@ class ApiClient {
       // Fallback: lokal speichern, falls Tabelle noch nicht in DB existiert.
       const local = this.readLocalExternalCandidates();
       const candidate = this.externalRowToCandidate(row);
-      this.writeLocalEditedDocuments(`external:${row.id}`, {
-        userId: `external:${row.id}`,
-        cvPdf: editedCvPdf || undefined,
-        certificates: editedCertificates,
-        qualifications: editedQualifications,
-      });
       this.writeLocalExternalCandidates([candidate, ...local]);
       return candidate;
     }
 
-    this.writeLocalEditedDocuments(`external:${row.id}`, {
-      userId: `external:${row.id}`,
-      cvPdf: editedCvPdf || undefined,
-      certificates: editedCertificates,
-      qualifications: editedQualifications,
-    });
     return this.externalRowToCandidate(row);
   }
 }
