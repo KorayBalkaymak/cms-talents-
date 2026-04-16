@@ -140,6 +140,10 @@ type DashboardUserEntry = RegisteredUserListItem & {
   sourceCandidateNumber?: string;
 };
 
+function isRecruiterAddedCandidate(candidate: CandidateProfile): boolean {
+  return candidate.userId.startsWith('external:');
+}
+
 function roleLabelDe(role: UserRole): string {
   if (role === UserRole.ADMIN) return 'Recruiter';
   if (role === UserRole.RECRUITER) return 'Recruiter';
@@ -3365,6 +3369,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                   .filter(Boolean)
                                   .join(' · ')}
                               </p>
+                              {isRecruiterAddedCandidate(cand) ? (
+                                <p className="mt-1 inline-flex rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-orange-700">
+                                  Vom Recruiter hinzugefügt
+                                </p>
+                              ) : null}
                               {candidateReviewHint(cand).mobileText ? (
                                 <p className={`mt-1 text-[10px] font-black uppercase tracking-wider ${candidateReviewHint(cand).className.includes('red-700') ? 'text-red-700' : candidateReviewHint(cand).className.includes('emerald-700') ? 'text-emerald-700' : 'text-amber-700'}`}>
                                   {candidateReviewHint(cand).mobileText}
@@ -3419,6 +3428,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                       {`${cand.firstName || ''} ${cand.lastName || ''}`.trim() || cand.candidateNumber || 'Unbekannter Kandidat'}
                                     </div>
                                     <div className="text-[10px] font-bold uppercase text-slate-400">{cand.city}</div>
+                                    {isRecruiterAddedCandidate(cand) ? (
+                                      <p className="mt-1 inline-flex rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-orange-700">
+                                        Vom Recruiter hinzugefügt
+                                      </p>
+                                    ) : null}
                                     {candidateReviewHint(cand).mobileText ? (
                                       <p
                                         className={`mt-1 max-w-[min(100%,280px)] text-[9px] font-black uppercase leading-snug tracking-wide ${candidateReviewHint(cand).className.includes('red-700') ? 'text-red-700' : candidateReviewHint(cand).className.includes('emerald-700') ? 'text-emerald-700' : 'text-amber-700'}`}
