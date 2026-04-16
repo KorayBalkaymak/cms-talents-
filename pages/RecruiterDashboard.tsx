@@ -1137,7 +1137,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     }
     return {
       text: 'In Bearbeitung',
-      mobileText: 'Aktuell bearbeitet',
+      mobileText: '',
       className: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
     };
   }, [isCandidateStale]);
