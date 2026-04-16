@@ -1402,7 +1402,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     }
   };
 
-  const handleUnpublishRegisteredCandidate = async (target: RegisteredUserListItem) => {
+  const handleUnpublishRegisteredCandidate = async (target: DashboardUserEntry) => {
     if (target.id === user.id) return;
     setRegisteredUsersError(null);
     setRegisteredUsersSuccess(null);
@@ -2845,7 +2845,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       const effRole = effectiveRegisteredUserRole(u);
                       const isRecruiterAccount = effRole === UserRole.RECRUITER || effRole === UserRole.ADMIN;
                       const canDeleteUser = !u.isExternallyAdded && !isSelf;
-                      const canUnpublishUser = !u.isExternallyAdded && effRole === UserRole.CANDIDATE && u.isPublished && !isSelf;
+                      const canUnpublishUser = effRole === UserRole.CANDIDATE && u.isPublished && !isSelf;
                       return (
                         <div
                           key={u.id}
@@ -2934,7 +2934,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           const effRole = effectiveRegisteredUserRole(u);
                           const isRecruiterAccount = effRole === UserRole.RECRUITER || effRole === UserRole.ADMIN;
                           const canDeleteUser = !u.isExternallyAdded && !isSelf;
-                          const canUnpublishUser = !u.isExternallyAdded && effRole === UserRole.CANDIDATE && u.isPublished && !isSelf;
+                          const canUnpublishUser = effRole === UserRole.CANDIDATE && u.isPublished && !isSelf;
                           return (
                             <tr
                               key={u.id}
