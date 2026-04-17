@@ -895,10 +895,9 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               className="h-10 sm:col-span-2"
             />
             <Input
-              type="date"
               value={generalInquiryForm.projectStart}
               onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, projectStart: e.target.value }))}
-              placeholder="Projektstart *"
+              placeholder="Projektstart (z. B. 01.05.2026) *"
               className="h-10"
             />
             <Input
