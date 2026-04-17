@@ -33,6 +33,27 @@ type MarketplaceDocEntry = {
 
 /** Max. PDF-Unterlagen pro Interessenanfrage (Marktplatz). */
 const MAX_INQUIRY_CUSTOMER_PDFS = 2;
+const CALENDAR_WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+function formatDateDe(date: Date): string {
+  return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function calendarMonthLabel(date: Date): string {
+  return date.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+}
+
+function buildCalendarDays(month: Date): Date[] {
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  const mondayOffset = (first.getDay() + 6) % 7;
+  const start = new Date(first);
+  start.setDate(first.getDate() - mondayOffset);
+  return Array.from({ length: 42 }, (_, index) => {
+    const day = new Date(start);
+    day.setDate(start.getDate() + index);
+    return day;
+  });
+}
 
 function codeNameFromUserId(userId: string): string {
   const labels = ['TX', 'QN', 'VK', 'RM', 'SL', 'PN', 'ZR', 'LF', 'MK', 'JD'];
@@ -239,6 +260,8 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const [generalInquirySuccess, setGeneralInquirySuccess] = useState('');
   const [generalInquiryCustomerPdfs, setGeneralInquiryCustomerPdfs] = useState<{ name: string; data: string }[]>([]);
   const [generalInquiryPdfError, setGeneralInquiryPdfError] = useState('');
+  const [showGeneralProjectStartCalendar, setShowGeneralProjectStartCalendar] = useState(false);
+  const [generalProjectStartMonth, setGeneralProjectStartMonth] = useState(() => new Date());
   const candidateModalBodyRef = useRef<HTMLDivElement>(null);
 
   // PDF in Modal mit iframe anzeigen (zuverlässig, keine weiße Seite)
@@ -334,6 +357,10 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
   const selectedCandidateCodeName = useMemo(
     () => (selectedCandidate ? codeNameFromUserId(selectedCandidate.userId) : ''),
     [selectedCandidate]
+  );
+  const generalProjectStartDays = useMemo(
+    () => buildCalendarDays(generalProjectStartMonth),
+    [generalProjectStartMonth]
   );
   const selectedDocsList = useMemo((): MarketplaceDocEntry[] => {
     if (!selectedCandidateDocs) return [];
@@ -873,6 +900,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
             setGeneralInquirySuccess('');
             setGeneralInquiryPdfError('');
             setGeneralInquiryCustomerPdfs([]);
+            setShowGeneralProjectStartCalendar(false);
           }
         }}
         title="Suchprofil an den Recruiter senden"
@@ -894,12 +922,74 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               placeholder="Ihre Position (z. B. Einkauf, HR, Projektleitung) *"
               className="h-10 sm:col-span-2"
             />
-            <Input
-              value={generalInquiryForm.projectStart}
-              onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, projectStart: e.target.value }))}
-              placeholder="Projektstart (z. B. 01.05.2026) *"
-              className="h-10"
-            />
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowGeneralProjectStartCalendar((v) => !v)}
+                className="flex h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 text-left text-sm text-slate-900 outline-none transition-all focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+              >
+                <span className={generalInquiryForm.projectStart ? 'font-medium text-slate-900' : 'text-slate-400'}>
+                  {generalInquiryForm.projectStart || 'Projektstart wählen *'}
+                </span>
+                <svg className="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3M5 11h14M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z" />
+                </svg>
+              </button>
+              {showGeneralProjectStartCalendar ? (
+                <div className="mt-2 rounded-2xl border border-orange-200 bg-white p-3 shadow-xl ring-1 ring-orange-100">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-black text-slate-700"
+                      onClick={() => setGeneralProjectStartMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+                      aria-label="Vorheriger Monat"
+                    >
+                      ‹
+                    </button>
+                    <p className="text-sm font-black text-slate-900">{calendarMonthLabel(generalProjectStartMonth)}</p>
+                    <button
+                      type="button"
+                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-black text-slate-700"
+                      onClick={() => setGeneralProjectStartMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+                      aria-label="Nächster Monat"
+                    >
+                      ›
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black uppercase tracking-wide text-slate-400">
+                    {CALENDAR_WEEKDAYS.map((day) => (
+                      <span key={day}>{day}</span>
+                    ))}
+                  </div>
+                  <div className="mt-1 grid grid-cols-7 gap-1">
+                    {generalProjectStartDays.map((day) => {
+                      const label = formatDateDe(day);
+                      const inMonth = day.getMonth() === generalProjectStartMonth.getMonth();
+                      const selected = generalInquiryForm.projectStart === label;
+                      return (
+                        <button
+                          key={day.toISOString()}
+                          type="button"
+                          onClick={() => {
+                            setGeneralInquiryForm((s) => ({ ...s, projectStart: label }));
+                            setShowGeneralProjectStartCalendar(false);
+                          }}
+                          className={`aspect-square rounded-lg text-xs font-black transition-colors ${
+                            selected
+                              ? 'bg-orange-600 text-white shadow-md shadow-orange-500/25'
+                              : inMonth
+                                ? 'bg-slate-50 text-slate-900 hover:bg-orange-50 hover:text-orange-700'
+                                : 'bg-white text-slate-300 hover:bg-slate-50'
+                          }`}
+                        >
+                          {day.getDate()}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+            </div>
             <Input
               value={generalInquiryForm.projectDuration}
               onChange={(e) => setGeneralInquiryForm((s) => ({ ...s, projectDuration: e.target.value }))}
@@ -980,6 +1070,7 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
                 setGeneralInquirySuccess('');
                 setGeneralInquiryCustomerPdfs([]);
                 setGeneralInquiryPdfError('');
+                setShowGeneralProjectStartCalendar(false);
               }}
             >
               Schließen
