@@ -1027,17 +1027,6 @@ const TalentMarketplace: React.FC<TalentMarketplaceProps> = (props) => {
               )
             )}
 
-            {(selectedCandidate.address || selectedCandidate.zipCode || selectedCandidate.phoneNumber) && (
-              <div className="bg-slate-50 p-4 rounded-xl">
-                <p className="text-xs font-black text-slate-400 uppercase mb-2">Kontakt / Adresse</p>
-                <div className="space-y-1 text-slate-700">
-                  {selectedCandidate.address && <p>{selectedCandidate.address}</p>}
-                  {(selectedCandidate.zipCode || selectedCandidate.city) && <p>{[selectedCandidate.zipCode, selectedCandidate.city].filter(Boolean).join(' ')}</p>}
-                  {selectedCandidate.phoneNumber && <p><a href={`tel:${selectedCandidate.phoneNumber}`} className="text-orange-600 hover:underline">{selectedCandidate.phoneNumber}</a></p>}
-                </div>
-              </div>
-            )}
-
             {(selectedCandidate.skills?.length ?? 0) > 0 && (
               <div>
                 <p className="text-xs font-black text-slate-400 uppercase mb-3">Skills</p>

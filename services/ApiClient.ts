@@ -359,6 +359,9 @@ class ApiClient {
       ...c,
       firstName: 'Talent',
       lastName: code,
+      address: undefined,
+      zipCode: undefined,
+      phoneNumber: undefined,
     };
   }
 
