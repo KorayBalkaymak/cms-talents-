@@ -534,26 +534,35 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const initialInquiriesLoadAttempts = useRef(0);
   const isInquiriesLoadInFlight = useRef(false);
   const pendingInquiriesReload = useRef(false);
+  const inquiriesLoadedOnce = useRef(false);
+  const inquiriesCount = useRef(0);
 
   const applyLoadedInquiries = useCallback((list: CandidateInquiry[]) => {
     setInquiries((prev) => {
       // Mobile: Ein späterer leerer Request darf bereits geladene Daten nicht überschreiben.
-      if (list.length === 0 && prev.length > 0) return prev;
+      if (list.length === 0 && prev.length > 0) {
+        inquiriesCount.current = prev.length;
+        return prev;
+      }
+      inquiriesCount.current = list.length;
       return list;
     });
     initialInquiriesLoadAttempts.current += 1;
     if (list.length > 0 || initialInquiriesLoadAttempts.current >= 2) {
+      inquiriesLoadedOnce.current = true;
       setHasSettledInitialInquiriesLoad(true);
     }
   }, []);
 
-  const loadInquiries = useCallback(async () => {
+  const loadInquiries = useCallback(async (options?: { foreground?: boolean }) => {
     if (isInquiriesLoadInFlight.current) {
       pendingInquiriesReload.current = true;
       return;
     }
     isInquiriesLoadInFlight.current = true;
-    setIsLoadingInquiries(true);
+    const showForegroundLoading =
+      options?.foreground === true && !inquiriesLoadedOnce.current && inquiriesCount.current === 0;
+    if (showForegroundLoading) setIsLoadingInquiries(true);
     try {
       const list = await candidateService.getInquiries();
       applyLoadedInquiries(list);
@@ -561,7 +570,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       isInquiriesLoadInFlight.current = false;
       if (pendingInquiriesReload.current) {
         pendingInquiriesReload.current = false;
-        void loadInquiries();
+        void loadInquiries({ foreground: false });
       } else {
         setIsLoadingInquiries(false);
       }
@@ -573,9 +582,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       writeDashboardViewToUrl(view);
       setActiveView(view);
       if (view === 'inquiries') {
-        setHasSettledInitialInquiriesLoad(false);
-        initialInquiriesLoadAttempts.current = 0;
-        void loadInquiries();
+        const needsInitialLoad = !inquiriesLoadedOnce.current && inquiriesCount.current === 0;
+        if (needsInitialLoad) {
+          setHasSettledInitialInquiriesLoad(false);
+          initialInquiriesLoadAttempts.current = 0;
+        }
+        void loadInquiries({ foreground: needsInitialLoad });
       }
     },
     [loadInquiries]
@@ -608,7 +620,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') &&
         session
       ) {
-        void loadInquiries();
+        void loadInquiries({ foreground: false });
       }
     });
     return () => subscription.unsubscribe();
@@ -616,25 +628,28 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
   /** Externe Interessen: schneller Poll in dieser Ansicht + Reload bei Tab-/App-Rückkehr (Handy/Tablet/Desktop). */
   useEffect(() => {
+    if (activeView !== 'inquiries') return;
     let cancelled = false;
     let initialRetryId: number | null = null;
     const safeLoad = async () => {
-      await loadInquiries();
-      if (!cancelled && inquiries.length === 0 && initialInquiriesLoadAttempts.current < 2) {
+      const needsInitialLoad = !inquiriesLoadedOnce.current && inquiriesCount.current === 0;
+      await loadInquiries({ foreground: needsInitialLoad });
+      if (!cancelled && inquiriesCount.current === 0 && initialInquiriesLoadAttempts.current < 2) {
         initialRetryId = window.setTimeout(() => {
           if (!cancelled) void safeLoad();
         }, 900);
       }
     };
     void safeLoad();
-    const pollMs = activeView === 'inquiries' ? 10_000 : 30_000;
-    const id = window.setInterval(safeLoad, pollMs);
+    const id = window.setInterval(() => {
+      void loadInquiries({ foreground: false });
+    }, 10_000);
     return () => {
       cancelled = true;
       if (initialRetryId !== null) window.clearTimeout(initialRetryId);
       window.clearInterval(id);
     };
-  }, [activeView, inquiries.length, loadInquiries]);
+  }, [activeView, loadInquiries]);
 
   const inquiriesResumeRefreshAt = useRef(0);
   useEffect(() => {
@@ -644,7 +659,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       const now = Date.now();
       if (now - inquiriesResumeRefreshAt.current < 1500) return;
       inquiriesResumeRefreshAt.current = now;
-      void loadInquiries();
+      void loadInquiries({ foreground: false });
     };
     document.addEventListener('visibilitychange', refreshIfInquiries);
     window.addEventListener('focus', refreshIfInquiries);
@@ -2195,11 +2210,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     <span
                       className={`inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white backdrop-blur-sm ${
-                        isLoadingInquiries ? 'animate-pulse' : ''
+                        isLoadingInquiries && inquiries.length === 0 ? 'animate-pulse' : ''
                       }`}
                     >
                       <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" aria-hidden />
-                      {isLoadingInquiries
+                      {isLoadingInquiries && inquiries.length === 0
                         ? 'Wird geladen…'
                         : `${inquiries.length} Anfrage${inquiries.length === 1 ? '' : 'n'}`}
                     </span>
@@ -2208,7 +2223,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       size="sm"
                       variant="outline"
                       className="h-9 !border-white/15 !bg-white/5 !px-3 !text-[11px] !font-black !text-white hover:!bg-white/10"
-                      onClick={() => void loadInquiries()}
+                      onClick={() => void loadInquiries({ foreground: inquiries.length === 0 })}
                     >
                       Aktualisieren
                     </Button>
@@ -2228,7 +2243,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   </div>
                 )}
 
-                {!hasSettledInitialInquiriesLoad || (isLoadingInquiries && inquiries.length === 0) ? (
+                {inquiries.length === 0 && !hasSettledInitialInquiriesLoad ? (
                   <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
                     <div className="h-10 w-10 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" aria-hidden />
                     <p className="mt-4 text-sm font-semibold text-slate-700">Anfragen werden geladen…</p>
