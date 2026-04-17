@@ -158,6 +158,7 @@ function inactivityDurationDe(lastSeenAt?: string | null): string {
 
 type DashboardUserEntry = RegisteredUserListItem & {
   isExternallyAdded?: boolean;
+  isSnapshotOnly?: boolean;
   sourceCandidateNumber?: string;
 };
 
@@ -659,7 +660,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     if (activeView !== 'users') return;
     let cancelled = false;
     const loadUsers = async () => {
-      setLoadingRegisteredUsers(true);
+      setLoadingRegisteredUsers(registeredUsers.length === 0 && candidates.length === 0);
       setRegisteredUsersError(null);
       try {
         const list = await candidateService.listRegisteredUsers();
@@ -680,7 +681,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [activeView]);
+  }, [activeView, candidates.length, registeredUsers.length]);
 
   const loadPlannerData = useCallback(async () => {
     setPlannerLoading(true);
@@ -1098,20 +1099,22 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       merged.set(userItem.id, userItem);
     }
     for (const candidate of candidates) {
-      if (!candidate.userId.startsWith('external:') || merged.has(candidate.userId)) continue;
+      if (merged.has(candidate.userId)) continue;
       const fullName = `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim();
+      const isExternallyAdded = candidate.userId.startsWith('external:');
       merged.set(candidate.userId, {
         id: candidate.userId,
-        email: 'Kein Login-Konto (manuell hinzugefügt)',
+        email: isExternallyAdded ? 'Kein Login-Konto (manuell hinzugefügt)' : 'E-Mail wird geladen',
         role: UserRole.CANDIDATE,
         firstName: candidate.firstName || '',
         lastName: candidate.lastName || '',
-        isSubmitted: true,
+        isSubmitted: !!candidate.isSubmitted,
         isPublished: !!candidate.isPublished,
         createdAt: candidate.createdAt,
         lastSeenAt: null,
-        isExternallyAdded: true,
-        sourceCandidateNumber: candidate.candidateNumber || (fullName ? undefined : 'Extern'),
+        isExternallyAdded,
+        isSnapshotOnly: !isExternallyAdded,
+        sourceCandidateNumber: candidate.candidateNumber || (fullName ? undefined : isExternallyAdded ? 'Extern' : 'Kandidat'),
       });
     }
     return Array.from(merged.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -3136,7 +3139,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="flex flex-col leading-tight">
                     <div className="text-3xl font-black text-white">
-                      {loadingRegisteredUsers ? '…' : dashboardUsers.length}
+                      {dashboardUsers.length}
                     </div>
                     <div className="text-[10px] font-black uppercase tracking-widest text-white/45">Nutzer gesamt</div>
                   </div>
@@ -3160,7 +3163,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   {registeredUsersSuccess}
                 </div>
               )}
-              {loadingRegisteredUsers && registeredUsers.length === 0 ? (
+              {loadingRegisteredUsers && dashboardUsers.length === 0 ? (
                 <div className="flex h-40 items-center justify-center">
                   <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-orange-500" />
                 </div>
@@ -3176,7 +3179,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       const isSelf = u.id === user.id;
                       const effRole = effectiveRegisteredUserRole(u);
                       const isRecruiterAccount = effRole === UserRole.RECRUITER || effRole === UserRole.ADMIN;
-                      const canDeleteUser = !u.isExternallyAdded && !isSelf;
+                      const canDeleteUser = !u.isExternallyAdded && !u.isSnapshotOnly && !isSelf;
                       const canUnpublishUser = effRole === UserRole.CANDIDATE && u.isPublished && !isSelf;
                       return (
                         <div
@@ -3209,6 +3212,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               )}
                               {u.isSubmitted ? <Badge variant="slate">Formular eingereicht</Badge> : null}
                               {u.isExternallyAdded ? <Badge variant="yellow">Manuell hinzugefügt</Badge> : null}
+                              {u.isSnapshotOnly ? <Badge variant="slate">Kontodaten werden geladen</Badge> : null}
                             </div>
                           )}
                           <p className="mt-2 text-xs font-semibold text-slate-200">
@@ -3236,6 +3240,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             title={
                               u.isExternallyAdded
                                 ? 'Manuell hinzugefügte Kandidaten sind kein Login-Konto und werden hier nicht gelöscht.'
+                                : u.isSnapshotOnly
+                                  ? 'Kontodaten werden noch geladen.'
                                 : isSelf
                                   ? 'Eigenes Konto kann hier nicht gelöscht werden.'
                                   : undefined
@@ -3265,7 +3271,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           const isSelf = u.id === user.id;
                           const effRole = effectiveRegisteredUserRole(u);
                           const isRecruiterAccount = effRole === UserRole.RECRUITER || effRole === UserRole.ADMIN;
-                          const canDeleteUser = !u.isExternallyAdded && !isSelf;
+                          const canDeleteUser = !u.isExternallyAdded && !u.isSnapshotOnly && !isSelf;
                           const canUnpublishUser = effRole === UserRole.CANDIDATE && u.isPublished && !isSelf;
                           return (
                             <tr
@@ -3284,6 +3290,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                     )}
                                     {u.isSubmitted ? <Badge variant="slate">Formular eingereicht</Badge> : null}
                                     {u.isExternallyAdded ? <Badge variant="yellow">Manuell hinzugefügt</Badge> : null}
+                                    {u.isSnapshotOnly ? <Badge variant="slate">Kontodaten werden geladen</Badge> : null}
                                   </div>
                                 )}
                               </td>
@@ -3320,6 +3327,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                     title={
                                       u.isExternallyAdded
                                         ? 'Manuell hinzugefügte Kandidaten sind kein Login-Konto und werden hier nicht gelöscht.'
+                                        : u.isSnapshotOnly
+                                          ? 'Kontodaten werden noch geladen.'
                                         : isSelf
                                           ? 'Eigenes Konto nicht löschbar'
                                           : undefined
