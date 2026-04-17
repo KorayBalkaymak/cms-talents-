@@ -12,6 +12,7 @@ import VerifyEmail from './pages/VerifyEmail';
 import { Toast, Button } from './components/UI';
 
 const RECRUITER_CANDIDATES_CACHE_KEY = 'cms_talents_recruiter_candidates_snapshot';
+const CANDIDATE_PROFILE_UPDATED_EVENT = 'cms-talents:candidate-profile-updated';
 
 const resolveInitialPath = () => {
   if (window.location.pathname === '/verify-email') {
@@ -245,9 +246,19 @@ const App: React.FC = () => {
 
     tick();
     const id = window.setInterval(tick, 10_000);
+    const refreshFromProfileUpdate = () => {
+      void tick();
+    };
+    const refreshFromStorage = (event: StorageEvent) => {
+      if (event.key === CANDIDATE_PROFILE_UPDATED_EVENT) void tick();
+    };
+    window.addEventListener(CANDIDATE_PROFILE_UPDATED_EVENT, refreshFromProfileUpdate);
+    window.addEventListener('storage', refreshFromStorage);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      window.removeEventListener(CANDIDATE_PROFILE_UPDATED_EVENT, refreshFromProfileUpdate);
+      window.removeEventListener('storage', refreshFromStorage);
     };
   }, [currentPath, user]);
 
@@ -341,6 +352,24 @@ const App: React.FC = () => {
         );
       } else {
         showToast('Profil erfolgreich gespeichert!');
+      }
+      try {
+        const cached = readRecruiterCandidatesCache();
+        if (cached.length > 0) {
+          const existsInCache = cached.some((c) => c.userId === res.userId);
+          writeRecruiterCandidatesCache(
+            existsInCache
+              ? cached.map((c) => (c.userId === res.userId ? res : c))
+              : [res, ...cached]
+          );
+        }
+        window.localStorage.setItem(
+          CANDIDATE_PROFILE_UPDATED_EVENT,
+          JSON.stringify({ userId: res.userId, updatedAt: res.updatedAt || new Date().toISOString() })
+        );
+        window.dispatchEvent(new CustomEvent(CANDIDATE_PROFILE_UPDATED_EVENT, { detail: { userId: res.userId } }));
+      } catch {
+        // Sofort-Sync ist Komfort; Speichern selbst ist bereits erfolgreich.
       }
     } catch (e: any) {
       showToast(e.message || 'Fehler beim Speichern', 'error');
