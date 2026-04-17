@@ -2045,7 +2045,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       </aside>
 
       {/* Main Content - SCALED DOWN */}
-      <main className="flex min-h-[100dvh] min-h-0 flex-1 flex-col overflow-x-hidden md:h-screen md:overflow-hidden">
+      <main className="flex min-h-[100dvh] min-h-0 flex-1 flex-col overflow-x-hidden">
         {/* Mobil: Logo + Titel + Logout (Sidebar fehlt) */}
         <div
           className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-800 bg-slate-900 px-3 py-2.5 md:hidden"
@@ -2193,7 +2193,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-visible bg-slate-50/50 p-3 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] md:overflow-y-auto sm:p-6 sm:pb-8">
+        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-visible bg-slate-50/50 p-3 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:p-6 sm:pb-8">
           {activeView === 'inquiries' ? (
             <div className="overflow-x-clip rounded-3xl border border-slate-200/90 bg-white shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)]">
               <div className="relative overflow-x-clip border-b border-white/10 bg-gradient-to-br from-slate-900 via-[#0f172a] to-slate-950 px-4 py-4 sm:px-8 sm:py-8">
@@ -2261,7 +2261,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     </p>
                   </div>
                 ) : (
-                  <ul className="space-y-4 pr-1 md:max-h-[min(70vh,720px)] md:overflow-y-auto [scrollbar-width:thin] md:[scrollbar-color:rgba(148,163,184,0.5)_transparent]">
+                  <ul className="space-y-4 pr-1">
                     {inquiries.slice(0, 200).map((inq) => {
                       const editing = getActiveInquiryEditing(inq);
                       const isMine = editing?.userId === user.id;
