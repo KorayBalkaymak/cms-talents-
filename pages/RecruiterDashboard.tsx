@@ -188,6 +188,24 @@ function looksLikeMarketplaceCodenameCandidate(candidate: CandidateProfile): boo
   return first === 'talent' && /^(KT|EXT)-[A-Z0-9]+$/.test(last);
 }
 
+function fullNameFromParts(firstName?: string | null, lastName?: string | null): string {
+  return `${firstName || ''} ${lastName || ''}`.trim();
+}
+
+function recruiterCandidateDisplayName(
+  candidate: CandidateProfile,
+  registeredNameById?: Map<string, string>
+): string {
+  const registeredName = registeredNameById?.get(candidate.userId)?.trim();
+  if (registeredName) return registeredName;
+
+  const directName = fullNameFromParts(candidate.firstName, candidate.lastName);
+  if (directName && !looksLikeMarketplaceCodenameCandidate(candidate)) return directName;
+
+  // Recruiter-Dashboard darf niemals Marktplatz-Codenamen wie "Talent KT-..." anzeigen.
+  return isRecruiterAddedCandidate(candidate) ? 'Recruiter-Kandidat' : 'Name wird geladen';
+}
+
 /** Erkennt die strukturierte Marktplatz-Anfrage (TalentMarketplace.submitInquiry), ein- oder mehrzeilig. */
 const MARKETPLACE_INQUIRY_FIELDS: { prefix: string; label: string }[] = [
   { prefix: 'Firma:', label: 'Firma' },
@@ -501,12 +519,16 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     if (fresh) setSelectedCandidate(fresh);
   }, [candidates, selectedCandidate]);
 
+  const hasMarketplaceAliases = useMemo(
+    () => candidates.some(looksLikeMarketplaceCodenameCandidate),
+    [candidates]
+  );
+
   useEffect(() => {
     if (!onRefreshCandidates) return;
-    const hasMarketplaceAliases = candidates.some(looksLikeMarketplaceCodenameCandidate);
     if (!hasMarketplaceAliases) return;
     void onRefreshCandidates();
-  }, [candidates, onRefreshCandidates]);
+  }, [hasMarketplaceAliases, onRefreshCandidates]);
 
   // Heartbeat deaktivieren, wenn das Modal / die Auswahl gewechselt oder geschlossen wird.
   useEffect(() => {
@@ -672,10 +694,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   }, [activeView, loadInquiries]);
 
   useEffect(() => {
-    if (activeView !== 'users') return;
+    if (activeView !== 'users' && !hasMarketplaceAliases) return;
     let cancelled = false;
     const loadUsers = async () => {
-      setLoadingRegisteredUsers(registeredUsers.length === 0 && candidates.length === 0);
+      setLoadingRegisteredUsers(activeView === 'users' && registeredUsers.length === 0 && candidates.length === 0);
       setRegisteredUsersError(null);
       try {
         const list = await candidateService.listRegisteredUsers();
@@ -696,7 +718,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [activeView, candidates.length, registeredUsers.length]);
+  }, [activeView, candidates.length, registeredUsers.length, hasMarketplaceAliases]);
 
   const loadPlannerData = useCallback(async () => {
     setPlannerLoading(true);
@@ -1135,6 +1157,21 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     return Array.from(merged.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [registeredUsers, candidates]);
 
+  const registeredCandidateNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const item of registeredUsers) {
+      if (effectiveRegisteredUserRole(item) !== UserRole.CANDIDATE) continue;
+      const fullName = fullNameFromParts(item.firstName, item.lastName);
+      if (fullName) map.set(item.id, fullName);
+    }
+    return map;
+  }, [registeredUsers]);
+
+  const displayCandidateName = useCallback(
+    (candidate: CandidateProfile) => recruiterCandidateDisplayName(candidate, registeredCandidateNameById),
+    [registeredCandidateNameById]
+  );
+
   const filteredRegisteredUsers = useMemo(() => {
     const term = deferredSearchTerm.trim().toLowerCase();
     if (!term) return dashboardUsers;
@@ -1327,11 +1364,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const candidateNameById = useMemo(() => {
     const m = new Map<string, string>();
     for (const c of candidates) {
-      const fullName = `${c.firstName || ''} ${c.lastName || ''}`.trim();
-      m.set(c.userId, fullName || c.candidateNumber || 'Unbekannter Kandidat');
+      m.set(c.userId, displayCandidateName(c));
     }
     return m;
-  }, [candidates]);
+  }, [candidates, displayCandidateName]);
 
   const displayProfession = useCallback((cand: CandidateProfile): string => {
     const raw = (cand.profession || '').trim();
@@ -2372,8 +2408,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                       ) : (
                                         <ul className="flex flex-col gap-2">
                                           {matchInfo.ranked.map(({ candidate: c, score, reasons }) => {
-                                            const sugName =
-                                              `${c.firstName} ${c.lastName}`.trim() || c.candidateNumber || 'Kandidat';
+                                            const sugName = displayCandidateName(c);
                                             return (
                                               <li
                                                 key={c.userId}
@@ -3099,7 +3134,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   ) : (
                     <ul className="mt-4 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
                       {matchingRankedResults.map(({ candidate: c, score, reasons }) => {
-                        const name = `${c.firstName} ${c.lastName}`.trim() || c.candidateNumber || 'Kandidat';
+                        const name = displayCandidateName(c);
                         return (
                           <li key={c.userId} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="min-w-0">
@@ -3449,7 +3484,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                             <Avatar seed={cand.firstName + cand.lastName} size="sm" imageUrl={cand.profileImageUrl} />
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-bold text-slate-900">
-                                {`${cand.firstName || ''} ${cand.lastName || ''}`.trim() || cand.candidateNumber || 'Unbekannter Kandidat'}
+                                {displayCandidateName(cand)}
                               </p>
                               <p className="text-xs font-semibold text-slate-500">
                                 {[
@@ -3516,7 +3551,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                   <Avatar seed={cand.firstName + cand.lastName} size="sm" imageUrl={cand.profileImageUrl} />
                                   <div>
                                     <div className="text-sm font-bold text-slate-900">
-                                      {`${cand.firstName || ''} ${cand.lastName || ''}`.trim() || cand.candidateNumber || 'Unbekannter Kandidat'}
+                                      {displayCandidateName(cand)}
                                     </div>
                                     <div className="text-[10px] font-bold uppercase text-slate-400">{cand.city}</div>
                                     {isRecruiterAddedCandidate(cand) ? (
@@ -3617,7 +3652,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 <Avatar seed={selectedCandidate.candidateNumber || selectedCandidate.firstName} size="md" imageUrl={selectedCandidate.profileImageUrl} />
                 <div className="flex-1 leading-tight">
                   <h3 className="text-lg font-black">
-                    {`${selectedCandidate.firstName || ''} ${selectedCandidate.lastName || ''}`.trim() || selectedCandidate.candidateNumber || 'Unbekannter Kandidat'}
+                    {displayCandidateName(selectedCandidate)}
                   </h3>
                   <p className="text-orange-500 font-bold uppercase text-[10px] tracking-wider">{selectedCandidate.industry}</p>
                 </div>
@@ -3749,7 +3784,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6">
                           <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Name</p>
-                            <p className="font-black text-slate-900 text-sm">{selectedCandidate.firstName} {selectedCandidate.lastName}</p>
+                            <p className="font-black text-slate-900 text-sm">{displayCandidateName(selectedCandidate)}</p>
                           </div>
                           <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Beruf</p>
@@ -3784,7 +3819,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6">
                             <div>
                               <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Name</p>
-                              <p className="font-black text-slate-900 text-sm">{selectedCandidate.firstName} {selectedCandidate.lastName}</p>
+                              <p className="font-black text-slate-900 text-sm">{displayCandidateName(selectedCandidate)}</p>
                             </div>
                             <div>
                               <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Adresse</p>
