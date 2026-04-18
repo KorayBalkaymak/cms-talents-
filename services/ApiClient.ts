@@ -30,6 +30,7 @@ const RECRUITER_ROLE_BY_EMAIL: Record<string, UserRole> = {
   'haagen@industries-cms.com': UserRole.ADMIN,
   'hagen@industries-cms.com': UserRole.RECRUITER,
   'candau@industries-cms.com': UserRole.RECRUITER,
+  'canda@industries-cms.com': UserRole.RECRUITER,
   'fuhrmann@industries-cms.com': UserRole.RECRUITER,
 };
 
@@ -157,14 +158,38 @@ function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-function formatAuthError(message?: string): string {
-  const text = (message || '').toLowerCase();
+function formatAuthError(message?: unknown): string {
+  const raw =
+    typeof message === 'string'
+      ? message
+      : message && typeof message === 'object' && 'message' in message
+        ? String((message as { message?: unknown }).message || '')
+        : '';
+  const text = raw.toLowerCase();
   if (text.includes('invalid login credentials')) return 'Ungültige Anmeldedaten';
   if (text.includes('email not confirmed')) return 'Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse.';
   if (text.includes('user already registered')) return 'Diese E-Mail ist bereits registriert.';
   if (text.includes('password should be at least')) return 'Passwort muss mindestens 8 Zeichen haben.';
   if (text.includes('signup is disabled')) return 'Registrierung ist derzeit deaktiviert.';
-  return message || 'Anfrage fehlgeschlagen';
+  return raw || 'Anfrage fehlgeschlagen';
+}
+
+function withRequestTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const id = window.setTimeout(() => {
+      reject(new Error(message));
+    }, ms);
+    promise.then(
+      (value) => {
+        window.clearTimeout(id);
+        resolve(value);
+      },
+      (error) => {
+        window.clearTimeout(id);
+        reject(error);
+      }
+    );
+  });
 }
 
 function isRecruiterRole(role?: string | null): boolean {
@@ -174,6 +199,16 @@ function isRecruiterRole(role?: string | null): boolean {
 export function recruiterRoleFromEmail(email?: string | null): UserRole {
   if (!email) return UserRole.CANDIDATE;
   return RECRUITER_ROLE_BY_EMAIL[normalizeEmail(email)] || UserRole.CANDIDATE;
+}
+
+function authUserToRecruiterUser(authUser: { id: string; email?: string | null; created_at?: string | null }, role: UserRole): User {
+  return {
+    id: authUser.id,
+    email: authUser.email || '',
+    role,
+    createdAt: authUser.created_at || new Date().toISOString(),
+    firstName: authUser.email?.split('@')[0] || undefined,
+  };
 }
 
 function recruiterClaimLabelFromUser(u: User): string {
@@ -1237,18 +1272,38 @@ class ApiClient {
 
   async login(email: string, password: string, expectedRole?: string) {
     const normalizedEmail = normalizeEmail(email);
+    const expectedRecruiterLogin = expectedRole === UserRole.RECRUITER;
+    const allowlistedRecruiterRole = recruiterRoleFromEmail(normalizedEmail);
 
-    if (expectedRole === UserRole.RECRUITER && !isRecruiterEmail(normalizedEmail)) {
+    if (expectedRecruiterLogin && !isRecruiterEmail(normalizedEmail)) {
       return { success: false, error: 'Dieser Recruiter-Account ist nicht freigeschaltet.' };
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: normalizedEmail,
-      password,
-    });
+    let signInResult: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>;
+    try {
+      signInResult = await withRequestTimeout(
+        supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        }),
+        expectedRecruiterLogin ? 8000 : 12000,
+        'Der Login dauert zu lange. Bitte prüfen Sie die Verbindung und versuchen Sie es erneut.'
+      );
+    } catch (e) {
+      return { success: false, error: e instanceof Error ? e.message : 'Anmeldung fehlgeschlagen.' };
+    }
+
+    const { data, error } = signInResult;
 
     if (error) {
       return { success: false, error: formatAuthError(error.message) };
+    }
+
+    if (expectedRecruiterLogin && data.user && isRecruiterRole(allowlistedRecruiterRole)) {
+      const user = authUserToRecruiterUser(data.user, allowlistedRecruiterRole);
+      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      void this.ensureOwnProfile(data.user.id);
+      return { success: true, user };
     }
 
     const user = await this.getSessionUser();
