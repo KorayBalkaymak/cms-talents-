@@ -25,6 +25,7 @@ import { recruiterRoleFromEmail } from '../services/ApiClient';
 import { COPPER_PANEL } from '../constants/copperTheme';
 import { supabase } from '../utils/supabase';
 import { rankCandidates } from '../services/SearchService';
+import { createAiMatch, AiMatchResult } from '../services/AiMatchingService';
 
 type DashboardView = 'talents' | 'inquiries' | 'planner' | 'external' | 'users' | 'calculator' | 'matching';
 
@@ -425,6 +426,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [activeView, setActiveView] = useState<DashboardView>(() => dashboardViewFromUrl());
   const [matchingQuery, setMatchingQuery] = useState<string | null>(null);
   const [matchingInquiryId, setMatchingInquiryId] = useState<string | null>(null);
+  const [aiMatchByInquiryId, setAiMatchByInquiryId] = useState<Record<string, AiMatchResult>>({});
+  const [aiMatchingLoadingId, setAiMatchingLoadingId] = useState<string | null>(null);
+  const [aiMatchingErrorByInquiryId, setAiMatchingErrorByInquiryId] = useState<Record<string, string>>({});
   const [pdfTextByAttachmentKey, setPdfTextByAttachmentKey] = useState<Record<string, string>>({});
   const [pdfTextStatusByAttachmentKey, setPdfTextStatusByAttachmentKey] = useState<Record<string, 'loading' | 'ready' | 'empty' | 'error'>>({});
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
@@ -1245,6 +1249,14 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     return list.slice(0, 50);
   }, [matchingQuery, visibleCandidates, deferredSearchTerm]);
 
+  const visibleCandidateById = useMemo(() => {
+    const map = new Map<string, CandidateProfile>();
+    for (const candidate of visibleCandidates) {
+      map.set(candidate.userId, candidate);
+    }
+    return map;
+  }, [visibleCandidates]);
+
   const inquiryMatchById = useMemo(() => {
     const m = new Map<string, { query: string; ranked: MatchResult[] }>();
     for (const inq of inquiries) {
@@ -1278,6 +1290,83 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const activeInquiryAnalysis = useMemo(
     () => (activeMatchingFromInquiry ? inquiryAnalysisById.get(activeMatchingFromInquiry.id) || buildInquiryAnalysis(activeMatchingFromInquiry, pdfTextByAttachmentKey) : null),
     [activeMatchingFromInquiry, inquiryAnalysisById, pdfTextByAttachmentKey]
+  );
+
+  const getInquiryExtractedPdfText = useCallback(
+    (inq: CandidateInquiry) =>
+      (inq.customerAttachments || [])
+        .map((_, idx) => pdfTextByAttachmentKey[inquiryAttachmentKey(inq, idx)] || '')
+        .filter((text) => text.trim().length > 0)
+        .join('\n\n')
+        .slice(0, 20000),
+    [pdfTextByAttachmentKey]
+  );
+
+  const runAiMatchingForInquiry = useCallback(
+    async (inq: CandidateInquiry) => {
+      if (visibleCandidates.length === 0) {
+        setAiMatchingErrorByInquiryId((prev) => ({
+          ...prev,
+          [inq.id]: 'Es gibt aktuell keine sichtbaren Kandidaten fuer das KI-Matching.',
+        }));
+        return;
+      }
+      setAiMatchingLoadingId(inq.id);
+      setAiMatchingErrorByInquiryId((prev) => {
+        const next = { ...prev };
+        delete next[inq.id];
+        return next;
+      });
+      try {
+        const result = await createAiMatch({
+          inquiry: inq,
+          candidates: visibleCandidates,
+          extractedPdfText: getInquiryExtractedPdfText(inq),
+        });
+        setAiMatchByInquiryId((prev) => ({ ...prev, [inq.id]: result }));
+      } catch (error) {
+        setAiMatchingErrorByInquiryId((prev) => ({
+          ...prev,
+          [inq.id]: error instanceof Error ? error.message : 'KI-Matching konnte nicht ausgefuehrt werden.',
+        }));
+      } finally {
+        setAiMatchingLoadingId((current) => (current === inq.id ? null : current));
+      }
+    },
+    [getInquiryExtractedPdfText, visibleCandidates]
+  );
+
+  useEffect(() => {
+    if (activeView !== 'matching') return;
+    if (!activeMatchingFromInquiry) return;
+    if (aiMatchByInquiryId[activeMatchingFromInquiry.id]) return;
+    if (aiMatchingErrorByInquiryId[activeMatchingFromInquiry.id]) return;
+    if (aiMatchingLoadingId === activeMatchingFromInquiry.id) return;
+    const pdfSummary = inquiryPdfTextSummary(activeMatchingFromInquiry, pdfTextStatusByAttachmentKey);
+    if (pdfSummary.loading > 0) return;
+    void runAiMatchingForInquiry(activeMatchingFromInquiry);
+  }, [
+    activeView,
+    activeMatchingFromInquiry,
+    aiMatchByInquiryId,
+    aiMatchingErrorByInquiryId,
+    aiMatchingLoadingId,
+    pdfTextStatusByAttachmentKey,
+    runAiMatchingForInquiry,
+  ]);
+
+  const activeAiMatch = activeMatchingFromInquiry ? aiMatchByInquiryId[activeMatchingFromInquiry.id] : undefined;
+  const activeAiMatchError = activeMatchingFromInquiry ? aiMatchingErrorByInquiryId[activeMatchingFromInquiry.id] : undefined;
+  const activeAiMatchLoading = !!activeMatchingFromInquiry && aiMatchingLoadingId === activeMatchingFromInquiry.id;
+  const aiMatchingRankedResults = useMemo(
+    () =>
+      (activeAiMatch?.matches || [])
+        .map((match) => ({
+          match,
+          candidate: visibleCandidateById.get(match.candidateId),
+        }))
+        .filter((item): item is { match: AiMatchResult['matches'][number]; candidate: CandidateProfile } => !!item.candidate),
+    [activeAiMatch, visibleCandidateById]
   );
 
   const applyInquiryToMatching = useCallback(
@@ -3111,16 +3200,67 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         <p className="mt-1 text-xs text-slate-500">{activeInquiryAnalysis.attachmentNames.join(' · ')}</p>
                       </div>
                     ) : null}
+                    <div className="mt-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">ChatGPT Analyse</p>
+                          <p className="mt-1 text-xs font-semibold text-slate-700">
+                            Die KI liest Anfragefelder und Kunden-PDFs und bewertet echte Kandidaten aus der Datenbank.
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="primary"
+                          className="h-9 text-[11px] font-black"
+                          isLoading={activeAiMatchLoading}
+                          disabled={activeAiMatchLoading}
+                          onClick={() => activeMatchingFromInquiry && void runAiMatchingForInquiry(activeMatchingFromInquiry)}
+                        >
+                          ChatGPT Matching starten
+                        </Button>
+                      </div>
+                      {activeAiMatch ? (
+                        <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+                          <p className="font-black">KI-Zusammenfassung</p>
+                          <p className="mt-1 font-medium leading-relaxed">{activeAiMatch.summary}</p>
+                          {activeAiMatch.requirements.length > 0 ? (
+                            <p className="mt-1 text-emerald-800">Erkannte Anforderungen: {activeAiMatch.requirements.slice(0, 6).join(' · ')}</p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      {activeAiMatchError ? (
+                        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
+                          {activeAiMatchError} Lokales Matching bleibt als Fallback sichtbar.
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
                 ) : null}
               </div>
               {activeMatchingFromInquiry ? (
                 <div className="border-t border-slate-200 bg-slate-50/50 px-4 py-5 sm:px-6">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">Trefferliste</h3>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">
+                    {activeAiMatch ? 'ChatGPT Trefferliste' : 'Lokale Trefferliste'}
+                  </h3>
                   <p className="mt-1 text-xs font-medium text-slate-500">
-                    {`Analyse aus externer Anfrage von ${activeMatchingFromInquiry.contactName}. Sortierung nach Relevanz und begründeten Treffern.`}
+                    {activeAiMatch
+                      ? `KI-Analyse aus externer Anfrage von ${activeMatchingFromInquiry.contactName}. PDFs und Anfragefelder wurden ausgewertet.`
+                      : `Analyse aus externer Anfrage von ${activeMatchingFromInquiry.contactName}. Sortierung nach Relevanz und begründeten Treffern.`}
                   </p>
-                  {matchingRankedResults.length === 0 ? (
+                  {activeAiMatchLoading ? (
+                    <div className="mt-4 flex items-center gap-3 rounded-xl border border-violet-100 bg-white px-4 py-5 text-sm font-semibold text-slate-700">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" aria-hidden />
+                      ChatGPT liest Anfrage und PDFs und bewertet passende Kandidaten...
+                    </div>
+                  ) : activeAiMatch && aiMatchingRankedResults.length === 0 ? (
+                    <div className="mt-4">
+                      <EmptyState
+                        title="Wir haben aktuell keinen passenden Kandidaten"
+                        description={activeAiMatch.noMatchReason || 'ChatGPT hat die Anfrage analysiert und keinen ausreichend passenden Kandidaten gefunden.'}
+                      />
+                    </div>
+                  ) : !activeAiMatch && matchingRankedResults.length === 0 ? (
                     <div className="mt-4">
                       <EmptyState
                         title="Wir haben aktuell keinen passenden Kandidaten"
@@ -3131,6 +3271,41 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         }
                       />
                     </div>
+                  ) : activeAiMatch ? (
+                    <ul className="mt-4 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
+                      {aiMatchingRankedResults.map(({ candidate: c, match }) => {
+                        const name = displayCandidateName(c);
+                        return (
+                          <li key={c.userId} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-slate-900">{name}</p>
+                              <p className="mt-0.5 text-xs font-medium text-slate-600">
+                                {displayProfession(c)} · {c.industry}
+                                {c.city ? ` · ${c.city}` : ''}
+                              </p>
+                              {match.why.length ? (
+                                <p className="mt-2 text-[11px] font-semibold leading-relaxed text-emerald-700">
+                                  Warum passend: {match.why.join(' • ')}
+                                </p>
+                              ) : null}
+                              {match.risks.length ? (
+                                <p className="mt-1 text-[11px] font-semibold leading-relaxed text-amber-700">
+                                  Hinweise: {match.risks.join(' • ')}
+                                </p>
+                              ) : null}
+                            </div>
+                            <div className="flex shrink-0 flex-row items-center gap-2 sm:flex-col sm:items-end">
+                              <Badge variant={match.recommendation === 'strong' ? 'green' : match.recommendation === 'possible' ? 'yellow' : 'slate'}>
+                                KI {Math.round(match.score)}%
+                              </Badge>
+                              <Button type="button" size="sm" variant="primary" className="h-9 text-[11px] font-black" onClick={() => void handleViewCandidate(c)}>
+                                Profil öffnen
+                              </Button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   ) : (
                     <ul className="mt-4 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
                       {matchingRankedResults.map(({ candidate: c, score, reasons }) => {
