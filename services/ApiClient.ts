@@ -25,6 +25,9 @@ const LOCAL_RECRUITER_EVENTS_KEY = 'cms_talents_local_recruiter_events';
 const LOCAL_RECRUITER_CHAT_KEY = 'cms_talents_local_recruiter_chat';
 const EDITING_CLAIM_SET_PREFIX = 'editing_claim:set:';
 const EDITING_CLAIM_CLEAR = 'editing_claim:clear';
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined) || '';
+const SUPABASE_PUBLIC_KEY =
+  ((import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY) as string | undefined) || '';
 
 const RECRUITER_ROLE_BY_EMAIL: Record<string, UserRole> = {
   'haagen@industries-cms.com': UserRole.ADMIN,
@@ -209,6 +212,62 @@ function authUserToRecruiterUser(authUser: { id: string; email?: string | null; 
     createdAt: authUser.created_at || new Date().toISOString(),
     firstName: authUser.email?.split('@')[0] || undefined,
   };
+}
+
+type DirectPasswordSignInResult = {
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  token_type?: string;
+  user?: { id: string; email?: string | null; created_at?: string | null };
+  error?: string;
+  error_description?: string;
+  msg?: string;
+  message?: string;
+};
+
+async function directPasswordSignIn(email: string, password: string): Promise<DirectPasswordSignInResult> {
+  if (!SUPABASE_URL || !SUPABASE_PUBLIC_KEY) {
+    return { error: 'Supabase-Konfiguration fehlt.' };
+  }
+
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(`${SUPABASE_URL.replace(/\/$/, '')}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_PUBLIC_KEY,
+        Authorization: `Bearer ${SUPABASE_PUBLIC_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+      signal: controller.signal,
+    });
+    const payload = (await response.json().catch(() => ({}))) as DirectPasswordSignInResult;
+    if (!response.ok) {
+      return {
+        error:
+          payload.error_description ||
+          payload.msg ||
+          payload.message ||
+          payload.error ||
+          'Anmeldung fehlgeschlagen.',
+      };
+    }
+    return payload;
+  } catch (e) {
+    return {
+      error:
+        e instanceof DOMException && e.name === 'AbortError'
+          ? 'Supabase Auth antwortet nicht. Bitte Seite neu laden und erneut versuchen.'
+          : e instanceof Error
+            ? e.message
+            : 'Anmeldung fehlgeschlagen.',
+    };
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 }
 
 function recruiterClaimLabelFromUser(u: User): string {
@@ -1290,6 +1349,24 @@ class ApiClient {
         'Der Login dauert zu lange. Bitte prüfen Sie die Verbindung und versuchen Sie es erneut.'
       );
     } catch (e) {
+      if (expectedRecruiterLogin && isRecruiterRole(allowlistedRecruiterRole)) {
+        const direct = await directPasswordSignIn(normalizedEmail, password);
+        if (direct.access_token && direct.refresh_token && direct.user) {
+          const user = authUserToRecruiterUser(direct.user, allowlistedRecruiterRole);
+          localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+          await withRequestTimeout(
+            supabase.auth.setSession({
+              access_token: direct.access_token,
+              refresh_token: direct.refresh_token,
+            }),
+            1500,
+            'Session-Sync dauert zu lange.'
+          ).catch(() => undefined);
+          void this.ensureOwnProfile(direct.user.id);
+          return { success: true, user };
+        }
+        return { success: false, error: formatAuthError(direct.error || direct.error_description || direct.msg || direct.message) };
+      }
       return { success: false, error: e instanceof Error ? e.message : 'Anmeldung fehlgeschlagen.' };
     }
 
