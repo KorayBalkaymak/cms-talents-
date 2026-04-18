@@ -986,6 +986,7 @@ class ApiClient {
     );
     return {
       userId: row.id,
+      accountRole: row.role,
       avatarSeed: row.avatar_seed || row.id.substring(0, 8),
       status: row.status,
       isPublished: !!row.is_published,
@@ -1347,7 +1348,6 @@ class ApiClient {
       .from('profiles')
       .select('*')
       .is('deleted_at', null)
-      .eq('role', UserRole.CANDIDATE)
       .order('created_at', { ascending: false });
 
     if (error) {

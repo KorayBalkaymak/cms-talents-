@@ -1087,9 +1087,10 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   // Recruiter dürfen NICHT Stammdaten/Skills/Links bearbeiten (nur Admin).
   const canEdit = isAdmin;
 
-  // Die API liefert hier bereits nur Kandidatenprofile (keine Recruiter-Konten).
-  // Recruiter/Admins muessen in "Talents" alle Kandidaten sehen, auch Entwuerfe und noch nicht freigegebene Profile.
-  const visibleCandidates = candidates;
+  // Der zentrale Datenpool enthaelt Profile fuer "Alle Nutzer"; Talents zeigt daraus nur echte Kandidatenprofile.
+  const visibleCandidates = candidates.filter(
+    (c) => c.userId.startsWith('external:') || (c.accountRole ?? UserRole.CANDIDATE) === UserRole.CANDIDATE
+  );
 
   const isCandidateStale = useCallback((cand: CandidateProfile) => {
     const updatedAtMs = new Date(cand.updatedAt).getTime();
@@ -1137,10 +1138,11 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       if (merged.has(candidate.userId)) continue;
       const fullName = `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim();
       const isExternallyAdded = candidate.userId.startsWith('external:');
+      const snapshotRole = isExternallyAdded ? UserRole.CANDIDATE : candidate.accountRole ?? UserRole.CANDIDATE;
       merged.set(candidate.userId, {
         id: candidate.userId,
         email: isExternallyAdded ? 'Kein Login-Konto (manuell hinzugefügt)' : 'E-Mail wird geladen',
-        role: UserRole.CANDIDATE,
+        role: snapshotRole,
         firstName: candidate.firstName || '',
         lastName: candidate.lastName || '',
         isSubmitted: !!candidate.isSubmitted,

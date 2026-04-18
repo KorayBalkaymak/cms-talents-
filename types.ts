@@ -60,6 +60,7 @@ export interface CandidateProfile {
   createdAt: string;        // REQUIRED - ISO timestamp
   updatedAt: string;        // REQUIRED - ISO timestamp
   candidateNumber?: string; // OPTIONAL - feste Kandidaten-ID (z. B. KT-1A2B3C4D)
+  accountRole?: UserRole;   // OPTIONAL - interne Konto-Rolle fuer Recruiter-Dashboard-Filter
 
   // --- REQUIRED PERSONAL INFO ---
   firstName: string;        // REQUIRED - Pflichtfeld
