@@ -1318,6 +1318,7 @@ class ApiClient {
       .from('profiles')
       .select('*')
       .is('deleted_at', null)
+      .eq('role', UserRole.CANDIDATE)
       .eq('is_published', true)
       .eq('status', CandidateStatus.ACTIVE)
       .order('created_at', { ascending: false });
@@ -1346,10 +1347,14 @@ class ApiClient {
       .from('profiles')
       .select('*')
       .is('deleted_at', null)
+      .eq('role', UserRole.CANDIDATE)
       .order('created_at', { ascending: false });
 
-    if (error || !data) {
-      return [];
+    if (error) {
+      throw new Error(error.message || 'Kandidaten konnten nicht geladen werden.');
+    }
+    if (!data) {
+      throw new Error('Kandidaten konnten nicht geladen werden.');
     }
 
     const rows = data as ProfileRow[];
@@ -1395,7 +1400,12 @@ class ApiClient {
       }
     }
 
-    if (error || !data) return [];
+    if (error) {
+      throw new Error(error.message || 'Nutzer konnten nicht geladen werden.');
+    }
+    if (!data) {
+      throw new Error('Nutzer konnten nicht geladen werden.');
+    }
 
     type Row = {
       id: string;

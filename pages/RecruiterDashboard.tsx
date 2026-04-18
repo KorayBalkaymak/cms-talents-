@@ -1087,11 +1087,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   // Recruiter dürfen NICHT Stammdaten/Skills/Links bearbeiten (nur Admin).
   const canEdit = isAdmin;
 
-  // Recruiter sollen nicht alle Entwürfe/leer angelegte Profile sehen.
-  // Sichtbar: eingereicht ODER bereits veröffentlicht. Admins sehen alles.
-  const visibleCandidates = isAdmin
-    ? candidates
-    : candidates.filter((c) => !!c.isSubmitted || !!c.isPublished || c.status === CandidateStatus.ACTIVE);
+  // Die API liefert hier bereits nur Kandidatenprofile (keine Recruiter-Konten).
+  // Recruiter/Admins muessen in "Talents" alle Kandidaten sehen, auch Entwuerfe und noch nicht freigegebene Profile.
+  const visibleCandidates = candidates;
 
   const isCandidateStale = useCallback((cand: CandidateProfile) => {
     const updatedAtMs = new Date(cand.updatedAt).getTime();

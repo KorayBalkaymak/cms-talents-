@@ -76,6 +76,24 @@ function writeRecruiterCandidatesCache(list: CandidateProfile[]): void {
   }
 }
 
+function applyRecruiterCandidatesSafely(
+  list: CandidateProfile[],
+  setAllCandidates: React.Dispatch<React.SetStateAction<CandidateProfile[]>>,
+  options: { allowEmpty?: boolean } = {}
+): void {
+  if (list.length > 0 || options.allowEmpty) {
+    writeRecruiterCandidatesCache(list);
+  }
+
+  setAllCandidates((prev) => {
+    // Ein leerer Hintergrund-/Fehler-Refresh darf eine vorhandene Recruiter-Liste nie wegwischen.
+    if (list.length === 0 && prev.length > 0 && !options.allowEmpty) {
+      return prev;
+    }
+    return list;
+  });
+}
+
 async function loadPublicCandidatesWithRetry(): Promise<CandidateProfile[]> {
   let lastList: CandidateProfile[] = [];
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -154,15 +172,17 @@ const App: React.FC = () => {
             const hasCachedCandidates = readRecruiterCandidatesCache().length > 0;
             setIsRecruiterCandidatesLoading(!hasCachedCandidates);
             const list = await loadRecruiterCandidatesWithRetry();
-            writeRecruiterCandidatesCache(list);
-            setAllCandidates(list);
+            applyRecruiterCandidatesSafely(list, setAllCandidates, { allowEmpty: !hasCachedCandidates });
           } else {
             setIsMarketplaceLoading(true);
             const list = await loadPublicCandidatesWithRetry();
             setAllCandidates(list);
           }
-        } catch {
-          setAllCandidates([]);
+        } catch (e) {
+          console.warn('[App] Initial candidate load failed:', e);
+          if (!isInitialRecruiter) {
+            setAllCandidates([]);
+          }
         } finally {
           setIsRecruiterCandidatesLoading(false);
           setIsMarketplaceLoading(false);
@@ -236,8 +256,7 @@ const App: React.FC = () => {
       try {
         const list = await loadRecruiterCandidatesWithRetry();
         if (!cancelled) {
-          writeRecruiterCandidatesCache(list);
-          setAllCandidates(list);
+          applyRecruiterCandidatesSafely(list, setAllCandidates);
         }
       } catch {
         // ignore transient errors
@@ -321,8 +340,7 @@ const App: React.FC = () => {
       setIsRecruiterCandidatesLoading(true);
       try {
         const list = await loadRecruiterCandidatesWithRetry();
-        writeRecruiterCandidatesCache(list);
-        setAllCandidates(list);
+        applyRecruiterCandidatesSafely(list, setAllCandidates, { allowEmpty: true });
       } finally {
         setIsRecruiterCandidatesLoading(false);
       }
@@ -384,8 +402,7 @@ const App: React.FC = () => {
   ) => {
     await candidateService.adminAction(userId, action, newStatus, performerId || user?.id);
     const list = await loadRecruiterCandidatesWithRetry();
-    writeRecruiterCandidatesCache(list);
-    setAllCandidates(list);
+    applyRecruiterCandidatesSafely(list, setAllCandidates, { allowEmpty: action === 'delete' });
     showToast(
       action === 'delete'
         ? 'Konto wurde entfernt.'
@@ -401,8 +418,7 @@ const App: React.FC = () => {
 
   const refreshCandidatesForRecruiter = async () => {
     const list = await loadRecruiterCandidatesWithRetry();
-    writeRecruiterCandidatesCache(list);
-    setAllCandidates(list);
+    applyRecruiterCandidatesSafely(list, setAllCandidates);
   };
 
   const handleLogout = () => {

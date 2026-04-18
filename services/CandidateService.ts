@@ -22,7 +22,7 @@ class CandidateService {
       return await api.getAllCandidates();
     } catch (e) {
       console.error('[CandidateService] Error fetching all candidates:', e);
-      return [];
+      throw e;
     }
   }
 
@@ -31,7 +31,7 @@ class CandidateService {
       return await api.listRegisteredUsers();
     } catch (e) {
       console.error('[CandidateService] Error listing registered users:', e);
-      return [];
+      throw e;
     }
   }
 
