@@ -197,6 +197,10 @@ class CandidateService {
     }
   }
 
+  getCachedInquiries(): CandidateInquiry[] {
+    return api.getLocalInquiriesFallback();
+  }
+
   async deleteInquiry(inquiryId: string): Promise<void> {
     try {
       await api.deleteCandidateInquiry(inquiryId);

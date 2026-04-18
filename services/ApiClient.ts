@@ -2352,20 +2352,13 @@ class ApiClient {
   async getCandidateInquiries(): Promise<CandidateInquiry[]> {
     const local = this.readLocalInquiries();
     try {
-      // Mobile Browser hydratisieren die Supabase-Session gelegentlich leicht verzögert.
-      // Ohne Retry würde der erste Recruiter-Fetch als "leer" enden, obwohl Daten vorhanden sind.
-      let sessionUserId: string | null = null;
-      for (let attempt = 0; attempt < 4; attempt += 1) {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session?.user?.id) {
-          sessionUserId = session.user.id;
-          break;
-        }
-        await new Promise((resolve) => window.setTimeout(resolve, 250));
-      }
-      if (!sessionUserId) {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      // Kein künstliches Warten beim Öffnen der Ansicht: Cache sofort zeigen,
+      // Supabase lädt nach Auth-Hydration über onAuthStateChange im Hintergrund nach.
+      if (!session?.user?.id) {
         return local;
       }
 
