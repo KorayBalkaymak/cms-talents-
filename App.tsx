@@ -148,6 +148,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const init = async () => {
+      const initialRoutePath = getRoutePathFromWindow();
+      const isAuthRoute = initialRoutePath === '/recruiter/auth' || initialRoutePath === '/candidate/auth';
       let initialUser = authService.getCurrentUser();
 
       if (initialUser) {
@@ -156,6 +158,12 @@ const App: React.FC = () => {
           const cached = readRecruiterCandidatesCache();
           if (cached.length > 0) setAllCandidates(cached);
         }
+      }
+
+      if (isAuthRoute) {
+        // Auf Login-Seiten keinen Supabase-Session-Init starten: ein haengender Auth-Lock blockiert sonst den echten Login.
+        setIsLoading(false);
+        return;
       }
 
       const authInitPromise = authService.ensureInit();
