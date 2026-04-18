@@ -28,6 +28,7 @@ const EDITING_CLAIM_CLEAR = 'editing_claim:clear';
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined) || '';
 const SUPABASE_PUBLIC_KEY =
   ((import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY) as string | undefined) || '';
+const LOGIN_REQUEST_TIMEOUT_MS = 25000;
 
 const RECRUITER_ROLE_BY_EMAIL: Record<string, UserRole> = {
   'haagen@industries-cms.com': UserRole.ADMIN,
@@ -232,7 +233,7 @@ async function directPasswordSignIn(email: string, password: string): Promise<Di
   }
 
   const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+  const timeoutId = window.setTimeout(() => controller.abort(), LOGIN_REQUEST_TIMEOUT_MS);
   try {
     const response = await fetch(`${SUPABASE_URL.replace(/\/$/, '')}/auth/v1/token?grant_type=password`, {
       method: 'POST',
@@ -260,7 +261,7 @@ async function directPasswordSignIn(email: string, password: string): Promise<Di
     return {
       error:
         e instanceof DOMException && e.name === 'AbortError'
-          ? 'Supabase Auth antwortet nicht. Bitte Seite neu laden und erneut versuchen.'
+          ? 'Supabase Auth antwortet nicht rechtzeitig. Bitte erneut versuchen.'
           : e instanceof Error
             ? e.message
             : 'Anmeldung fehlgeschlagen.',
@@ -268,6 +269,24 @@ async function directPasswordSignIn(email: string, password: string): Promise<Di
   } finally {
     window.clearTimeout(timeoutId);
   }
+}
+
+async function directPasswordSignInWithRetry(email: string, password: string, attempts = 2): Promise<DirectPasswordSignInResult> {
+  let last: DirectPasswordSignInResult = { error: 'Anmeldung fehlgeschlagen.' };
+  for (let i = 0; i < attempts; i += 1) {
+    const result = await directPasswordSignIn(email, password);
+    last = result;
+    if (result.access_token && result.refresh_token && result.user) return result;
+    const errText = `${result.error || ''} ${result.error_description || ''} ${result.msg || ''} ${result.message || ''}`.toLowerCase();
+    // Bei klaren Auth-Fehlern nicht unnötig erneut probieren.
+    if (errText.includes('invalid login credentials') || errText.includes('ungültige anmeldedaten') || errText.includes('email not confirmed')) {
+      return result;
+    }
+    if (i < attempts - 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, 500 * (i + 1)));
+    }
+  }
+  return last;
 }
 
 function recruiterClaimLabelFromUser(u: User): string {
@@ -1338,6 +1357,13 @@ class ApiClient {
       return { success: false, error: 'Dieser Recruiter-Account ist nicht freigeschaltet.' };
     }
 
+    // Veraltete lokale Session-Locks koennen besonders in Safari/IOS den Login blockieren.
+    await withRequestTimeout(
+      supabase.auth.signOut({ scope: 'local' }),
+      1200,
+      'Lokale Session-Bereinigung dauerte zu lange.'
+    ).catch(() => undefined);
+
     let signInResult: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>;
     try {
       signInResult = await withRequestTimeout(
@@ -1345,12 +1371,12 @@ class ApiClient {
           email: normalizedEmail,
           password,
         }),
-        expectedRecruiterLogin ? 8000 : 12000,
+        LOGIN_REQUEST_TIMEOUT_MS,
         'Der Login dauert zu lange. Bitte prüfen Sie die Verbindung und versuchen Sie es erneut.'
       );
     } catch (e) {
       if (expectedRecruiterLogin && isRecruiterRole(allowlistedRecruiterRole)) {
-        const direct = await directPasswordSignIn(normalizedEmail, password);
+        const direct = await directPasswordSignInWithRetry(normalizedEmail, password, 2);
         if (direct.access_token && direct.refresh_token && direct.user) {
           const user = authUserToRecruiterUser(direct.user, allowlistedRecruiterRole);
           localStorage.setItem(SESSION_KEY, JSON.stringify(user));
