@@ -173,6 +173,13 @@ function roleLabelDe(role: UserRole): string {
   return 'Kandidat';
 }
 
+function dashboardUserDisplayName(u: DashboardUserEntry): string {
+  const fullName = fullNameFromParts(u.firstName, u.lastName);
+  if (fullName) return fullName;
+  if (u.email.includes('@')) return u.email.split('@')[0] || u.email;
+  return u.sourceCandidateNumber || 'Kandidat';
+}
+
 function contactInitialsFromName(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length >= 2) {
@@ -683,7 +690,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       setRegisteredUsersError(null);
       try {
         const list = await candidateService.listRegisteredUsers();
-        if (!cancelled) setRegisteredUsers(list);
+        if (!cancelled) {
+          setRegisteredUsers((prev) => (list.length === 0 && prev.length > 0 ? prev : list));
+        }
       } catch (e) {
         if (!cancelled) {
           setRegisteredUsersError(e instanceof Error ? e.message : 'Nutzer konnten nicht geladen werden.');
@@ -1117,13 +1126,32 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       merged.set(userItem.id, userItem);
     }
     for (const candidate of candidates) {
-      if (merged.has(candidate.userId)) continue;
+      const existing = merged.get(candidate.userId);
+      if (existing) {
+        const candidateName = fullNameFromParts(candidate.firstName, candidate.lastName);
+        if (candidateName) {
+          merged.set(candidate.userId, {
+            ...existing,
+            firstName: candidate.firstName || existing.firstName,
+            lastName: candidate.lastName || existing.lastName,
+            isSubmitted: !!candidate.isSubmitted,
+            isPublished: !!candidate.isPublished,
+            sourceCandidateNumber: candidate.candidateNumber || existing.sourceCandidateNumber,
+          });
+        }
+        continue;
+      }
       const fullName = `${candidate.firstName || ''} ${candidate.lastName || ''}`.trim();
       const isExternallyAdded = candidate.userId.startsWith('external:');
       const snapshotRole = isExternallyAdded ? UserRole.CANDIDATE : candidate.accountRole ?? UserRole.CANDIDATE;
+
+      // Recruiter/Admin-Snapshots aus dem Kandidatenpool enthalten oft keine Kontodaten.
+      // Sie wuerden als kaputte "E-Mail wird geladen"-Zeilen erscheinen, bis profiles/RLS antwortet.
+      if (!isExternallyAdded && snapshotRole !== UserRole.CANDIDATE) continue;
+
       merged.set(candidate.userId, {
         id: candidate.userId,
-        email: isExternallyAdded ? 'Kein Login-Konto (manuell hinzugefügt)' : 'E-Mail wird geladen',
+        email: isExternallyAdded ? 'Kein Login-Konto (manuell hinzugefügt)' : 'E-Mail im Profil nicht verfügbar',
         role: snapshotRole,
         firstName: candidate.firstName || '',
         lastName: candidate.lastName || '',
@@ -3374,7 +3402,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 <>
                   <div className="divide-y divide-slate-100 lg:hidden">
                     {filteredRegisteredUsers.map((u) => {
-                      const displayName = `${u.firstName} ${u.lastName}`.trim() || u.email;
+                      const displayName = dashboardUserDisplayName(u);
                       const isSelf = u.id === user.id;
                       const effRole = effectiveRegisteredUserRole(u);
                       const isRecruiterAccount = effRole === UserRole.RECRUITER || effRole === UserRole.ADMIN;
@@ -3411,7 +3439,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               )}
                               {u.isSubmitted ? <Badge variant="slate">Formular eingereicht</Badge> : null}
                               {u.isExternallyAdded ? <Badge variant="yellow">Manuell hinzugefügt</Badge> : null}
-                              {u.isSnapshotOnly ? <Badge variant="slate">Kontodaten werden geladen</Badge> : null}
+                              {u.isSnapshotOnly ? <Badge variant="slate">Profil ohne Kontodaten</Badge> : null}
                             </div>
                           )}
                           <p className="mt-2 text-xs font-semibold text-slate-200">
@@ -3440,7 +3468,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               u.isExternallyAdded
                                 ? 'Manuell hinzugefügte Kandidaten sind kein Login-Konto und werden hier nicht gelöscht.'
                                 : u.isSnapshotOnly
-                                  ? 'Kontodaten werden noch geladen.'
+                                  ? 'Zu diesem Profil gibt es keine löschbaren Login-Kontodaten.'
                                 : isSelf
                                   ? 'Eigenes Konto kann hier nicht gelöscht werden.'
                                   : undefined
@@ -3466,7 +3494,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                       </thead>
                       <tbody className="divide-y divide-slate-800">
                         {filteredRegisteredUsers.map((u) => {
-                          const displayName = `${u.firstName} ${u.lastName}`.trim() || '—';
+                          const displayName = dashboardUserDisplayName(u);
                           const isSelf = u.id === user.id;
                           const effRole = effectiveRegisteredUserRole(u);
                           const isRecruiterAccount = effRole === UserRole.RECRUITER || effRole === UserRole.ADMIN;
@@ -3489,7 +3517,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                     )}
                                     {u.isSubmitted ? <Badge variant="slate">Formular eingereicht</Badge> : null}
                                     {u.isExternallyAdded ? <Badge variant="yellow">Manuell hinzugefügt</Badge> : null}
-                                    {u.isSnapshotOnly ? <Badge variant="slate">Kontodaten werden geladen</Badge> : null}
+                                    {u.isSnapshotOnly ? <Badge variant="slate">Profil ohne Kontodaten</Badge> : null}
                                   </div>
                                 )}
                               </td>
@@ -3527,7 +3555,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                       u.isExternallyAdded
                                         ? 'Manuell hinzugefügte Kandidaten sind kein Login-Konto und werden hier nicht gelöscht.'
                                         : u.isSnapshotOnly
-                                          ? 'Kontodaten werden noch geladen.'
+                                          ? 'Zu diesem Profil gibt es keine löschbaren Login-Kontodaten.'
                                         : isSelf
                                           ? 'Eigenes Konto nicht löschbar'
                                           : undefined
