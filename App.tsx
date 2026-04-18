@@ -118,6 +118,25 @@ async function loadRecruiterCandidatesWithRetry(): Promise<CandidateProfile[]> {
   throw lastError instanceof Error ? lastError : new Error('Recruiter-Kandidaten konnten nicht geladen werden.');
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const id = window.setTimeout(() => {
+      reject(new Error(`${label} dauert zu lange.`));
+    }, ms);
+
+    promise.then(
+      (value) => {
+        window.clearTimeout(id);
+        resolve(value);
+      },
+      (error) => {
+        window.clearTimeout(id);
+        reject(error);
+      }
+    );
+  });
+}
+
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [currentPath, setCurrentPath] = useState(resolveInitialPath());
@@ -129,43 +148,58 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const init = async () => {
-      // Ensure auth service is initialized before reading session state.
-      await authService.ensureInit();
+      let initialUser = authService.getCurrentUser();
 
-      const initialUser = authService.getCurrentUser();
-      const isInitialRecruiter =
-        !!initialUser && (initialUser.role === UserRole.RECRUITER || initialUser.role === UserRole.ADMIN);
-
-      // If we have a user, validate against Supabase and get profile data.
       if (initialUser) {
-        if (initialUser.role === UserRole.CANDIDATE) {
-          try {
-            const profile = await candidateService.getById(initialUser.id);
-            if (profile && profile.firstName) {
-              setUser({ ...initialUser, firstName: profile.firstName });
-            } else if (profile) {
-              setUser(initialUser);
-            } else {
-              // Profile does not exist anymore in Supabase. Session is invalid.
-              authService.logout();
-            }
-          } catch (e) {
-            // Supabase is not reachable or the user does not exist.
-            console.warn('[App] Session validation failed, logging out:', e);
-            authService.logout();
-          }
-        } else {
-          setUser(initialUser);
+        setUser(initialUser);
+        if (initialUser.role === UserRole.RECRUITER || initialUser.role === UserRole.ADMIN) {
+          const cached = readRecruiterCandidatesCache();
+          if (cached.length > 0) setAllCandidates(cached);
         }
       }
+
+      const authInitPromise = authService.ensureInit();
+
+      try {
+        await withTimeout(authInitPromise, 2500, 'Auth-Start');
+        initialUser = authService.getCurrentUser();
+        setUser(initialUser);
+      } catch (e) {
+        console.warn('[App] Auth init timed out; showing UI and continuing in background:', e);
+        initialUser = authService.getCurrentUser();
+        if (initialUser) setUser(initialUser);
+        authInitPromise
+          .then(() => {
+            setUser(authService.getCurrentUser());
+          })
+          .catch((error) => {
+            console.warn('[App] Background auth init failed:', error);
+          });
+      } finally {
+        // Der Startbildschirm darf nie wegen Supabase/Auth endlos stehen bleiben.
+        setIsLoading(false);
+      }
+
+      const isInitialRecruiter =
+        !!initialUser && (initialUser.role === UserRole.RECRUITER || initialUser.role === UserRole.ADMIN);
 
       if (isInitialRecruiter) {
         const cached = readRecruiterCandidatesCache();
         if (cached.length > 0) setAllCandidates(cached);
       }
 
-      // Show UI immediately; load public candidate list in the background.
-      setIsLoading(false);
+      if (initialUser?.role === UserRole.CANDIDATE) {
+        withTimeout(candidateService.getById(initialUser.id), 2500, 'Profilvalidierung')
+          .then((profile) => {
+            if (profile?.firstName) {
+              setUser((current) => (current?.id === initialUser?.id ? { ...current, firstName: profile.firstName } : current));
+            }
+          })
+          .catch((e) => {
+            console.warn('[App] Session validation skipped/failed in background:', e);
+          });
+      }
+
       const loadInitialCandidates = async () => {
         try {
           if (isInitialRecruiter) {
