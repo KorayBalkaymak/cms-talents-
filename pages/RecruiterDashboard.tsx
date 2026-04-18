@@ -2678,51 +2678,55 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
                       <div className="w-full overflow-x-auto overflow-y-visible [-webkit-overflow-scrolling:touch]">
                         <div className="min-w-[300px] sm:min-w-0">
-                      <div className="grid grid-cols-7 gap-0.5 sm:gap-2">
-                        {PLANNER_WEEKDAY_LABELS.map((d) => (
-                          <div key={d} className="rounded-lg py-1.5 text-center text-[10px] font-black tracking-wide text-slate-200 sm:py-2 sm:text-sm">{d}</div>
-                        ))}
-                        {plannerCalendarDays.map((cell) => {
-                          const events = plannerEventsByDate.get(cell.key) || [];
-                          const isSelected = cell.key === plannerSelectedDate;
-                          return (
-                            <button
-                              key={cell.key}
-                              type="button"
-                              onClick={() => {
-                                setPlannerSelectedDate(cell.key);
-                                setPlannerEventForm((s) => ({ ...s, scheduledDate: cell.key, scheduledTime: s.scheduledTime || '09:00' }));
-                              }}
-                              className={`min-h-[52px] rounded-xl border p-1 text-left transition sm:min-h-[78px] sm:rounded-2xl sm:p-2 ${
-                                isSelected
-                                  ? 'border-orange-300 bg-white shadow-sm ring-2 ring-orange-200'
-                                  : cell.inMonth
-                                    ? 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
-                                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm'
-                              }`}
-                            >
-                              <div className="mb-1 flex items-center justify-between">
-                                <span className={`text-[11px] font-black sm:text-sm ${cell.isToday ? 'text-orange-600' : 'text-slate-800'}`}>
-                                  {cell.date.getDate()}
-                                </span>
-                                {events.length > 0 ? (
-                                  <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-black text-white">{events.length}</span>
-                                ) : null}
+                          <div className="grid grid-cols-7 gap-0.5 sm:gap-2">
+                            {PLANNER_WEEKDAY_LABELS.map((d) => (
+                              <div key={d} className="rounded-lg py-1.5 text-center text-[10px] font-black tracking-wide text-slate-200 sm:py-2 sm:text-sm">
+                                {d}
                               </div>
-                              <div className="space-y-1">
-                                {events.slice(0, 2).map((evt) => (
-                                  <div key={evt.id} className="truncate rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700">
-                                    {new Date(evt.scheduledFor).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} · {evt.title}
+                            ))}
+                            {plannerCalendarDays.map((cell) => {
+                              const events = plannerEventsByDate.get(cell.key) || [];
+                              const isSelected = cell.key === plannerSelectedDate;
+                              const cellClass = isSelected
+                                ? 'border-orange-300 bg-white shadow-sm ring-2 ring-orange-200'
+                                : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm';
+
+                              return (
+                                <button
+                                  key={cell.key}
+                                  type="button"
+                                  onClick={() => {
+                                    setPlannerSelectedDate(cell.key);
+                                    setPlannerEventForm((s) => ({
+                                      ...s,
+                                      scheduledDate: cell.key,
+                                      scheduledTime: s.scheduledTime || '09:00',
+                                    }));
+                                  }}
+                                  className={`min-h-[52px] rounded-xl border p-1 text-left transition sm:min-h-[78px] sm:rounded-2xl sm:p-2 ${cellClass}`}
+                                >
+                                  <div className="mb-1 flex items-center justify-between">
+                                    <span className={`text-[11px] font-black sm:text-sm ${cell.isToday ? 'text-orange-600' : 'text-slate-800'}`}>
+                                      {cell.date.getDate()}
+                                    </span>
+                                    {events.length > 0 ? (
+                                      <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-black text-white">{events.length}</span>
+                                    ) : null}
                                   </div>
-                                ))}
-                                {events.length > 2 ? (
-                                  <div className="text-[10px] font-bold text-slate-500">+{events.length - 2} weitere</div>
-                                ) : null}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
+                                  <div className="space-y-1">
+                                    {events.slice(0, 2).map((evt) => (
+                                      <div key={evt.id} className="truncate rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-700">
+                                        {new Date(evt.scheduledFor).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} · {evt.title}
+                                      </div>
+                                    ))}
+                                    {events.length > 2 ? (
+                                      <div className="text-[10px] font-bold text-slate-500">+{events.length - 2} weitere</div>
+                                    ) : null}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     </div>
