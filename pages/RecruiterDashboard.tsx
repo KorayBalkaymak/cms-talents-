@@ -411,6 +411,17 @@ function inquiryPdfTextSummary(
   return summary;
 }
 
+function localMatchPercent(score: number): number {
+  if (!Number.isFinite(score) || score <= 0) return 0;
+  return Math.max(1, Math.min(100, Math.round((score / 24) * 100)));
+}
+
+function matchSignalForPercent(percent: number): { variant: 'green' | 'yellow' | 'red'; label: string } {
+  if (percent >= 95) return { variant: 'green', label: 'Top-Match' };
+  if (percent >= 85) return { variant: 'yellow', label: 'Moeglich' };
+  return { variant: 'red', label: 'Schwach' };
+}
+
 /** Rotes Ausrufezeichen im Kreis – gleiche Logik wie „Bearbeiten nötig: seit 3+ Tagen offen“ (nicht bei freigegeben + aktiv). */
 function StaleNeedsAttentionIcon({ title }: { title: string }) {
   return (
@@ -1259,7 +1270,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
         return hay.includes(term);
       });
     }
-    return list.slice(0, 50);
+    return list.slice(0, 3);
   }, [matchingQuery, visibleCandidates, deferredSearchTerm]);
 
   const inquiryMatchById = useMemo(() => {
@@ -1272,7 +1283,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       if (inq.candidateUserId) {
         ranked = ranked.filter((r) => r.candidate.userId !== inq.candidateUserId);
       }
-      m.set(inq.id, { query: q, ranked: ranked.slice(0, 10) });
+      m.set(inq.id, { query: q, ranked: ranked.slice(0, 3) });
     }
     return m;
   }, [activeView, inquiries, inquiryAnalysisById, visibleCandidates]);
@@ -2509,6 +2520,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                         <ul className="flex flex-col gap-2">
                                           {matchInfo.ranked.map(({ candidate: c, score, reasons }) => {
                                             const sugName = displayCandidateName(c);
+                                            const percent = localMatchPercent(score);
+                                            const signal = matchSignalForPercent(percent);
                                             return (
                                               <li
                                                 key={c.userId}
@@ -2526,7 +2539,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                                                   ) : null}
                                                 </div>
                                                 <div className="flex shrink-0 items-center gap-2">
-                                                  <Badge variant="slate">Score {score}</Badge>
+                                                  <Badge variant={signal.variant}>{percent}% · {signal.label}</Badge>
                                                   <Button
                                                     type="button"
                                                     size="sm"
@@ -3268,7 +3281,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   <p className="mt-1 text-xs font-medium text-slate-500">
                     {activeAiMatch
                       ? `Maximal 3 KI-Vorschlaege fuer die Anfrage von ${activeMatchingFromInquiry.contactName}.`
-                      : `Analyse aus externer Anfrage von ${activeMatchingFromInquiry.contactName}. Sortierung nach Relevanz und begründeten Treffern.`}
+                      : `Maximal 3 lokale Vorschlaege fuer die Anfrage von ${activeMatchingFromInquiry.contactName}. 95-100% gruen, 85-94% gelb, darunter rot.`}
                   </p>
                   {activeAiMatchLoading ? (
                     <div className="mt-4 flex items-center gap-3 rounded-xl border border-emerald-100 bg-white px-4 py-5 text-sm font-semibold text-slate-700">
@@ -3333,6 +3346,8 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                     <ul className="mt-4 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
                       {matchingRankedResults.map(({ candidate: c, score, reasons }) => {
                         const name = displayCandidateName(c);
+                        const percent = localMatchPercent(score);
+                        const signal = matchSignalForPercent(percent);
                         return (
                           <li key={c.userId} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="min-w-0">
@@ -3353,7 +3368,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                               ) : null}
                             </div>
                             <div className="flex shrink-0 flex-row items-center gap-2 sm:flex-col sm:items-end">
-                              <Badge variant="slate">Score {score}</Badge>
+                              <Badge variant={signal.variant}>{percent}% · {signal.label}</Badge>
                               <Button type="button" size="sm" variant="primary" className="h-9 text-[11px] font-black" onClick={() => void handleViewCandidate(c)}>
                                 Profil öffnen
                               </Button>
