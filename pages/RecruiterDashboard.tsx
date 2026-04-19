@@ -25,6 +25,7 @@ import { recruiterRoleFromEmail } from '../services/ApiClient';
 import { COPPER_PANEL } from '../constants/copperTheme';
 import { supabase } from '../utils/supabase';
 import { rankCandidates } from '../services/SearchService';
+import { createSafeAiMatch, AiMatchResult } from '../services/AiMatchingService';
 
 type DashboardView = 'talents' | 'inquiries' | 'planner' | 'external' | 'users' | 'calculator' | 'matching';
 
@@ -432,6 +433,9 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   const [activeView, setActiveView] = useState<DashboardView>(() => dashboardViewFromUrl());
   const [matchingQuery, setMatchingQuery] = useState<string | null>(null);
   const [matchingInquiryId, setMatchingInquiryId] = useState<string | null>(null);
+  const [aiMatchByInquiryId, setAiMatchByInquiryId] = useState<Record<string, AiMatchResult>>({});
+  const [aiMatchingLoadingId, setAiMatchingLoadingId] = useState<string | null>(null);
+  const [aiMatchingErrorByInquiryId, setAiMatchingErrorByInquiryId] = useState<Record<string, string>>({});
   const [pdfTextByAttachmentKey, setPdfTextByAttachmentKey] = useState<Record<string, string>>({});
   const [pdfTextStatusByAttachmentKey, setPdfTextStatusByAttachmentKey] = useState<Record<string, 'loading' | 'ready' | 'empty' | 'error'>>({});
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile | null>(null);
@@ -1285,6 +1289,90 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     () => (activeMatchingFromInquiry ? inquiryAnalysisById.get(activeMatchingFromInquiry.id) || buildInquiryAnalysis(activeMatchingFromInquiry, pdfTextByAttachmentKey) : null),
     [activeMatchingFromInquiry, inquiryAnalysisById, pdfTextByAttachmentKey]
   );
+
+  const activePdfTextSummary = useMemo(
+    () =>
+      activeMatchingFromInquiry
+        ? inquiryPdfTextSummary(activeMatchingFromInquiry, pdfTextStatusByAttachmentKey)
+        : { total: 0, loading: 0, ready: 0, empty: 0, error: 0 },
+    [activeMatchingFromInquiry, pdfTextStatusByAttachmentKey]
+  );
+
+  const getInquiryExtractedPdfText = useCallback(
+    (inq: CandidateInquiry) =>
+      (inq.customerAttachments || [])
+        .map((_, idx) => pdfTextByAttachmentKey[inquiryAttachmentKey(inq, idx)] || '')
+        .filter((text) => text.trim().length > 0)
+        .join('\n\n')
+        .slice(0, 20000),
+    [pdfTextByAttachmentKey]
+  );
+
+  const runAiMatchingForInquiry = useCallback(
+    async (inq: CandidateInquiry) => {
+      if (aiMatchingLoadingId) return;
+      const analysis = inquiryAnalysisById.get(inq.id) || buildInquiryAnalysis(inq, pdfTextByAttachmentKey);
+      const query = analysis.query.trim();
+      if (!query) {
+        setAiMatchingErrorByInquiryId((prev) => ({
+          ...prev,
+          [inq.id]: 'Die Anfrage enthaelt noch zu wenig auswertbare Informationen fuer KI-Matching.',
+        }));
+        return;
+      }
+      const shortlist = rankCandidates(visibleCandidates, query)
+        .filter((result) => result.score > 0 && result.candidate.userId !== inq.candidateUserId)
+        .slice(0, 12)
+        .map((result) => result.candidate);
+      if (shortlist.length === 0) {
+        setAiMatchByInquiryId((prev) => ({
+          ...prev,
+          [inq.id]: {
+            summary: 'Es gibt aktuell keinen lokalen Kandidaten, der genug Ueberschneidungen fuer eine KI-Pruefung hat.',
+            requirements: [],
+            matches: [],
+            noMatchReason: 'Aktuell keinen ausreichend passenden Kandidaten gefunden.',
+          },
+        }));
+        return;
+      }
+
+      setAiMatchingLoadingId(inq.id);
+      setAiMatchingErrorByInquiryId((prev) => {
+        const next = { ...prev };
+        delete next[inq.id];
+        return next;
+      });
+      try {
+        const result = await createSafeAiMatch({
+          inquiry: inq,
+          candidates: shortlist,
+          query,
+          extractedPdfText: getInquiryExtractedPdfText(inq),
+        });
+        setAiMatchByInquiryId((prev) => ({ ...prev, [inq.id]: result }));
+      } catch (error) {
+        setAiMatchingErrorByInquiryId((prev) => ({
+          ...prev,
+          [inq.id]: error instanceof Error ? error.message : 'KI-Matching konnte gerade nicht berechnet werden.',
+        }));
+      } finally {
+        setAiMatchingLoadingId((current) => (current === inq.id ? null : current));
+      }
+    },
+    [aiMatchingLoadingId, getInquiryExtractedPdfText, inquiryAnalysisById, pdfTextByAttachmentKey, visibleCandidates]
+  );
+
+  const activeAiMatch = activeMatchingFromInquiry ? aiMatchByInquiryId[activeMatchingFromInquiry.id] : undefined;
+  const activeAiMatchError = activeMatchingFromInquiry ? aiMatchingErrorByInquiryId[activeMatchingFromInquiry.id] : undefined;
+  const activeAiMatchLoading = !!activeMatchingFromInquiry && aiMatchingLoadingId === activeMatchingFromInquiry.id;
+  const aiMatchingRankedResults = useMemo(() => {
+    if (!activeAiMatch) return [];
+    const byId = new Map(visibleCandidates.map((candidate) => [candidate.userId, candidate]));
+    return activeAiMatch.matches
+      .map((match) => ({ match, candidate: byId.get(match.candidateId) }))
+      .filter((item): item is { match: AiMatchResult['matches'][number]; candidate: CandidateProfile } => !!item.candidate);
+  }, [activeAiMatch, visibleCandidates]);
 
   const applyInquiryToMatching = useCallback(
     (inq: CandidateInquiry) => {
@@ -3034,7 +3122,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-violet-700">Externe Interessen als Quelle</p>
-                      <h3 className="mt-1 text-sm font-black text-slate-900">Anfrage auswählen und automatisch matchen</h3>
+                      <h3 className="mt-1 text-sm font-black text-slate-900">Anfrage auswaehlen und sicher matchen</h3>
                     </div>
                     <Button type="button" variant="secondary" className="h-9 text-[11px] font-bold" onClick={() => openDashboardView('inquiries')}>
                       Externe Interessen öffnen
@@ -3117,18 +3205,110 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                         <p className="mt-1 text-xs text-slate-500">{activeInquiryAnalysis.attachmentNames.join(' · ')}</p>
                       </div>
                     ) : null}
+                    <div className="mt-3 rounded-xl border border-emerald-100 bg-white px-3 py-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">KI-Pruefung</p>
+                          <p className="mt-1 text-xs font-semibold leading-relaxed text-slate-700">
+                            Startet nur auf Knopfdruck, bewertet maximal 12 lokale Treffer und gibt hoechstens 3 Vorschlaege zurueck.
+                          </p>
+                          <p className="mt-1 text-[11px] font-semibold text-slate-500">
+                            95-100% gruen · 85-94% gelb · unter 85% rot
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="primary"
+                          className="h-9 text-[11px] font-black"
+                          isLoading={activeAiMatchLoading}
+                          disabled={activeAiMatchLoading || activePdfTextSummary.loading > 0}
+                          onClick={() => activeMatchingFromInquiry && void runAiMatchingForInquiry(activeMatchingFromInquiry)}
+                        >
+                          KI-Matching starten
+                        </Button>
+                      </div>
+                      {activePdfTextSummary.loading > 0 ? (
+                        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
+                          Bitte kurz warten: Die PDF wird noch fuer die Analyse vorbereitet.
+                        </p>
+                      ) : activeAiMatch ? (
+                        <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+                          <p className="font-black">KI-Zusammenfassung</p>
+                          <p className="mt-1 font-medium leading-relaxed">{activeAiMatch.summary}</p>
+                          {activeAiMatch.requirements.length > 0 ? (
+                            <p className="mt-1 text-emerald-800">Erkannte Anforderungen: {activeAiMatch.requirements.slice(0, 6).join(' · ')}</p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      {activeAiMatchError ? (
+                        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
+                          {activeAiMatchError} Die lokale Trefferliste bleibt weiter sichtbar.
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
                 ) : null}
               </div>
               {activeMatchingFromInquiry ? (
                 <div className="border-t border-slate-200 bg-slate-50/50 px-4 py-5 sm:px-6">
                   <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">
-                    Lokale Trefferliste
+                    {activeAiMatch ? 'KI-Vorschlaege' : 'Lokale Trefferliste'}
                   </h3>
                   <p className="mt-1 text-xs font-medium text-slate-500">
-                    Analyse aus externer Anfrage von {activeMatchingFromInquiry.contactName}. Sortierung nach Relevanz und begründeten Treffern.
+                    {activeAiMatch
+                      ? `Maximal 3 KI-Vorschlaege fuer die Anfrage von ${activeMatchingFromInquiry.contactName}.`
+                      : `Analyse aus externer Anfrage von ${activeMatchingFromInquiry.contactName}. Sortierung nach Relevanz und begründeten Treffern.`}
                   </p>
-                  {matchingRankedResults.length === 0 ? (
+                  {activeAiMatchLoading ? (
+                    <div className="mt-4 flex items-center gap-3 rounded-xl border border-emerald-100 bg-white px-4 py-5 text-sm font-semibold text-slate-700">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" aria-hidden />
+                      KI liest Anfrage/PDF und bewertet passende Kandidaten...
+                    </div>
+                  ) : activeAiMatch && aiMatchingRankedResults.length === 0 ? (
+                    <div className="mt-4">
+                      <EmptyState
+                        title="Aktuell keinen passenden Kandidaten gefunden"
+                        description={activeAiMatch.noMatchReason || 'Die KI hat keinen Kandidaten mit ausreichender Passung gefunden.'}
+                      />
+                    </div>
+                  ) : activeAiMatch ? (
+                    <ul className="mt-4 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
+                      {aiMatchingRankedResults.map(({ candidate: c, match }) => {
+                        const name = displayCandidateName(c);
+                        const variant = match.signal === 'green' ? 'green' : match.signal === 'yellow' ? 'yellow' : 'red';
+                        const label = match.signal === 'green' ? 'Top-Match' : match.signal === 'yellow' ? 'Moeglich' : 'Schwach';
+                        return (
+                          <li key={c.userId} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-slate-900">{name}</p>
+                              <p className="mt-0.5 text-xs font-medium text-slate-600">
+                                {displayProfession(c)} · {c.industry}
+                                {c.city ? ` · ${c.city}` : ''}
+                              </p>
+                              <p className="mt-2 text-[12px] font-semibold leading-relaxed text-slate-700">{match.summary}</p>
+                              {match.reasons.length ? (
+                                <p className="mt-2 text-[11px] font-semibold leading-relaxed text-emerald-700">
+                                  Warum passend: {match.reasons.join(' • ')}
+                                </p>
+                              ) : null}
+                              {match.risks.length ? (
+                                <p className="mt-1 text-[11px] font-semibold leading-relaxed text-amber-700">
+                                  Hinweise: {match.risks.join(' • ')}
+                                </p>
+                              ) : null}
+                            </div>
+                            <div className="flex shrink-0 flex-row items-center gap-2 sm:flex-col sm:items-end">
+                              <Badge variant={variant}>{match.score}% · {label}</Badge>
+                              <Button type="button" size="sm" variant="primary" className="h-9 text-[11px] font-black" onClick={() => void handleViewCandidate(c)}>
+                                Profil öffnen
+                              </Button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : matchingRankedResults.length === 0 ? (
                     <div className="mt-4">
                       <EmptyState
                         title="Wir haben aktuell keinen passenden Kandidaten"
@@ -3178,7 +3358,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
                 <div className="border-t border-slate-200 bg-slate-50/50 px-4 py-8 sm:px-6">
                   <EmptyState
                     title="Noch keine externen Interessen"
-                    description="Sobald Anfragen eingehen, analysiert das KI-Matching diese automatisch und schlägt passende Kandidaten vor."
+                    description="Sobald Anfragen eingehen, koennen sie hier sicher per KI-Matching geprueft werden."
                   />
                 </div>
               ) : null}
