@@ -1203,14 +1203,22 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   }, [inquiries, pdfTextByAttachmentKey]);
 
   useEffect(() => {
+    if (activeView !== 'inquiries' && activeView !== 'matching') return;
     let cancelled = false;
-    const jobs: Array<Promise<void>> = [];
+    let started = 0;
     for (const inq of inquiries) {
       (inq.customerAttachments || []).forEach((attachment, idx) => {
+        if (started >= 2) return;
         const key = inquiryAttachmentKey(inq, idx);
-        if (pdfTextStatusByAttachmentKey[key] === 'loading' || pdfTextStatusByAttachmentKey[key] === 'ready' || pdfTextStatusByAttachmentKey[key] === 'empty') return;
+        if (
+          pdfTextStatusByAttachmentKey[key] === 'loading' ||
+          pdfTextStatusByAttachmentKey[key] === 'ready' ||
+          pdfTextStatusByAttachmentKey[key] === 'empty' ||
+          pdfTextStatusByAttachmentKey[key] === 'error'
+        ) return;
+        started += 1;
         setPdfTextStatusByAttachmentKey((prev) => ({ ...prev, [key]: 'loading' }));
-        const job = extractPdfText(attachment.data)
+        void extractPdfText(attachment.data)
           .then((text) => {
             if (cancelled) return;
             const cleanText = text.trim();
@@ -1221,13 +1229,12 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
             console.warn('[RecruiterDashboard] PDF text extraction failed', attachment.name, error);
             if (!cancelled) setPdfTextStatusByAttachmentKey((prev) => ({ ...prev, [key]: 'error' }));
           });
-        jobs.push(job);
       });
     }
     return () => {
       cancelled = true;
     };
-  }, [inquiries, pdfTextStatusByAttachmentKey]);
+  }, [activeView, inquiries, pdfTextStatusByAttachmentKey]);
 
   const matchingRankedResults = useMemo(() => {
     if (!matchingQuery?.trim()) return [];
@@ -1256,6 +1263,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   }, [matchingQuery, visibleCandidates, deferredSearchTerm]);
 
   const inquiryMatchById = useMemo(() => {
+    if (activeView !== 'inquiries' && activeView !== 'matching') return new Map<string, { query: string; ranked: MatchResult[] }>();
     const m = new Map<string, { query: string; ranked: MatchResult[] }>();
     for (const inq of inquiries) {
       const q = inquiryAnalysisById.get(inq.id)?.query || '';
@@ -1267,17 +1275,19 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
       m.set(inq.id, { query: q, ranked: ranked.slice(0, 10) });
     }
     return m;
-  }, [inquiries, inquiryAnalysisById, visibleCandidates]);
+  }, [activeView, inquiries, inquiryAnalysisById, visibleCandidates]);
 
   const selectableInquiryMatches = useMemo(
-    () =>
-      inquiries
+    () => {
+      if (activeView !== 'matching') return [];
+      return inquiries
         .filter((inq) => {
           const q = inquiryAnalysisById.get(inq.id)?.query || '';
           return q.trim().length > 0;
         })
-        .slice(0, 12),
-    [inquiries, inquiryAnalysisById]
+        .slice(0, 12);
+    },
+    [activeView, inquiries, inquiryAnalysisById]
   );
 
   const activeMatchingFromInquiry = useMemo(
