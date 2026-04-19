@@ -138,6 +138,61 @@ begin
   end if;
 end $$;
 
+create table if not exists public.candidate_inquiries (
+  id uuid primary key default gen_random_uuid(),
+  candidate_user_id uuid,
+  contact_name text not null,
+  contact_email text not null,
+  contact_phone text not null,
+  message text,
+  customer_attachments jsonb not null default '[]'::jsonb,
+  recruiter_editing_user_id uuid,
+  recruiter_editing_label text,
+  recruiter_editing_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+do $$
+begin
+  if to_regclass('public.candidate_inquiries') is not null then
+    alter table public.candidate_inquiries enable row level security;
+
+    alter table public.candidate_inquiries
+      alter column candidate_user_id drop not null;
+
+    alter table public.candidate_inquiries
+      add column if not exists customer_attachments jsonb not null default '[]'::jsonb,
+      add column if not exists recruiter_editing_user_id uuid,
+      add column if not exists recruiter_editing_label text,
+      add column if not exists recruiter_editing_at timestamptz;
+
+    drop policy if exists "Public can insert inquiries" on public.candidate_inquiries;
+    create policy "Public can insert inquiries"
+    on public.candidate_inquiries
+    for insert
+    with check (true);
+
+    drop policy if exists "Recruiters can read inquiries" on public.candidate_inquiries;
+    create policy "Recruiters can read inquiries"
+    on public.candidate_inquiries
+    for select
+    using (public.is_recruiter_or_admin());
+
+    drop policy if exists "Recruiters can update inquiries" on public.candidate_inquiries;
+    create policy "Recruiters can update inquiries"
+    on public.candidate_inquiries
+    for update
+    using (public.is_recruiter_or_admin())
+    with check (public.is_recruiter_or_admin());
+
+    drop policy if exists "Recruiters can delete inquiries" on public.candidate_inquiries;
+    create policy "Recruiters can delete inquiries"
+    on public.candidate_inquiries
+    for delete
+    using (public.is_recruiter_or_admin());
+  end if;
+end $$;
+
 -- Kontrolle nach dem Run:
 -- is_recruiter_or_admin muss true sein.
 select public.is_recruiter_or_admin() as is_recruiter_or_admin;
@@ -150,3 +205,7 @@ where deleted_at is null;
 -- Diese Zahl muss die manuell hinzugefuegten Recruiter-Kandidaten zeigen.
 select count(*) as external_candidates_visible_for_this_recruiter
 from public.external_candidates;
+
+-- Diese Zahl muss die externen Interessen zeigen.
+select count(*) as candidate_inquiries_visible_for_this_recruiter
+from public.candidate_inquiries;

@@ -608,7 +608,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
     (view: DashboardView) => {
       writeDashboardViewToUrl(view);
       setActiveView(view);
-      if (view === 'inquiries') {
+      if (view === 'inquiries' || view === 'matching') {
         const needsInitialLoad = !inquiriesLoadedOnce.current && inquiriesCount.current === 0;
         void loadInquiries({ foreground: needsInitialLoad });
       }
@@ -651,7 +651,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
 
   /** Externe Interessen: schneller Poll in dieser Ansicht + Reload bei Tab-/App-Rückkehr (Handy/Tablet/Desktop). */
   useEffect(() => {
-    if (activeView !== 'inquiries') return;
+    if (activeView !== 'inquiries' && activeView !== 'matching') return;
     const needsInitialLoad = !inquiriesLoadedOnce.current && inquiriesCount.current === 0;
     void loadInquiries({ foreground: needsInitialLoad });
     const id = window.setInterval(() => {
@@ -666,7 +666,7 @@ const RecruiterDashboard: React.FC<RecruiterDashboardProps> = ({ user, candidate
   useEffect(() => {
     const refreshIfInquiries = () => {
       if (document.visibilityState !== 'visible') return;
-      if (activeView !== 'inquiries') return;
+      if (activeView !== 'inquiries' && activeView !== 'matching') return;
       const now = Date.now();
       if (now - inquiriesResumeRefreshAt.current < 1500) return;
       inquiriesResumeRefreshAt.current = now;
