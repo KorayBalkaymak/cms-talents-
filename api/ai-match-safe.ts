@@ -120,7 +120,7 @@ export default async function handler(req: any, res: any) {
     });
   }
 
-  const allowedIds = new Set(candidates.map((c: any) => String(c.id || '')).filter(Boolean));
+  const allowedIds = new Set<string>(candidates.map((c: any) => String(c.id || '')).filter(Boolean));
   const inquiry = body.inquiry || {};
   const attachments = Array.isArray(inquiry.attachments) ? inquiry.attachments.slice(0, 2) : [];
   const content: any[] = [
