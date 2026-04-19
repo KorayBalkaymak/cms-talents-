@@ -79,18 +79,26 @@ function writeRecruiterCandidatesCache(list: CandidateProfile[]): void {
 function applyRecruiterCandidatesSafely(
   list: CandidateProfile[],
   setAllCandidates: React.Dispatch<React.SetStateAction<CandidateProfile[]>>,
-  options: { allowEmpty?: boolean } = {}
+  options: { allowEmpty?: boolean; allowShrink?: boolean } = {}
 ): void {
-  if (list.length > 0 || options.allowEmpty) {
-    writeRecruiterCandidatesCache(list);
-  }
-
   setAllCandidates((prev) => {
     // Ein leerer Hintergrund-/Fehler-Refresh darf eine vorhandene Recruiter-Liste nie wegwischen.
     if (list.length === 0 && prev.length > 0 && !options.allowEmpty) {
       return prev;
     }
-    return list;
+
+    let next = list;
+    if (!options.allowShrink && prev.length > list.length && list.length > 0) {
+      const merged = new Map<string, CandidateProfile>();
+      for (const candidate of prev) merged.set(candidate.userId, candidate);
+      for (const candidate of list) merged.set(candidate.userId, candidate);
+      next = Array.from(merged.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+
+    if (next.length > 0 || options.allowEmpty) {
+      writeRecruiterCandidatesCache(next);
+    }
+    return next;
   });
 }
 
@@ -444,7 +452,7 @@ const App: React.FC = () => {
   ) => {
     await candidateService.adminAction(userId, action, newStatus, performerId || user?.id);
     const list = await loadRecruiterCandidatesWithRetry();
-    applyRecruiterCandidatesSafely(list, setAllCandidates, { allowEmpty: action === 'delete' });
+    applyRecruiterCandidatesSafely(list, setAllCandidates, { allowEmpty: action === 'delete', allowShrink: action === 'delete' });
     showToast(
       action === 'delete'
         ? 'Konto wurde entfernt.'
